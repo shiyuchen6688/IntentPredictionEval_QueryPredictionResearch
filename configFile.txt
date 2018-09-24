@@ -1,0 +1,10 @@
+ALGORITHM=CF
+INTENT_REP=tuple
+DATASET=NYCTaxiTrips
+QUERYSESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCCleanedSessions
+DB=madlibtest
+FULLTABLE=nyc_yellow_tripdata_2016_06
+FULLTABLESIZE=10967307
+SAMPLETABLE=nyc_yellow_tripdata_2016_06_sample_1_percent
+SAMPLETABLESIZE=109673
+EXEC_SAMPLE=true
