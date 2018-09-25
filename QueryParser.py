@@ -1,23 +1,6 @@
 import sys
 import os
 import time, argparse
-# the whole point of this parsing is to check if in the results we have a column called rowID. Else, we want to get rowID.
-# Several possible cases:
-#
-def fetchRowIDs(sessQuery, rows, configDict):
-    rowIDs = []
-    if 'ID' in rows[0]:
-        for row in rows:
-            rowIDs.append(row['ID'])
-    else:
-        sessQuery = rewriteQueryForProvenance(sessQuery, configDict)
-    return rowIDs
-
-# rowIDs = []
-#    for row in rows:
-#        rowIDs.append(row['id'])
-#    del rows
-#    gc.collect()
 
 def setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
     projFlag[parseLevel] = False
@@ -127,11 +110,22 @@ def parseNYCQuery(sessQuery):
     return (sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth)
 
 def rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth):
+    parseLevel = 0
     if "WHERE" not in sessQuery and ("HAVING" not in sessQuery or "HAVING (COUNT(1) > 0)" in sessQuery):
-        return None
+        return None  # either one of HAVING or WHERE must be in the sessQuery, else every tuple ends up being a witness
     elif "WHERE" in sessQuery and "HAVING" not in sessQuery and "GROUP BY" not in sessQuery:
-        parseLevel = 0
         sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + ", id")  # we are projecting id as well
+    elif "WHERE" in sessQuery and "GROUP BY" in sessQuery and "HAVING" not in sessQuery:
+        sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + ", id")  # we are projecting id as well
+        projectList[parseLevel] = projectList[parseLevel] + ", id"
+        numAttrsProjected = projectList[parseLevel].count(",")+1
+        sessQuery.replace(groupByList[parseLevel], groupByList[parseLevel] + ", " + str(numAttrsProjected)) # we are grouping by id as well, via its index ID in the projections
+        groupByList[parseLevel] = groupByList[parseLevel] + ", " + str(numAttrsProjected)
+    elif "GROUP BY" in sessQuery and "HAVING" in sessQuery:
+        # if MIN/MAX/AVG/SUM in sessQuery, every tuple is a witness
+        aggrKeywords = ["MIN", "MAX", "AVG", "COUNT", "SUM"]
+        if any(aggrKeyword in projectList for aggrKeyword in aggrKeywords):
+            return None
 
     return sessQuery
 
@@ -141,3 +135,24 @@ def rewriteQueryForProvenance(sessQuery, configDict):
     if configDict['DATASET']=='NYCTaxiTrips':
         (sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth) = parseNYCQuery(sessQuery)
         sessQuery = rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth)
+
+# the whole point of this parsing is to check if in the results we have a column called rowID. Else, we want to get rowID.
+# Several possible cases:
+#
+def fetchRowIDs(sessQuery, rows, configDict):
+    rowIDs = []
+    if 'id' in rows[0]:
+        for row in rows:
+            rowIDs.append(row['id'])
+    else:
+        sessQuery = rewriteQueryForProvenance(sessQuery, configDict)
+        if sessQuery is None:
+            return None
+
+    return rowIDs
+
+# rowIDs = []
+#    for row in rows:
+#        rowIDs.append(row['id'])
+#    del rows
+#    gc.collect()
