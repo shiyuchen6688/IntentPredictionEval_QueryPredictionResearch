@@ -135,6 +135,7 @@ def rewriteQueryForProvenance(sessQuery, configDict):
     if configDict['DATASET']=='NYCTaxiTrips':
         (sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth) = parseNYCQuery(sessQuery)
         sessQuery = rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth)
+        return sessQuery
 
 # the whole point of this parsing is to check if in the results we have a column called rowID. Else, we want to get rowID.
 # Several possible cases:
