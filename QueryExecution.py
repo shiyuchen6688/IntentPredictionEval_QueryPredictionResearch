@@ -27,18 +27,20 @@ def executeQuery(sessQuery, configDict):
     try:
         #sessQuery = "SELECT * from nyc_yellow_tripdata_2016_06 order by id desc limit 10"
         #cur.execute("""SELECT * from nyc_yellow_tripdata_2016_06 order by id desc limit 10""")
+        if configDict['DATASET'] == 'NYCTaxiTrips':
+            sessQuery = sessQuery.split("~")[0]
         cur.execute(sessQuery)
     except:
         print "cannot execute the query on Postgres"
 
     if configDict['INTENT_REP']=='tuple':
         rows = cur.fetchall()
-        rowIDs = []
-        for row in rows:
-            rowIDs.append(row['id'])
-        del rows
-        gc.collect()
-        resObj = tupleIntent.createTupleIntentRep(rowIDs, configDict)
+    #    rowIDs = []
+    #    for row in rows:
+    #        rowIDs.append(row['id'])
+    #    del rows
+    #    gc.collect()
+        resObj = tupleIntent.createTupleIntentRep(rows, sessQuery, configDict)
     elif configDict['INTENT_REP']=='fragment':
         resObj = fragmentIntent.createFragmentIntentRep(sessQuery, configDict)
     elif configDict['INTENT_REP'] == 'query':
