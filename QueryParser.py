@@ -110,9 +110,6 @@ def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByL
                 tableList[parseLevel] = tableList[parseLevel] + " " + token
     return selectList, projectList, groupByList, havingList, tableList, stackParenth
 
-def rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth):
-    
-
 def parseNYCQuery(sessQuery):
     selectList = {}
     projectList = {}
@@ -127,9 +124,20 @@ def parseNYCQuery(sessQuery):
     parseLevel = -1
     stackParenth = {}
     (selectList, projectList, groupByList, havingList, tableList, stackParenth) = parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, stackParenth)
-    rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth)
+    return (sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth)
+
+def rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth):
+    if "WHERE" not in sessQuery and ("HAVING" not in sessQuery or "HAVING (COUNT(1) > 0)" in sessQuery):
+        return None
+    elif "WHERE" in sessQuery and "HAVING" not in sessQuery and "GROUP BY" not in sessQuery:
+        parseLevel = 0
+        sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + ", id")  # we are projecting id as well
+
+    return sessQuery
+
 
 def rewriteQueryForProvenance(sessQuery, configDict):
     # write grammer to parse query and then rewrite
     if configDict['DATASET']=='NYCTaxiTrips':
-        parseNYCQuery(sessQuery)
+        (sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth) = parseNYCQuery(sessQuery)
+        sessQuery = rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth)
