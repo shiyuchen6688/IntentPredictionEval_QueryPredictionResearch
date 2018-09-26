@@ -44,10 +44,13 @@ def setAllFlagsFalse(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
     havFlag[parseLevel] = False
     tabFlag[parseLevel] = False
 
-def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, stackParenth):
+def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, stackParenth, extractFieldNum):
     tokens = sessQuery.split() #accommodates one or more spaces
     stackParenth[parseLevel] = 0  # 0 opening  (
+    extractFieldNum[parseLevel] = 0 # 0 EXTRACTS so far
     for token in tokens:
+        if "EXTRACT" in token:
+            extractFieldNum[parseLevel] = extractFieldNum[parseLevel] + 1
         if "(" in token:
             stackParenth[parseLevel] = stackParenth[parseLevel] + token.count("(")
         if ")" in token:
@@ -58,8 +61,12 @@ def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByL
             parseLevel =parseLevel + 1
             setProjFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel)
             stackParenth[parseLevel] = 0 # 0 opening  (
+            extractFieldNum[parseLevel] = 0 # 0 Extracts so far
         elif "FROM" in token:
-            setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel)
+            if extractFieldNum[parseLevel] > 0:
+                extractFieldNum[parseLevel] = extractFieldNum[parseLevel] - 1  # this FROM is attached to EXTRACT and not to the table
+            else:
+                setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel) # this is FROM followed by tablename(s)
         elif "WHERE" in token:
             setSelFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel)
         elif "GROUP BY" in token:
@@ -91,7 +98,7 @@ def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByL
                 tableList[parseLevel] = token
             else:
                 tableList[parseLevel] = tableList[parseLevel] + " " + token
-    return selectList, projectList, groupByList, havingList, tableList, stackParenth
+    return selectList, projectList, groupByList, havingList, tableList
 
 def parseNYCQuery(sessQuery):
     selectList = {}
@@ -106,36 +113,61 @@ def parseNYCQuery(sessQuery):
     tabFlag = {}
     parseLevel = -1
     stackParenth = {}
-    (selectList, projectList, groupByList, havingList, tableList, stackParenth) = parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, stackParenth)
-    return (sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth)
+    extractFieldNum = {}
+    (selectList, projectList, groupByList, havingList, tableList) = parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, stackParenth, extractFieldNum)
+    return (sessQuery, selectList, projectList, groupByList, havingList, tableList)
 
-def rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth):
+def rewriteHavingGroupByComplexQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList):
+    parseLevel = 0
+    colAliasList = []
+    cols = projectList[parseLevel].split()
+    for col in cols:
+        lenCol = col.split("AS")
+        colAlias = col.split("AS")[lenCol-1]
+        colAliasList.append(colAlias)
+    tempQuery = sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + " INTO TEMP")
+    tableAlias = tableList[parseLevel].split()[1] # this gives the alias
+    tempProjectList = projectList[parseLevel].replace(tableAlias, "TEMP")
+    joinSelList = ""
+    colCount = 0
+    for colAlias in colAliasList:
+        tempProjectList = tempProjectList.replace("AS "+colAlias, "AS TEMP."+colAlias)
+        if colCount == 0:
+            joinSelList = joinSelList + "WHERE "
+        else:
+            joinSelList = joinSelList+" AND "
+        joinSelList = joinSelList+tableAlias+"."+colAlias+"=TEMP."+colAlias
+    joinProjectList = projectList[parseLevel]+", "+tempProjectList
+    newQuery = tempQuery+";"+"SELECT "+joinProjectList+" FROM "+tableList[parseLevel]+", TEMP "+joinSelList
+    return newQuery
+
+def rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList):
     parseLevel = 0
     if "WHERE" not in sessQuery and ("HAVING" not in sessQuery or "HAVING (COUNT(1) > 0)" in sessQuery):
         return None  # either one of HAVING or WHERE must be in the sessQuery, else every tuple ends up being a witness
     elif "WHERE" in sessQuery and "HAVING" not in sessQuery and "GROUP BY" not in sessQuery:
-        sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + ", id")  # we are projecting id as well
+        newQuery = sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + ", id")  # we are projecting id as well
     elif "WHERE" in sessQuery and "GROUP BY" in sessQuery and "HAVING" not in sessQuery:
-        sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + ", id")  # we are projecting id as well
+        newQuery = sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + ", id")  # we are projecting id as well
         projectList[parseLevel] = projectList[parseLevel] + ", id"
         numAttrsProjected = projectList[parseLevel].count(",")+1
-        sessQuery.replace(groupByList[parseLevel], groupByList[parseLevel] + ", " + str(numAttrsProjected)) # we are grouping by id as well, via its index ID in the projections
+        newQuery = newQuery.replace(groupByList[parseLevel], groupByList[parseLevel] + ", " + str(numAttrsProjected)) # we are grouping by id as well, via its index ID in the projections
         groupByList[parseLevel] = groupByList[parseLevel] + ", " + str(numAttrsProjected)
     elif "GROUP BY" in sessQuery and "HAVING" in sessQuery:
         # if MIN/MAX/AVG/SUM in sessQuery, every tuple is a witness
         aggrKeywords = ["MIN", "MAX", "AVG", "COUNT", "SUM"]
         if any(aggrKeyword in projectList for aggrKeyword in aggrKeywords):
             return None
-
-    return sessQuery
+        newQuery = rewriteHavingGroupByComplexQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList)
+    return newQuery
 
 
 def rewriteQueryForProvenance(sessQuery, configDict):
     # write grammer to parse query and then rewrite
     if configDict['DATASET']=='NYCTaxiTrips':
-        (sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth) = parseNYCQuery(sessQuery)
-        sessQuery = rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList, stackParenth)
-        return sessQuery
+        (sessQuery, selectList, projectList, groupByList, havingList, tableList) = parseNYCQuery(sessQuery)
+        newQuery = rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList)
+        return newQuery
 
 # the whole point of this parsing is to check if in the results we have a column called rowID. Else, we want to get rowID.
 # Several possible cases:
@@ -146,8 +178,8 @@ def fetchRowIDs(sessQuery, rows, configDict):
         for row in rows:
             rowIDs.append(row['id'])
     else:
-        sessQuery = rewriteQueryForProvenance(sessQuery, configDict)
-        if sessQuery is None:
+        newQuery = rewriteQueryForProvenance(sessQuery, configDict)
+        if newQuery is None:
             return None
 
     return rowIDs
