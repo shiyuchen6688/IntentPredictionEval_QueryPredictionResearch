@@ -1,6 +1,7 @@
 import sys
 import os
 import time, argparse
+import ParseConfigFile as parseConfig
 
 def setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
     projFlag[parseLevel] = False
@@ -189,3 +190,16 @@ def fetchRowIDs(sessQuery, rows, configDict):
 #        rowIDs.append(row['id'])
 #    del rows
 #    gc.collect()
+
+if __name__ == "__main__":
+    configDict = parseConfig.parseConfigFile("configFile.txt")
+    with open(configDict['QUERYSESSIONS']) as f:
+        for line in f:
+            sessQueries = line.split(";")
+            sessName = sessQueries[0]
+            for i in range(1,len(sessQueries)):
+                sessQuery = sessQueries[i]
+                newQuery = rewriteQueryForProvenance(sessQuery, configDict)
+                print "Session "+sessName+", Query "+str(i)+": \n"
+                print "OrigQuery: "+sessQuery+"\n"
+                print "Provenance Query: "+newQuery+"\n"
