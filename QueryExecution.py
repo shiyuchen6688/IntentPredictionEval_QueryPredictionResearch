@@ -11,7 +11,7 @@ def replaceTableName(sessQuery, configDict):
         sessQuery.replace(configDict['SAMPLETABLE'], configDict['FULLTABLE'])
     return sessQuery
 
-def executeQuery(sessQuery, configDict):
+def executeQuery(sessQuery, configDict, withIntent):
     execUponSampleData = bool(configDict['EXEC_SAMPLE'])
     if not execUponSampleData:
         sessQuery = replaceTableName(sessQuery, configDict)
@@ -30,17 +30,23 @@ def executeQuery(sessQuery, configDict):
         if configDict['DATASET'] == 'NYCTaxiTrips':
             sessQuery = sessQuery.split("~")[0]
         cur.execute(sessQuery)
+        if not withIntent:
+            rows = cur.fetchall()
+            return rows
     except:
         print "cannot execute the query on Postgres"
 
     if configDict['INTENT_REP']=='tuple':
         rows = cur.fetchall()
-    #    rowIDs = []
-    #    for row in rows:
-    #        rowIDs.append(row['id'])
-    #    del rows
-    #    gc.collect()
-        resObj = tupleIntent.createTupleIntentRep(rows, sessQuery, configDict)
+        rowIDs = None
+        firstRow = rows[0]
+        if 'id' in firstRow:
+            rowIDs = []
+            for row in rows:
+                rowIDs.append(row['id'])
+            del rows
+            gc.collect()
+        resObj = tupleIntent.createTupleIntentRep(rowIDs, sessQuery, configDict)
     elif configDict['INTENT_REP']=='fragment':
         resObj = fragmentIntent.createFragmentIntentRep(sessQuery, configDict)
     elif configDict['INTENT_REP'] == 'query':
@@ -48,4 +54,4 @@ def executeQuery(sessQuery, configDict):
     return resObj
 
 if __name__ == "__main__":
-    executeQuery(None,None)
+    executeQuery(None,None,True)

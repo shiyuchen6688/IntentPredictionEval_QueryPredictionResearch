@@ -2,6 +2,7 @@ import sys
 import os
 import time, argparse
 import ParseConfigFile as parseConfig
+import QueryExecution as QExec
 import re
 
 def setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
@@ -207,16 +208,16 @@ def rewriteQueryForProvenance(sessQuery, configDict):
 # the whole point of this parsing is to check if in the results we have a column called rowID. Else, we want to get rowID.
 # Several possible cases:
 #
-def fetchRowIDs(sessQuery, rows, configDict):
+def fetchRowIDs(sessQuery, configDict):
     rowIDs = []
-    if 'id' in rows[0]:
-        for row in rows:
-            rowIDs.append(row['id'])
-    else:
-        newQuery = rewriteQueryForProvenance(sessQuery, configDict)
-        if newQuery is None:
-            return None
-
+    newQuery = rewriteQueryForProvenance(sessQuery, configDict)
+    if newQuery is None:
+        return None
+    if ";" in newQuery:  # happens for combined provenance queries generated for HAVING, GROUP BY combination
+        tempQuery = newQuery.split(";")[0]
+        QExec.executeQuery(tempQuery, configDict, False)
+        newQuery = newQuery.split(";")[1]
+    rowIDs = QExec.executeQuery(newQuery, configDict, False) # without intent
     return rowIDs
 
 # rowIDs = []
@@ -235,6 +236,7 @@ if __name__ == "__main__":
                 sessQuery = sessQueries[i].split("~")[0]
                 #sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
                 sessQuery = ' '.join(sessQuery.split())
+                #rowIDs = fetchRowIDs(sessQuery, configDict)
                 newQuery = rewriteQueryForProvenance(sessQuery, configDict)
                 print sessName+", Query "+str(i)+": \n"
                 print "OrigQuery: "+sessQuery+"\n"

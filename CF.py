@@ -40,7 +40,7 @@ def simulateHumanQueries(configDict):
                 sessQuery = sessQueries[i]
                 timeStepObj.updateTimeStep(timeStep)
                 timeStepObj.updateSessQuery(sessQuery)
-                resObj = QExec.executeQuery(sessQuery, configDict)
+                resObj = QExec.executeQuery(sessQuery, configDict, True) # with intent
                 predQuery = QR.recommendQuery(resObj, timeStepObj)
                 evaluatePredictions(predQuery, timeStepObj)
                 timeStepObj.updateSessLogs(resObj,sessName)
