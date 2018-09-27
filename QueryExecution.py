@@ -2,6 +2,8 @@ import sys
 import os
 import time, argparse
 import psycopg2
+import psycopg2.extras
+import ParseConfigFile as parseConfig
 import TupleIntent as tupleIntent
 import FragmentIntent as fragmentIntent
 import QueryIntent as queryIntent
@@ -11,7 +13,22 @@ def replaceTableName(sessQuery, configDict):
         sessQuery.replace(configDict['SAMPLETABLE'], configDict['FULLTABLE'])
     return sessQuery
 
-def executeQuery(sessQuery, configDict, withIntent):
+def getRowIDs(cur):
+    rows = cur.fetchall()
+    rowIDs = None
+    if rows is None or len(rows) == 0:
+        return None
+    firstRow = rows[0]
+    if 'id' in firstRow:
+        rowIDs = []
+        for row in rows:
+            rowIDs.append(int(row['id']))
+        del rows
+        gc.collect()
+    return rowIDs
+
+
+def executeQuery(sessQuery, configDict):
     execUponSampleData = bool(configDict['EXEC_SAMPLE'])
     if not execUponSampleData:
         sessQuery = replaceTableName(sessQuery, configDict)
@@ -30,22 +47,16 @@ def executeQuery(sessQuery, configDict, withIntent):
         if configDict['DATASET'] == 'NYCTaxiTrips':
             sessQuery = sessQuery.split("~")[0]
         cur.execute(sessQuery)
-        if not withIntent:
-            rows = cur.fetchall()
-            return rows
+        conn.commit()
+        return cur
     except:
         print "cannot execute the query on Postgres"
+        exit(0)
 
+def executeQueryWithIntent(sessQuery, configDict):
+    cur = executeQuery(sessQuery, configDict)
     if configDict['INTENT_REP']=='tuple':
-        rows = cur.fetchall()
-        rowIDs = None
-        firstRow = rows[0]
-        if 'id' in firstRow:
-            rowIDs = []
-            for row in rows:
-                rowIDs.append(row['id'])
-            del rows
-            gc.collect()
+        rowIDs = getRowIDs(cur)
         resObj = tupleIntent.createTupleIntentRep(rowIDs, sessQuery, configDict)
     elif configDict['INTENT_REP']=='fragment':
         resObj = fragmentIntent.createFragmentIntentRep(sessQuery, configDict)
@@ -54,4 +65,13 @@ def executeQuery(sessQuery, configDict, withIntent):
     return resObj
 
 if __name__ == "__main__":
-    executeQuery(None,None,True)
+    configDict = parseConfig.parseConfigFile("configFile.txt")
+    with open(configDict['QUERYSESSIONS']) as f:
+        for line in f:
+            sessQueries = line.split(";")
+            sessName = sessQueries[0]
+            for i in range(1, len(sessQueries) - 1):  # we need to ignore the empty query coming from the end of line semicolon ;
+                sessQuery = sessQueries[i].split("~")[0]
+                # sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
+                executeQuery(sessQuery, configDict)
+                print "Executed "+sessName+", Query "+str(i)

@@ -3,7 +3,7 @@ import os
 import time, argparse
 import ParseConfigFile as parseConfig
 import QueryExecution as QExec
-import re
+import re, gc
 
 def setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
     projFlag[parseLevel] = False
@@ -137,29 +137,39 @@ def rewriteHavingGroupByComplexQuery(sessQuery, selectList, projectList, groupBy
     parseLevel = 0
     colAliasList = []
     cols = projectList[parseLevel].split(",")
+    actualColList = []
     for col in cols:
-        lenCol = len(col.split("AS "))
-        colAlias = col.split("AS ")[lenCol-1]
+        lenCol = len(col.split(" AS "))
+        actualCol = ""
+        for i in range(lenCol-1):
+            actualCol += col.split(" AS ")[i]
+            if i<lenCol-2:
+                actualCol += " AS "
+        actualColList.append(actualCol)
+        colAlias = col.split(" AS ")[lenCol-1]
         colAliasList.append(colAlias)
     if projectList[parseLevel] not in sessQuery:
         print "Incorrect sessQuery with extra spaces !!"
         exit(0)
-    tempQuery = sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + " INTO TEMP")
+    tempQuery = sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + " INTO TEMPTABLE")
+    #tempQuery = "CREATE TABLE TEMPTABLE AS "+sessQuery
+
     tableAlias = tableList[parseLevel].split()[1] # this gives the alias
-    tempProjectList = projectList[parseLevel].replace(tableAlias, "TEMP")
+    #tempProjectList = projectList[parseLevel].replace(tableAlias, "TEMPTABLE")
     joinSelList = ""
-    colCount = 0
-    for colAlias in colAliasList:
-        tempProjectList = tempProjectList.replace("AS "+colAlias, "AS TEMP."+colAlias)
-        if colCount == 0:
+    assert len(colAliasList) == len(actualColList)
+    for colID in range(len(colAliasList)):
+        #tempProjectList = tempProjectList.replace("AS "+colAlias, "AS TEMPTABLE_"+colAlias)
+        #projectList[parseLevel] = projectList[parseLevel].replace(" "+colAlias, " "+tableAlias+"_"+colAlias)
+        colAlias = colAliasList[colID]
+        if colID == 0:
             joinSelList = joinSelList + "WHERE "
         else:
             joinSelList = joinSelList+" AND "
-        joinSelList = joinSelList+tableAlias+"."+colAlias+"=TEMP."+colAlias
-        colCount = colCount + 1
-    joinProjectList = projectList[parseLevel]+", "+tempProjectList+", "+tableAlias+".id" #ignored for now
+        joinSelList = joinSelList+actualColList[colID]+"=TEMPTABLE."+colAlias
+    joinProjectList = projectList[parseLevel]+", "+tableAlias+".id" #ignored for now
     #joinProjectList = "DISTINCT "+tableAlias+".id"
-    newQuery = tempQuery+";"+"SELECT "+joinProjectList+" FROM "+tableList[parseLevel]+", TEMP "+joinSelList
+    newQuery = tempQuery+";"+"SELECT "+joinProjectList+" FROM "+tableList[parseLevel]+", TEMPTABLE "+joinSelList
     return newQuery
 
 def rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList):
@@ -172,6 +182,10 @@ def rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, ta
             print "Incorrect sessQuery with extra spaces !!"
             exit(0)
         newQuery = sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + ", id")  # we are projecting id as well
+        #projectList[parseLevel] = projectList[parseLevel] + ", id"
+        #numAttrsProjected = projectList[parseLevel].count(",") + 1
+        if "HAVING (COUNT(1) > 0)" in newQuery:
+            newQuery = newQuery.replace("HAVING (COUNT(1) > 0)", "GROUP BY id HAVING (COUNT(1) > 0)")
         #newQuery = sessQuery.replace(projectList[parseLevel], "DISTINCT id")  # we are projecting id as well
     elif "WHERE" in sessQuery and "GROUP BY" in sessQuery and "HAVING" not in sessQuery:
         if projectList[parseLevel] not in sessQuery:
@@ -179,16 +193,18 @@ def rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, ta
             exit(0)
         newQuery = sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + ", id")  # we are projecting id as well
         projectList[parseLevel] = projectList[parseLevel] + ", id"
-        numAttrsProjected = projectList[parseLevel].count(",")+1
+        #numAttrsProjected = projectList[parseLevel].count(",")+1
         if groupByList[parseLevel] not in newQuery:
             print "Incorrect newQuery without groupBy list !!"
             exit(0)
-        newQuery = newQuery.replace(groupByList[parseLevel], groupByList[parseLevel] + ", " + str(numAttrsProjected)) # we are grouping by id as well, via its index ID in the projections
-        groupByList[parseLevel] = groupByList[parseLevel] + ", " + str(numAttrsProjected)
+        #newQuery = newQuery.replace(groupByList[parseLevel], groupByList[parseLevel] + ", " + str(numAttrsProjected)) # we are grouping by id as well, via its index ID in the projections
+        #groupByList[parseLevel] = groupByList[parseLevel] + ", " + str(numAttrsProjected)
+        newQuery = newQuery.replace(groupByList[parseLevel], groupByList[parseLevel] + ", id")  # we are grouping by id as well, via its index ID in the projections
+        groupByList[parseLevel] = groupByList[parseLevel] + ", id"
     elif "GROUP BY" in sessQuery and "HAVING" in sessQuery:
         # if MIN/MAX/AVG/SUM in sessQuery, every tuple is a witness
         aggrKeywords = ["MIN", "MAX", "AVG", "COUNT", "SUM"]
-        if any(aggrKeyword in projectList for aggrKeyword in aggrKeywords):
+        if any(aggrKeyword in projectList[parseLevel] for aggrKeyword in aggrKeywords):
             return None
         newQuery = rewriteHavingGroupByComplexQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList)
     return newQuery
@@ -212,13 +228,17 @@ def fetchRowIDs(sessQuery, configDict):
     rowIDs = []
     newQuery = rewriteQueryForProvenance(sessQuery, configDict)
     if newQuery is None:
-        return None
+        return (newQuery, None)
     if ";" in newQuery:  # happens for combined provenance queries generated for HAVING, GROUP BY combination
         tempQuery = newQuery.split(";")[0]
-        QExec.executeQuery(tempQuery, configDict, False)
+        QExec.executeQuery("drop table TEMPTABLE", configDict)
+        QExec.executeQuery(tempQuery, configDict)
+        print "successfully created temptable"
+        #QExec.executeQuery("select * from temptable", configDict)
         newQuery = newQuery.split(";")[1]
-    rowIDs = QExec.executeQuery(newQuery, configDict, False) # without intent
-    return rowIDs
+    cur = QExec.executeQuery(newQuery, configDict) # without intent
+    rowIDs = QExec.getRowIDs(cur)
+    return (newQuery,rowIDs)
 
 # rowIDs = []
 #    for row in rows:
@@ -236,7 +256,7 @@ if __name__ == "__main__":
                 sessQuery = sessQueries[i].split("~")[0]
                 #sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
                 sessQuery = ' '.join(sessQuery.split())
-                #rowIDs = fetchRowIDs(sessQuery, configDict)
+                #(newQuery, rowIDs) = fetchRowIDs(sessQuery, configDict)
                 newQuery = rewriteQueryForProvenance(sessQuery, configDict)
                 print sessName+", Query "+str(i)+": \n"
                 print "OrigQuery: "+sessQuery+"\n"
