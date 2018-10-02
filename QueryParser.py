@@ -157,7 +157,7 @@ def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByL
         elif "LIMIT" in token:
             setLimFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel)
         else:
-            selectList, projectList, groupByList, havingList, tableList, orderByList, limitList = checkFlagAndSetList(parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, token)
+            selectList, projectList, groupByList, havingList, tableList, orderByList, limitList = checkFlagAndSetList(parseLevel, selectList, projectList, groupByList, havingList, tableList, orderByList, limitList, selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, token)
     return selectList, projectList, groupByList, havingList, tableList, orderByList, limitList
 
 def parseNYCQuery(sessQuery):
