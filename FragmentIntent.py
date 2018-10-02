@@ -90,8 +90,7 @@ def createFragmentIntentRep(sessQuery, configDict):
     schemaDict = parseConfig.parseSchema(configDict['SCHEMA'])
     numCols = len(schemaDict)
     ### expected dimensionality is numCols * 11 -- 5 dims for AVG, MIN, MAX, SUM, COUNT, 6 dims for SELECT, PROJECT, GROUP BY, ORDER BY, LIMIT, HAVING ###
-    numDims = numCols * 11
-    resObj = BitMap(numDims)
+    numExpectedDims = numCols * 11
     (sessQuery, selectList, projectList, groupByList, havingList, tableList, orderByList, limitList) = qp.parseNYCQuery(sessQuery)
     selObj = createFragmentsFromAttrList(selectList, schemaDict, "SELECT", configDict, tableList)
     projAggrObj = createFragmentsFromAttrList(projectList, schemaDict, "PROJECT", configDict, tableList)
@@ -102,8 +101,10 @@ def createFragmentIntentRep(sessQuery, configDict):
     limitObj = createFragmentsFromAttrList(limitList, schemaDict, "LIMIT", configDict, tableList)
     if configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "BIT":
         resObj = BitMap.fromstring(projAggrObj.tostring()+selObj.tostring()+groupByObj.tostring()+orderByObj.tostring()+havingObj.tostring()+limitObj.tostring()+tableObj.tostring())
+        assert resObj.size() == numExpectedDims
     elif configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "WEIGHTED":
         resObj = projAggrObj+selObj+groupByObj+orderByObj+havingObj+limitObj+tableObj
+        assert resObj.count(";") == numExpectedDims
     return resObj
 
 if __name__ == "__main__":
