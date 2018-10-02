@@ -5,49 +5,79 @@ import ParseConfigFile as parseConfig
 import QueryExecution as QExec
 import re, gc
 
-def setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
+def setLimFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel):
+    projFlag[parseLevel] = False
+    selFlag[parseLevel] = False
+    grpFlag[parseLevel] = False
+    havFlag[parseLevel] = False
+    tabFlag[parseLevel] = False
+    orderFlag[parseLevel] = False
+    limFlag[parseLevel] = True
+
+def setOrderFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel):
+    projFlag[parseLevel] = False
+    selFlag[parseLevel] = False
+    grpFlag[parseLevel] = False
+    havFlag[parseLevel] = False
+    tabFlag[parseLevel] = False
+    orderFlag[parseLevel] = True
+    limFlag[parseLevel] = False
+
+def setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel):
     projFlag[parseLevel] = False
     selFlag[parseLevel] = False
     grpFlag[parseLevel] = False
     havFlag[parseLevel] = False
     tabFlag[parseLevel] = True
+    orderFlag[parseLevel] = False
+    limFlag[parseLevel] = False
 
-def setHavFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
+def setHavFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel):
     projFlag[parseLevel] = False
     selFlag[parseLevel] = False
     grpFlag[parseLevel] = False
     havFlag[parseLevel] = True
     tabFlag[parseLevel] = False
+    orderFlag[parseLevel] = False
+    limFlag[parseLevel] = False
 
-def setGrpFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
+def setGrpFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel):
     projFlag[parseLevel] = False
     selFlag[parseLevel] = False
     grpFlag[parseLevel] = True
     havFlag[parseLevel] = False
     tabFlag[parseLevel] = False
+    orderFlag[parseLevel] = False
+    limFlag[parseLevel] = False
 
-def setSelFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
+def setSelFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel):
     projFlag[parseLevel] = False
     selFlag[parseLevel] = True
     grpFlag[parseLevel] = False
     havFlag[parseLevel] = False
     tabFlag[parseLevel] = False
+    orderFlag[parseLevel] = False
+    limFlag[parseLevel] = False
 
-def setProjFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
+def setProjFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel):
     projFlag[parseLevel] = True
     selFlag[parseLevel] = False
     grpFlag[parseLevel] = False
     havFlag[parseLevel] = False
     tabFlag[parseLevel] = False
+    orderFlag[parseLevel] = False
+    limFlag[parseLevel] = False
 
-def setAllFlagsFalse(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel):
+def setAllFlagsFalse(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel):
     projFlag[parseLevel] = False
     selFlag[parseLevel] = False
     grpFlag[parseLevel] = False
     havFlag[parseLevel] = False
     tabFlag[parseLevel] = False
+    orderFlag[parseLevel] = False
+    limFlag[parseLevel] = False
 
-def checkFlagAndSetList(parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, token):
+def checkFlagAndSetList(parseLevel, selectList, projectList, groupByList, havingList, tableList, orderByList, limitList, selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, token):
     if projFlag[parseLevel]:
         if parseLevel not in projectList:
             projectList[parseLevel] = token
@@ -73,9 +103,19 @@ def checkFlagAndSetList(parseLevel, selectList, projectList, groupByList, having
             tableList[parseLevel] = token
         else:
             tableList[parseLevel] = tableList[parseLevel] + " " + token
-    return selectList, projectList, groupByList, havingList, tableList
+    elif orderFlag[parseLevel]:
+        if parseLevel not in orderByList:
+            orderByList[parseLevel] = token
+        else:
+            orderByList[parseLevel] = orderByList[parseLevel] + " " + token
+    elif limFlag[parseLevel]:
+        if parseLevel not in limitList:
+            limitList[parseLevel] = token
+        else:
+            limitList[parseLevel] = limitList[parseLevel] + " " + token
+    return selectList, projectList, groupByList, havingList, tableList, orderByList, limitList
 
-def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, stackParenth, extractFieldNum):
+def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByList, havingList, tableList, orderByList, limitList, selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, stackParenth, extractFieldNum):
     tokens = sessQuery.split() #accommodates one or more spaces
     stackParenth[parseLevel] = 0  # 0 opening  (
     extractFieldNum[parseLevel] = 0 # 0 EXTRACTS so far
@@ -90,31 +130,35 @@ def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByL
             parseLevel = parseLevel - 1 # finished a subquery
         if "SELECT" in token:
             parseLevel =parseLevel + 1
-            setProjFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel)
+            setProjFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel)
             stackParenth[parseLevel] = 0 # 0 opening  (
             extractFieldNum[parseLevel] = 0 # 0 Extracts so far
         elif "FROM" in token:
             if extractFieldNum[parseLevel] > 0:
                 extractFieldNum[parseLevel] = extractFieldNum[parseLevel] - 1  # this FROM is attached to EXTRACT and not to the table
-                selectList, projectList, groupByList, havingList, tableList = checkFlagAndSetList(parseLevel,
+                selectList, projectList, groupByList, havingList, tableList, orderByList, limitList = checkFlagAndSetList(parseLevel,
                                                                                                   selectList,
                                                                                                   projectList,
                                                                                                   groupByList,
                                                                                                   havingList, tableList,
                                                                                                   selFlag, projFlag,
                                                                                                   grpFlag, havFlag,
-                                                                                                  tabFlag, token)
+                                                                                                  tabFlag, orderFlag, limFlag, token)
             else:
-                setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel) # this is FROM followed by tablename(s)
+                setTabFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel) # this is FROM followed by tablename(s)
         elif "WHERE" in token:
-            setSelFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel)
+            setSelFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel)
         elif "GROUP" in token:
-            setGrpFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel)
+            setGrpFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel)
         elif "HAVING" in token:
-            setHavFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, parseLevel)
+            setHavFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel)
+        elif "ORDER" in token:
+            setOrderFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel)
+        elif "LIMIT" in token:
+            setLimFlagTrue(selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, parseLevel)
         else:
-            selectList, projectList, groupByList, havingList, tableList = checkFlagAndSetList(parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, token)
-    return selectList, projectList, groupByList, havingList, tableList
+            selectList, projectList, groupByList, havingList, tableList, orderByList, limitList = checkFlagAndSetList(parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, token)
+    return selectList, projectList, groupByList, havingList, tableList, orderByList, limitList
 
 def parseNYCQuery(sessQuery):
     selectList = {}
@@ -122,16 +166,20 @@ def parseNYCQuery(sessQuery):
     groupByList = {}
     havingList = {}
     tableList = {}
+    orderByList = {}
+    limitList = {}
     selFlag = {}
     projFlag = {}
     grpFlag = {}
     havFlag = {}
     tabFlag = {}
+    orderFlag = {}
+    limFlag = {}
     parseLevel = -1
     stackParenth = {}
     extractFieldNum = {}
-    (selectList, projectList, groupByList, havingList, tableList) = parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByList, havingList, tableList, selFlag, projFlag, grpFlag, havFlag, tabFlag, stackParenth, extractFieldNum)
-    return (sessQuery, selectList, projectList, groupByList, havingList, tableList)
+    (selectList, projectList, groupByList, havingList, tableList, orderByList, limitList) = parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByList, havingList, tableList, orderByList, limitList, selFlag, projFlag, grpFlag, havFlag, tabFlag, orderFlag, limFlag, stackParenth, extractFieldNum)
+    return (sessQuery, selectList, projectList, groupByList, havingList, tableList, orderByList, limitList)
 
 def rewriteHavingGroupByComplexQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList):
     parseLevel = 0
@@ -217,8 +265,8 @@ def rewriteQueryForProvenance(sessQuery, configDict):
         #sessQuery = sessQuery.replace('  ', ' ')
     sessQuery = ' '.join(sessQuery.split())
     if configDict['DATASET']=='NYCTaxiTrips':
-        (sessQuery, selectList, projectList, groupByList, havingList, tableList) = parseNYCQuery(sessQuery)
-        newQuery = rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList)
+        (sessQuery, selectList, projectList, groupByList, havingList, tableList, orderByList, limitList) = parseNYCQuery(sessQuery)
+        newQuery = rewriteQuery(sessQuery, selectList, projectList, groupByList, havingList, tableList) # no need to pass order by and limit as they do not make a difference
         return newQuery
 
 # the whole point of this parsing is to check if in the results we have a column called rowID. Else, we want to get rowID.

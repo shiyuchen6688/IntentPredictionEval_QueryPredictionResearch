@@ -29,8 +29,8 @@ def getRowIDs(cur):
 
 
 def executeQuery(sessQuery, configDict):
-    execUponSampleData = bool(configDict['EXEC_SAMPLE'])
-    if not execUponSampleData:
+    execUponSampleData = configDict['EXEC_SAMPLE']
+    if execUponSampleData!="True":
         sessQuery = replaceTableName(sessQuery, configDict)
     try:
         conn = psycopg2.connect("dbname='madlibtest' user='postgres' password=''")
