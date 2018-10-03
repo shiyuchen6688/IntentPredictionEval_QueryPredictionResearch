@@ -126,7 +126,7 @@ def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByL
             stackParenth[parseLevel] = stackParenth[parseLevel] + token.count("(")
         if ")" in token:
             stackParenth[parseLevel] = stackParenth[parseLevel] - token.count(")")
-        if stackParenth < 0:
+        if stackParenth[parseLevel] < 0:
             parseLevel = parseLevel - 1 # finished a subquery
         if "SELECT" in token:
             parseLevel =parseLevel + 1

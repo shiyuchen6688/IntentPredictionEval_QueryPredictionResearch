@@ -50,10 +50,14 @@ def trackColumnOrder(projectList, schemaDict):
         attrList = re.split(r',\s*(?![^()]*\))', attrListStr)
         colOrderDict[levelID] = list()
         for attrStr in attrList:
+            foundAttrStr = 0
             for col in schemaDict:
                 colIndex = schemaDict[col]
                 if col in attrStr:
+                    foundAttrStr = 1
                     colOrderDict[levelID].append(colIndex)
+            if foundAttrStr == 0:
+                colOrderDict[levelID].append(-1) # this covers bad cases such as SUM(1), COUNT(*), AVG(1), MIN(1), MAX(1)
     return colOrderDict
 
 def createFragmentsFromAttrList(attrListDict, schemaDict, opString, configDict, tableList, projectList):
@@ -98,10 +102,13 @@ def createFragmentsFromAttrList(attrListDict, schemaDict, opString, configDict, 
                     groupByColIndices = attrListDict[levelID].split(",") # u get the group by or order by indices
                     actualGroupByIndexes = []
                     for grpByColIndex in groupByColIndices:
-                        grpByColIndex = int(grpByColIndex.replace("BY ","")) - 1 # starts from 1
-                        if grpByColIndex in colOrder:
-                            actualGroupByIndex = colOrder[grpByColIndex]
-                            actualGroupByIndexes.append(actualGroupByIndex)
+                        grpByColIndex = grpByColIndex.replace("BY ","")
+                        if " " in grpByColIndex and ("ASC" in grpByColIndex or "DESC" in grpByColIndex):
+                            grpByColIndex = grpByColIndex.split(" ")[0]
+                        grpByColIndex = int(grpByColIndex) - 1 # starts from 1
+                        #if grpByColIndex in colOrder:
+                        actualGroupByIndex = colOrder[grpByColIndex]  #actualGroupByIndex could be -1 for cases such as SUM(1), COUNT(*), MIN(1), MAX(1), AVG(1) but it can't be found be in schemaDict, so no issues
+                        actualGroupByIndexes.append(actualGroupByIndex)
                     if colIndex in actualGroupByIndexes:
                         countCol = 1  # within a single group by a col can occur only once
                 else:
@@ -110,23 +117,23 @@ def createFragmentsFromAttrList(attrListDict, schemaDict, opString, configDict, 
                 if opString == "PROJECT":
                     tableAlias = findTableAlias(tableList, levelID, configDict)
                     countAvg = attrListDict[levelID].count("AVG(" + tableAlias + "." + col)
-                    if countAvg == 0:
+                    if countAvg == 0 and "AVG("+tableAlias not in attrListDict[levelID]:
                         countAvg = attrListDict[levelID].count("AVG(")  # AVG(1) is covered as all columns
                     avgDict = setColIndexInDict(avgDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countAvg, colIndex)
                     countMin = attrListDict[levelID].count("MIN(" + tableAlias + "." + col)
-                    if countMin == 0:
+                    if countMin == 0 and "MIN("+tableAlias not in attrListDict[levelID]:
                         countMin = attrListDict[levelID].count("MIN(")  # MIN(1) is covered as all columns
                     minDict = setColIndexInDict(minDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countMin, colIndex)
                     countMax = attrListDict[levelID].count("MAX(" + tableAlias + "." + col)
-                    if countMax == 0:
+                    if countMax == 0 and "MAX("+tableAlias not in attrListDict[levelID]:
                         countMax = attrListDict[levelID].count("MAX(") # MAX(1) is covered as all columns
                     maxDict = setColIndexInDict(maxDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countMax, colIndex)
                     countSum = attrListDict[levelID].count("SUM(" + tableAlias + "." + col)
-                    if countSum == 0:
+                    if countSum == 0 and "SUM("+tableAlias not in attrListDict[levelID]:
                         countSum = attrListDict[levelID].count("SUM(")  # SUM(1) is covered as all columns
                     sumDict = setColIndexInDict(sumDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countSum, colIndex)
                     countCount = attrListDict[levelID].count("COUNT(" + tableAlias + "." + col)
-                    if countCount == 0:
+                    if countCount == 0 and "COUNT("+tableAlias not in attrListDict[levelID]:
                         countCount = attrListDict[levelID].count("COUNT(")  # COUNT(1) is covered as all columns, also COUNT(*)
                     countDict = setColIndexInDict(countDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countCount, colIndex)
         resObjOp = parseOpDict(colDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], len(schemaDict))
@@ -184,8 +191,7 @@ if __name__ == "__main__":
             sessName = sessQueries[0]
             for i in range(1, len(sessQueries) - 1):  # we need to ignore the empty query coming from the end of line semicolon ;
                 sessQuery = sessQueries[i].split("~")[0]
-                # sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
-                sessQuery = "SELECT CAST(TRUNC(EXTRACT(DAY FROM nyc_yellow_tripdata_2016_06_sample_1_percent.tpep_pickup_datetime)) AS INTEGER) AS dy_tpep_pickup_datetime_ok, CAST(TRUNC(EXTRACT(MONTH FROM nyc_yellow_tripdata_2016_06_sample_1_percent.tpep_pickup_datetime)) AS INTEGER) AS mn_tpep_pickup_datetime_ok, CAST(TRUNC(EXTRACT(QUARTER FROM nyc_yellow_tripdata_2016_06_sample_1_percent.tpep_pickup_datetime)) AS INTEGER) AS qr_tpep_pickup_datetime_ok, SUM(1) AS sum_Number_of_Records_ok, CAST(TRUNC(EXTRACT(YEAR FROM nyc_yellow_tripdata_2016_06_sample_1_percent.tpep_pickup_datetime)) AS INTEGER) AS yr_tpep_pickup_datetime_ok FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3, 5"
+                #sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.store_and_fwd_flag AS store_and_fwd_flag FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1 ORDER BY 1 ASC NULLS FIRST"
                 sessQuery = ' '.join(sessQuery.split())
                 resObj = createFragmentIntentRep(sessQuery, configDict) #rowIDs passed should be None, else it won't fill up
                 queryName = sessName+", Query "+str(i)
