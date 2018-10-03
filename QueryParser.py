@@ -140,7 +140,7 @@ def parseQueryLevelWise(sessQuery, parseLevel, selectList, projectList, groupByL
                                                                                                   selectList,
                                                                                                   projectList,
                                                                                                   groupByList,
-                                                                                                  havingList, tableList,
+                                                                                                  havingList, tableList, orderByList, limitList,
                                                                                                   selFlag, projFlag,
                                                                                                   grpFlag, havFlag,
                                                                                                   tabFlag, orderFlag, limFlag, token)
