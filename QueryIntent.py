@@ -26,10 +26,11 @@ if __name__ == "__main__":
     except OSError:
         pass
     with open(configDict['QUERYSESSIONS']) as f:
+        queryVocabulary = {}  # dict with query as key and bit position/dimension as value
+        queryCount = 0
         for line in f:
             sessQueries = line.split(";")
             sessName = sessQueries[0]
-            queryVocabulary = {} #dict with query as key and bit position/dimension as value
             for i in range(1, len(sessQueries) - 1):  # we need to ignore the empty query coming from the end of line semicolon ;
                 sessQuery = sessQueries[i].split("~")[0]
                 #sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.store_and_fwd_flag AS store_and_fwd_flag FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1 ORDER BY 1 ASC NULLS FIRST"
@@ -38,4 +39,5 @@ if __name__ == "__main__":
                 queryName = sessName+", Query "+str(i)
                 outputIntentLine = queryName+"; OrigQuery: "+sessQuery+";"+str(resObj)
                 ti.appendToFile(queryIntentSessionsFile,outputIntentLine)
-                print "Generated fragment for "+queryName
+                queryCount = queryCount+1
+                print "Generated fragment for "+queryName+", #distinct queries so far: "+str(len(queryVocabulary))+", total #queries: "+str(queryCount)

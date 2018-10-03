@@ -55,12 +55,12 @@ def executeQuery(sessQuery, configDict):
 
 def executeQueryWithIntent(sessQuery, configDict):
     cur = executeQuery(sessQuery, configDict)
-    if configDict['INTENT_REP']=='tuple':
+    if configDict['INTENT_REP']=='TUPLE':
         rowIDs = getRowIDs(cur)
         resObj = tupleIntent.createTupleIntentRep(rowIDs, sessQuery, configDict)
-    elif configDict['INTENT_REP']=='fragment':
+    elif configDict['INTENT_REP']=='FRAGMENT':
         resObj = fragmentIntent.createFragmentIntentRep(sessQuery, configDict)
-    elif configDict['INTENT_REP'] == 'query':
+    elif configDict['INTENT_REP'] == 'QUERY':
         resObj = queryIntent.createQueryIntentRep(sessQuery, configDict)
     return resObj
 
