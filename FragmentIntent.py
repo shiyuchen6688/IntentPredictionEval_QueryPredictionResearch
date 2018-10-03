@@ -73,12 +73,12 @@ def createFragmentsFromAttrList(attrListDict, schemaDict, opString, configDict, 
             else:
                 resObjOp = BitMap.fromstring("0")
         elif configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "WEIGHTED":
-            resObjOp = str(numLimit)
+            resObjOp = str(numLimit)+";"
     elif opString == "TABLE":
         if configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "BIT":
             resObjOp = BitMap.fromstring("1")
         elif configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "WEIGHTED":
-            resObjOp = str(len(attrListDict)) # attrList comes as a dictionary with key as levelNumber
+            resObjOp = str(len(attrListDict)) # attrListDict comes as a dictionary with key as levelNumber, table is trailing bit dimension so no semicolon at end
     elif attrListDict is None:
         if opString != "PROJECT":
             resObjOp = BitMap(len(schemaDict))
@@ -169,7 +169,7 @@ def createFragmentIntentRep(sessQuery, configDict):
         assert resObj.size() == numExpectedDims+expectedPaddedBitCount
     elif configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "WEIGHTED":
         resObj = projAggrObj+selObj+groupByObj+orderByObj+havingObj+limitObj+tableObj
-        assert resObj.count(";") == numExpectedDims
+        assert resObj.count(";")+1 == numExpectedDims
     return resObj
 
 if __name__ == "__main__":
