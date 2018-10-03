@@ -1,10 +1,11 @@
 ALGORITHM=CF
-INTENT_REP=fragment
+INTENT_REP=query
 DATASET=NYCTaxiTrips
 QUERYSESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCCleanedSessions
 TUPLEINTENTSESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCTupleIntentSessions
 BIT_FRAGMENT_INTENT_SESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCBitFragmentIntentSessions
 WEIGHTED_FRAGMENT_INTENT_SESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCWeightedFragmentIntentSessions
+QUERY_INTENT_SESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCQueryIntentSessions
 SCHEMA=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCSchema
 BIT_OR_WEIGHTED_FRAGMENT=BIT
 DB=madlibtest
