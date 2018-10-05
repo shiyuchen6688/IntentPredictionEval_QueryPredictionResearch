@@ -67,17 +67,17 @@ def createFragmentsFromAttrList(attrListDict, schemaDict, opString, configDict, 
         if attrListDict is not None:
             for levelID in attrListDict:
                 numLimit = numLimit+attrListDict[levelID].count(opString)
-        if configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "BIT":
+        if configDict["BIT_OR_WEIGHTED"] == "BIT":
             if numLimit > 0:
                 resObjOp = BitMap.fromstring("1")
             else:
                 resObjOp = BitMap.fromstring("0")
-        elif configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "WEIGHTED":
+        elif configDict["BIT_OR_WEIGHTED"] == "WEIGHTED":
             resObjOp = str(numLimit)+";"
     elif opString == "TABLE":
-        if configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "BIT":
+        if configDict["BIT_OR_WEIGHTED"] == "BIT":
             resObjOp = BitMap.fromstring("1")
-        elif configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "WEIGHTED":
+        elif configDict["BIT_OR_WEIGHTED"] == "WEIGHTED":
             resObjOp = str(len(attrListDict)) # attrListDict comes as a dictionary with key as levelNumber, table is trailing bit dimension so no semicolon at end
     elif attrListDict is None:
         if opString != "PROJECT":
@@ -113,39 +113,39 @@ def createFragmentsFromAttrList(attrListDict, schemaDict, opString, configDict, 
                         countCol = 1  # within a single group by a col can occur only once
                 else:
                     countCol = attrListDict[levelID].count(col)
-                colDict = setColIndexInDict(colDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countCol, colIndex)
+                colDict = setColIndexInDict(colDict, configDict["BIT_OR_WEIGHTED"], countCol, colIndex)
                 if opString == "PROJECT":
                     tableAlias = findTableAlias(tableList, levelID, configDict)
                     countAvg = attrListDict[levelID].count("AVG(" + tableAlias + "." + col)
                     if countAvg == 0 and "AVG("+tableAlias not in attrListDict[levelID]:
                         countAvg = attrListDict[levelID].count("AVG(")  # AVG(1) is covered as all columns
-                    avgDict = setColIndexInDict(avgDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countAvg, colIndex)
+                    avgDict = setColIndexInDict(avgDict, configDict["BIT_OR_WEIGHTED"], countAvg, colIndex)
                     countMin = attrListDict[levelID].count("MIN(" + tableAlias + "." + col)
                     if countMin == 0 and "MIN("+tableAlias not in attrListDict[levelID]:
                         countMin = attrListDict[levelID].count("MIN(")  # MIN(1) is covered as all columns
-                    minDict = setColIndexInDict(minDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countMin, colIndex)
+                    minDict = setColIndexInDict(minDict, configDict["BIT_OR_WEIGHTED"], countMin, colIndex)
                     countMax = attrListDict[levelID].count("MAX(" + tableAlias + "." + col)
                     if countMax == 0 and "MAX("+tableAlias not in attrListDict[levelID]:
                         countMax = attrListDict[levelID].count("MAX(") # MAX(1) is covered as all columns
-                    maxDict = setColIndexInDict(maxDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countMax, colIndex)
+                    maxDict = setColIndexInDict(maxDict, configDict["BIT_OR_WEIGHTED"], countMax, colIndex)
                     countSum = attrListDict[levelID].count("SUM(" + tableAlias + "." + col)
                     if countSum == 0 and "SUM("+tableAlias not in attrListDict[levelID]:
                         countSum = attrListDict[levelID].count("SUM(")  # SUM(1) is covered as all columns
-                    sumDict = setColIndexInDict(sumDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countSum, colIndex)
+                    sumDict = setColIndexInDict(sumDict, configDict["BIT_OR_WEIGHTED"], countSum, colIndex)
                     countCount = attrListDict[levelID].count("COUNT(" + tableAlias + "." + col)
                     if countCount == 0 and "COUNT("+tableAlias not in attrListDict[levelID]:
                         countCount = attrListDict[levelID].count("COUNT(")  # COUNT(1) is covered as all columns, also COUNT(*)
-                    countDict = setColIndexInDict(countDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], countCount, colIndex)
-        resObjOp = parseOpDict(colDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], len(schemaDict))
+                    countDict = setColIndexInDict(countDict, configDict["BIT_OR_WEIGHTED"], countCount, colIndex)
+        resObjOp = parseOpDict(colDict, configDict["BIT_OR_WEIGHTED"], len(schemaDict))
         if opString == "PROJECT":
-            resObjAvg = parseOpDict(avgDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], len(schemaDict))
-            resObjMin = parseOpDict(minDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], len(schemaDict))
-            resObjMax = parseOpDict(maxDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], len(schemaDict))
-            resObjSum = parseOpDict(sumDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], len(schemaDict))
-            resObjCount = parseOpDict(countDict, configDict["BIT_OR_WEIGHTED_FRAGMENT"], len(schemaDict))
-            if configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "BIT":
+            resObjAvg = parseOpDict(avgDict, configDict["BIT_OR_WEIGHTED"], len(schemaDict))
+            resObjMin = parseOpDict(minDict, configDict["BIT_OR_WEIGHTED"], len(schemaDict))
+            resObjMax = parseOpDict(maxDict, configDict["BIT_OR_WEIGHTED"], len(schemaDict))
+            resObjSum = parseOpDict(sumDict, configDict["BIT_OR_WEIGHTED"], len(schemaDict))
+            resObjCount = parseOpDict(countDict, configDict["BIT_OR_WEIGHTED"], len(schemaDict))
+            if configDict["BIT_OR_WEIGHTED"] == "BIT":
                 resObjOp = BitMap.fromstring(resObjOp.tostring()+resObjAvg.tostring()+resObjMin.tostring()+resObjMax.tostring()+resObjSum.tostring()+resObjCount.tostring())
-            elif configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "WEIGHTED":
+            elif configDict["BIT_OR_WEIGHTED"] == "WEIGHTED":
                 resObjOp = resObjOp+resObjAvg+resObjMin+resObjMax+resObjSum+resObjCount
     return resObjOp
 
@@ -163,23 +163,23 @@ def createFragmentIntentRep(sessQuery, configDict):
     tableObj = createFragmentsFromAttrList(tableList, schemaDict, "TABLE", configDict, tableList, projectList)
     orderByObj = createFragmentsFromAttrList(orderByList, schemaDict, "ORDER BY", configDict, tableList, projectList)
     limitObj = createFragmentsFromAttrList(limitList, schemaDict, "LIMIT", configDict, tableList, projectList)
-    if configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "BIT":
+    if configDict["BIT_OR_WEIGHTED"] == "BIT":
         resObj = BitMap.fromstring(projAggrObj.tostring()+selObj.tostring()+groupByObj.tostring()+orderByObj.tostring()+havingObj.tostring()+limitObj.tostring()+tableObj.tostring())
         expectedPaddedBitCount = (6+4)*5+7+7 # reasoning is 19 bits get padded up to 24 and 1 bit gets padded up to 8, coz bitmaps are created in bytes not in bits
         assert resObj.size() == numExpectedDims+expectedPaddedBitCount
-    elif configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "WEIGHTED":
+    elif configDict["BIT_OR_WEIGHTED"] == "WEIGHTED":
         resObj = projAggrObj+selObj+groupByObj+orderByObj+havingObj+limitObj+tableObj
         assert resObj.count(";")+1 == numExpectedDims
     return resObj
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    if configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "BIT":
+    if configDict["BIT_OR_WEIGHTED"] == "BIT":
         fragmentIntentSessionsFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
-    elif configDict["BIT_OR_WEIGHTED_FRAGMENT"] == "WEIGHTED":
+    elif configDict["BIT_OR_WEIGHTED"] == "WEIGHTED":
         fragmentIntentSessionsFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
     else:
-        print "BIT_OR_WEIGHTED_FRAGMENT should be set either to BIT or WEIGHTED in the Config File !!"
+        print "BIT_OR_WEIGHTED should be set either to BIT or WEIGHTED in the Config File !!"
         sys.exit(0)
     try:
         os.remove(fragmentIntentSessionsFile)
