@@ -8,6 +8,7 @@ BIT_FRAGMENT_INTENT_SESSIONS=/Users/postgres/Documents/DataExploration-Research/
 WEIGHTED_FRAGMENT_INTENT_SESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCWeightedFragmentIntentSessions
 QUERY_INTENT_SESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCQueryIntentSessions
 SCHEMA=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCSchema
+NUMCOLS=19
 BIT_OR_WEIGHTED=BIT
 DB=madlibtest
 FULLTABLE=nyc_yellow_tripdata_2016_06
