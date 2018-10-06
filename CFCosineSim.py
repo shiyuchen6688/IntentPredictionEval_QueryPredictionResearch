@@ -138,22 +138,29 @@ def predictTopKIntents(sessionSummaries, sessID, predSessSummary, curQueryIntent
     # python supports for min-heap not max-heap so negate items and insert into min-heap
     minheap = []
     cosineSimDict = {}
-    for sessIndex in range(len(sessionSummaries)-1): # exclude the current session
-        oldSessionSummary = sessionSummaries[sessIndex]
-        if configDict['BIT_OR_WEIGHTED']=='BIT':
-            cosineSim = computeListBitCosineSimilarity(predSessSummary, oldSessionSummary)
-        elif configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
-            cosineSim = computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary)
-        heapq.heappush(minheap, -cosineSim)  # insert -ve cosineSim
-        if cosineSim not in cosineSimDict:
-            cosineSimDict[cosineSim] = list()
-        cosineSimDict[cosineSim].append(sessIndex)
+    for sessIndex in sessionSummaries: # exclude the current session
+        if sessIndex != sessID:
+            oldSessionSummary = sessionSummaries[sessIndex]
+            if configDict['BIT_OR_WEIGHTED']=='BIT':
+                cosineSim = computeListBitCosineSimilarity(predSessSummary, oldSessionSummary)
+            elif configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
+                cosineSim = computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary)
+            heapq.heappush(minheap, -cosineSim)  # insert -ve cosineSim
+            if cosineSim not in cosineSimDict:
+                cosineSimDict[cosineSim] = list()
+            cosineSimDict[cosineSim].append(sessIndex)
 
     topKSessIndices = []
     for i in range(int(cosineSim['TOP_K'])):
         topCosineSim = 0-(heapq.heappop(minheap)) # negated to get back the item
         topKSessIndex = findTopKSessIndex(topCosineSim, cosineSimDict, topKSessIndices)
         topKSessIndices.append(topKSessIndex)
+
+    topKQueryIntents = []
+    del cosineSimDict[:]
+    cosineSimDict = {}
+    for topKSessIndex in topKSessIndices:
+        oldQueryIntent =
 
 def checkEpisodeCompletion(startEpisode, configDict):
     timeElapsed = time.time() - startEpisode
