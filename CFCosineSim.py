@@ -1,9 +1,9 @@
+from __future__ import division
 import sys
 import os
 import time
 import QueryRecommender as QR
 from bitmap import BitMap
-from __future__ import division
 import math
 import heapq
 
