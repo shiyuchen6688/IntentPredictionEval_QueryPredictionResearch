@@ -134,33 +134,57 @@ def findTopKSessIndex(topCosineSim, cosineSimDict, topKSessindices):
         if sessIndex not in topKSessindices:
             return sessIndex
 
-def predictTopKIntents(sessionSummaries, sessID, predSessSummary, curQueryIntent, configDict):
+def popTopKfromHeap(configDict, minheap, cosineSimDict):
+    topKIndices = []
+    for i in range(int(configDict['TOP_K'])):
+        topCosineSim = 0 - (heapq.heappop(minheap))  # negated to get back the item
+        topKIndex = findTopKSessIndex(topCosineSim, cosineSimDict, topKIndices)
+        topKIndices.append(topKIndex)
+    return (minheap, topKIndices)
+
+def insertIntoMinHeap(minheap, elemList, elemIndex, configDict, cosineSimDict, predSessSummary, insertKey):
+    elem = elemList[elemIndex]
+    cosineSim = 0.0
+    assert configDict['BIT_OR_WEIGHTED'] == 'BIT' or configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED'
+    if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        cosineSim = computeListBitCosineSimilarity(predSessSummary, elem)
+    elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+        cosineSim = computeListWeightedCosineSimilarity(predSessSummary, elem)
+    heapq.heappush(minheap, -cosineSim)  # insert -ve cosineSim
+    if cosineSim not in cosineSimDict:
+        cosineSimDict[cosineSim] = list()
+    cosineSimDict[cosineSim].append(insertKey)
+    return (minheap, cosineSimDict)
+
+def retrieveTopKIntent(sessionDict, topKSessIndex, topKQueryIndex):
+    sessSummary = sessionSummaries[topKSessIndex]
+
+
+def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict):
     # python supports for min-heap not max-heap so negate items and insert into min-heap
     minheap = []
     cosineSimDict = {}
     for sessIndex in sessionSummaries: # exclude the current session
         if sessIndex != sessID:
-            oldSessionSummary = sessionSummaries[sessIndex]
-            if configDict['BIT_OR_WEIGHTED']=='BIT':
-                cosineSim = computeListBitCosineSimilarity(predSessSummary, oldSessionSummary)
-            elif configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
-                cosineSim = computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary)
-            heapq.heappush(minheap, -cosineSim)  # insert -ve cosineSim
-            if cosineSim not in cosineSimDict:
-                cosineSimDict[cosineSim] = list()
-            cosineSimDict[cosineSim].append(sessIndex)
+            (minheap, cosineSimDict) = insertIntoMinHeap(minheap, sessionSummaries, sessIndex, configDict, cosineSimDict, predSessSummary, sessIndex)
+    (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
 
-    topKSessIndices = []
-    for i in range(int(cosineSim['TOP_K'])):
-        topCosineSim = 0-(heapq.heappop(minheap)) # negated to get back the item
-        topKSessIndex = findTopKSessIndex(topCosineSim, cosineSimDict, topKSessIndices)
-        topKSessIndices.append(topKSessIndex)
-
-    topKQueryIntents = []
+    del minheap[:]
+    minheap = []
     del cosineSimDict[:]
     cosineSimDict = {}
     for topKSessIndex in topKSessIndices:
-        oldQueryIntent =
+        for queryIndex in range(len(sessionDict[topKSessIndex])):
+            (minheap, cosineSimDict) = insertIntoMinHeap(minheap, sessionDict[topKSessIndex], queryIndex, configDict, cosineSimDict, predSessSummary, str(topKSessIndex)+","+str(queryIndex))
+    (minheap, topKSessQueryIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
+
+    topKPredictedIntents = []
+    for topKSessQueryIndex in topKSessQueryIndices:
+        topKSessIndex = topKSessQueryIndex.split(",")[0]
+        topKQueryIndex = topKSessQueryIndex.split(",")[1]
+        topKIntent = sessionDict[topKSessIndex][topKQueryIndex]
+        topKPredictedIntents.append(topKIntent)
+    return topKPredictedIntents
 
 def checkEpisodeCompletion(startEpisode, configDict):
     timeElapsed = time.time() - startEpisode
@@ -206,6 +230,6 @@ def runCFCosineSim(intentSessionFile, configDict):
                 queryLinesSetAside = []
             (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
             if len(sessionSummaries)>0 and sessID in sessionSummaries:
-                topKPredictedIntents = predictTopKIntents(sessionSummaries, sessID, predSessSummary, curQueryIntent, configDict)
+                topKPredictedIntents = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
             else:
                 topKPredictedIntents = None
