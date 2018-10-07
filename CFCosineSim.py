@@ -156,10 +156,6 @@ def insertIntoMinHeap(minheap, elemList, elemIndex, configDict, cosineSimDict, p
     cosineSimDict[cosineSim].append(insertKey)
     return (minheap, cosineSimDict)
 
-def retrieveTopKIntent(sessionDict, topKSessIndex, topKQueryIndex):
-    sessSummary = sessionSummaries[topKSessIndex]
-
-
 def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict):
     # python supports for min-heap not max-heap so negate items and insert into min-heap
     minheap = []
@@ -207,6 +203,7 @@ def retrieveSessIDQueryIDIntent(line, configDict):
     return (sessID, queryID, curQueryIntent)
 
 def refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, sessionDict, sessionSummaries):
+    predSessSummary = None
     for line in queryLinesSetAside:
         (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
         (predSessSummary, sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
