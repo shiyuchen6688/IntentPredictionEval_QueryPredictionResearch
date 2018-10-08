@@ -1,11 +1,51 @@
+from __future__ import division
 import sys
 import os
 import time
 import QueryExecution as QExec
+from bitmap import BitMap
+import CFCosineSim
+import TupleIntent as ti
 
-def evaluatePredictions(predQuery, timeStepObj):
-    print "--pending evaluation--"
+def evaluatePredictions(outputIntentFile, configDict):
+    outputEvalFileName = configDict['OUTPUT_DIR'] + "/OutputEvalFileShortTermIntent_" + configDict['INTENT_REP'] + "_" + \
+                           configDict['BIT_OR_WEIGHTED'] + "_K_" + configDict['TOP_K'] + "_EPISODE_SECS_" + configDict[
+                               'EPISODE_IN_SECONDS']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
+    try:
+        os.remove(outputEvalFileName)
+    except OSError:
+        pass
+    with open(outputIntentFile) as f:
+        for line in f:
+            tokens = line.strip().split(";")
+            sessID = tokens[0].split(":")[1]
+            queryID = tokens[1].split(":")[1]
+            numEpisodes = tokens[2].split(":")[1]
+            precision = 0.0
+            recall = 0.0
+            maxCosineSim =0.0
+            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                curQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
+            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                curQueryIntent = tokens[3].split(":")[1]
+            for i in range(4,len(tokens)):
+                if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                    topKQueryIntent = BitMap.fromstring(tokens[i].split(":")[1])
+                    cosineSim = CFCosineSim.computeBitCosineSimilarity(curQueryIntent, topKQueryIntent)
+                elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                    topKQueryIntent = tokens[i].split(":")[1]
+                    cosineSim = CFCosineSim.computeWeightedCosineSimilarity(curQueryIntent, topKQueryIntent, ",")
+                if cosineSim >= configDict['ACCURACY_THRESHOLD']:
+                    recall = 1.0
+                    precision += 1.0
+                if cosineSim > maxCosineSim:
+                    maxCosineSim = cosineSim
+            precision /= float(len(tokens)-4+1)
+            outputEvalStr = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";Precision:"+str(precision)+";Recall:"+str(recall)+";Accuracy:"+str(maxCosineSim)
+            ti.appendToFile(outputEvalFileName, outputEvalStr)
+    print "--Completed Evaluation--"
 
+'''
 class TimeStep(object):
     def __init__(self, timeStep, sessQuery, sessQueryIntent, sessLogs):
         self.timeStep = timeStep
@@ -45,3 +85,5 @@ def simulateHumanQueriesWithCreateIntent(configDict):
                 predQuery = recommendQuery(resObj, timeStepObj)
                 evaluatePredictions(predQuery, timeStepObj)
                 timeStepObj.updateSessLogs(resObj,sessName)
+'''
+

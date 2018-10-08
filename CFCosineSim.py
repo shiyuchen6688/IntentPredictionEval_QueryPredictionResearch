@@ -53,7 +53,7 @@ def computePredSessSummary(sessionSummaries, sessID, configDict):
         if index != sessID:
             oldSessionSummary = sessionSummaries[index]
             if configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-                cosineSim = computeWeightedCosineSimilarity(curSessSummary, oldSessionSummary)
+                cosineSim = computeWeightedCosineSimilarity(curSessSummary, oldSessionSummary, ";")
             elif configDict['BIT_OR_WEIGHTED'] == 'BIT':
                 cosineSim = computeBitCosineSimilarity(curSessSummary, oldSessionSummary)
             for i in range(len(predSessSummary)):
@@ -101,9 +101,9 @@ def computeListBitCosineSimilarity(predSessSummary, oldSessionSummary):
     cosineSim = numerator / (math.sqrt(l2NormPredSess) * math.sqrt(l2NormOldSess))
     return cosineSim
 
-def computeWeightedCosineSimilarity(curSessionSummary, oldSessionSummary):
-    curSessDims = curSessionSummary.split(";")
-    oldSessDims = oldSessionSummary.split(";")
+def computeWeightedCosineSimilarity(curSessionSummary, oldSessionSummary, delimiter):
+    curSessDims = curSessionSummary.split(delimiter)
+    oldSessDims = oldSessionSummary.split(delimiter)
     assert len(curSessDims) == len(oldSessDims)
     numerator = 0.0
     l2NormQuery = 0.0
@@ -115,8 +115,8 @@ def computeWeightedCosineSimilarity(curSessionSummary, oldSessionSummary):
     cosineSim = numerator / (math.sqrt(l2NormQuery) * math.sqrt(l2NormSession))
     return cosineSim
 
-def computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary):
-    oldSessDims = oldSessionSummary.split(";")
+def computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary, delimiter):
+    oldSessDims = oldSessionSummary.split(delimiter)
     assert len(predSessSummary) == len(oldSessDims)
     numerator = 0.0
     l2NormQuery = 0.0
@@ -154,7 +154,7 @@ def insertIntoMinHeap(minheap, elemList, elemIndex, configDict, cosineSimDict, p
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
         cosineSim = computeListBitCosineSimilarity(predSessSummary, elem)
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        cosineSim = computeListWeightedCosineSimilarity(predSessSummary, elem)
+        cosineSim = computeListWeightedCosineSimilarity(predSessSummary, elem, ";")
     heapq.heappush(minheap, -cosineSim)  # insert -ve cosineSim
     if cosineSim not in cosineSimDict:
         cosineSimDict[cosineSim] = list()
