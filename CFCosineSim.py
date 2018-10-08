@@ -233,6 +233,7 @@ def appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQuery
         elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
             output_str += curQueryIntent.replace(";",",")
     ti.appendToFile(outputIntentFileName, output_str)
+    print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
 
 def runCFCosineSim(intentSessionFile, configDict):
     sessionSummaries = {} # key is sessionID and value is summary
@@ -264,3 +265,4 @@ def runCFCosineSim(intentSessionFile, configDict):
                 topKPredictedIntents = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
             else:
                 topKPredictedIntents = None
+    return outputIntentFileName

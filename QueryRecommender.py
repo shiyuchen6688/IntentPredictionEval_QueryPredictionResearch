@@ -6,16 +6,15 @@ import QueryExecution as QExec
 from bitmap import BitMap
 import CFCosineSim
 import TupleIntent as ti
+import ParseConfigFile as parseConfig
 
-def evaluatePredictions(outputIntentFile, configDict):
-    outputEvalFileName = configDict['OUTPUT_DIR'] + "/OutputEvalFileShortTermIntent_" + configDict['INTENT_REP'] + "_" + \
-                           configDict['BIT_OR_WEIGHTED'] + "_K_" + configDict['TOP_K'] + "_EPISODE_SECS_" + configDict[
-                               'EPISODE_IN_SECONDS']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
+def evaluatePredictions(outputIntentFileName, configDict):
+    outputEvalFileName = configDict['OUTPUT_DIR'] + "/OutputEvalFileShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_K_" + configDict['TOP_K'] + "_EPISODE_SECS_" + configDict['EPISODE_IN_SECONDS']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
     try:
         os.remove(outputEvalFileName)
     except OSError:
         pass
-    with open(outputIntentFile) as f:
+    with open(outputIntentFileName) as f:
         for line in f:
             tokens = line.strip().split(";")
             sessID = tokens[0].split(":")[1]
@@ -44,6 +43,11 @@ def evaluatePredictions(outputIntentFile, configDict):
             outputEvalStr = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";Precision:"+str(precision)+";Recall:"+str(recall)+";Accuracy:"+str(maxCosineSim)
             ti.appendToFile(outputEvalFileName, outputEvalStr)
     print "--Completed Evaluation--"
+
+if __name__ == "__main__":
+    configDict = parseConfig.parseConfigFile("configFile.txt")
+    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_K_"+configDict['TOP_K']+"_EPISODE_SECS_"+configDict['EPISODE_IN_SECONDS']
+    evaluatePredictions(outputIntentFileName, configDict)
 
 '''
 class TimeStep(object):
