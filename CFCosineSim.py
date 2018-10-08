@@ -163,7 +163,8 @@ def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, c
     for sessIndex in sessionSummaries: # exclude the current session
         if sessIndex != sessID:
             (minheap, cosineSimDict) = insertIntoMinHeap(minheap, sessionSummaries, sessIndex, configDict, cosineSimDict, predSessSummary, sessIndex)
-    (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
+    if len(minheap) > 0:
+        (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
 
     del minheap[:]
     minheap = []
@@ -172,7 +173,8 @@ def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, c
     for topKSessIndex in topKSessIndices:
         for queryIndex in range(len(sessionDict[topKSessIndex])):
             (minheap, cosineSimDict) = insertIntoMinHeap(minheap, sessionDict[topKSessIndex], queryIndex, configDict, cosineSimDict, predSessSummary, str(topKSessIndex)+","+str(queryIndex))
-    (minheap, topKSessQueryIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
+    if len(minheap) > 0:
+        (minheap, topKSessQueryIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
 
     topKPredictedIntents = []
     for topKSessQueryIndex in topKSessQueryIndices:
@@ -184,17 +186,17 @@ def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, c
 
 def checkEpisodeCompletion(startEpisode, configDict):
     timeElapsed = time.time() - startEpisode
-    if timeElapsed > configDict['EPISODE_IN_SECONDS']:
+    if timeElapsed > float(configDict['EPISODE_IN_SECONDS']):
         startEpisode = time.time()
         return (True, startEpisode)
     else:
         return (False, startEpisode)
 
 def retrieveSessIDQueryIDIntent(line, configDict):
-    tokens = line.split(";")
+    tokens = line.strip().split(";")
     sessQueryName = tokens[0]
-    sessID = int(sessQueryName.split(",")[0].split(" ")[1])
-    queryID = int(sessQueryName.split(",")[1].split(" ")[1]) - 1  # coz queryID starts from 1 instead of 0
+    sessID = int(sessQueryName.split(", ")[0].split(" ")[1])
+    queryID = int(sessQueryName.split(", ")[1].split(" ")[1]) - 1  # coz queryID starts from 1 instead of 0
     curQueryIntent = ';'.join(tokens[2:])
     if ";" not in curQueryIntent and configDict['BIT_OR_WEIGHTED'] == 'BIT':
         curQueryIntent = BitMap.fromstring(curQueryIntent)
