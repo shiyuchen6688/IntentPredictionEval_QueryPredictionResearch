@@ -8,9 +8,11 @@ import math
 import heapq
 import TupleIntent as ti
 
-def OR(sessionSummary, curQueryIntent):
-    assert sessionSummary.size() == curQueryIntent.size()
-    for i in range(sessionSummary.size()):
+def OR(sessionSummary, curQueryIntent, configDict):
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+        assert sessionSummary.size() == curQueryIntent.size()
+    idealSize = min(sessionSummary.size(), curQueryIntent.size())
+    for i in range(idealSize):
         if curQueryIntent.test(i):
             sessionSummary.set(i)
     return sessionSummary
@@ -26,12 +28,14 @@ def normalizeWeightedVector(curQueryIntent):
     res = ';'.join(normalizedVector)
     return res
 
-def ADD(sessionSummary, curQueryIntent):
+def ADD(sessionSummary, curQueryIntent, configDict):
     queryTokens = curQueryIntent.split(";")
     sessTokens = sessionSummary.split(";")
-    assert len(queryTokens) == len(sessTokens)
-    for i in range(len(queryTokens)):
-        sessTokens[i] = sessTokens[i]+queryTokens[i]
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+        assert len(queryTokens) == len(sessTokens)
+    idealSize = min(len(queryTokens), len(sessTokens))
+    for i in range(idealSize):
+        sessTokens[i] = float(sessTokens[i])+float(queryTokens[i])
     sessionSummary = normalizeWeightedVector(';'.join(sessTokens))
     return sessionSummary
 
@@ -53,15 +57,29 @@ def computePredSessSummary(sessionSummaries, sessID, configDict):
         if index != sessID:
             oldSessionSummary = sessionSummaries[index]
             if configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-                cosineSim = computeWeightedCosineSimilarity(curSessSummary, oldSessionSummary, ";")
+                cosineSim = computeWeightedCosineSimilarity(curSessSummary, oldSessionSummary, ";", configDict)
+                idealSize = min(len(predSessSummary), len(oldSessionSummary.split(";")))
             elif configDict['BIT_OR_WEIGHTED'] == 'BIT':
                 cosineSim = computeBitCosineSimilarity(curSessSummary, oldSessionSummary)
-            for i in range(len(predSessSummary)):
+                idealSize = min(len(predSessSummary), oldSessionSummary.size())
+            if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+                if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                    assert len(predSessSummary) == oldSessionSummary.size()
+                elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                    assert len(predSessSummary) == len(oldSessionSummary.split(";"))
+            for i in range(idealSize):
                 if configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                     predSessSummary[i] = predSessSummary[i]+ (1-alpha)*cosineSim*oldSessionSummary[i]
                 elif configDict['BIT_OR_WEIGHTED'] == 'BIT' and oldSessionSummary.test(i):
                     predSessSummary[i] = predSessSummary[i] + (1-alpha)*cosineSim*1.0
     return predSessSummary
+
+def createEntrySimilarTo(curQueryIntent, configDict):
+    if configDict['BIT_OR_WEIGHTED']=='BIT':
+        sessSumEntry = BitMap.fromstring(curQueryIntent.tostring())
+    elif configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
+        sessSumEntry = curQueryIntent
+    return sessSumEntry
 
 def refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict):
     if sessID in sessionDict:
@@ -71,11 +89,11 @@ def refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries,
         sessionDict[sessID].append(curQueryIntent)
     if sessID in sessionSummaries:
         if configDict['BIT_OR_WEIGHTED']=='BIT':
-            sessionSummaries[sessID] = OR(sessionSummaries[sessID],curQueryIntent)
+            sessionSummaries[sessID] = OR(sessionSummaries[sessID],curQueryIntent, configDict)
         elif configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
-            sessionSummaries[sessID] = ADD(sessionSummaries[sessID],curQueryIntent)
+            sessionSummaries[sessID] = ADD(sessionSummaries[sessID],curQueryIntent, configDict)
     else:
-        sessionSummaries[sessID] = curQueryIntent
+        sessionSummaries[sessID] = createEntrySimilarTo(curQueryIntent, configDict)
     predSessSummary = computePredSessSummary(sessionSummaries, sessID, configDict)
     return (predSessSummary, sessionDict, sessionSummaries)
 
@@ -87,44 +105,66 @@ def computeBitCosineSimilarity(curSessionSummary, oldSessionSummary):
     cosineSim = float(numSetBitsIntersect)/l2NormProduct
     return cosineSim
 
-def computeListBitCosineSimilarity(predSessSummary, oldSessionSummary):
-    assert(len(predSessSummary))==oldSessionSummary.size()
+def computeListBitCosineSimilarity(predSessSummary, oldSessionSummary, configDict):
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+        assert(len(predSessSummary))==oldSessionSummary.size()
+    idealSize = min(len(predSessSummary), oldSessionSummary.size())
     numerator = 0.0
     l2NormPredSess = 0.0
     l2NormOldSess = 0.0
     for i in range(len(predSessSummary)):
+        l2NormPredSess += float(predSessSummary[i] * predSessSummary[i])
+    for i in range(oldSessionSummary.size()):
+        if oldSessionSummary.test(i):
+            l2NormOldSess += float(1.0 * 1.0)
+    for i in range(idealSize):
         predSessDim = predSessSummary[i]
         if oldSessionSummary.test(i):
             numerator += float(predSessDim * 1.0)
-            l2NormOldSess += float(1.0 * 1.0)
-        l2NormPredSess += float(predSessDim * predSessDim)
+    if l2NormOldSess == 0 or l2NormPredSess == 0:
+        print "L2NormSquares cannot be zero !!"
+        sys.exit(0)
     cosineSim = numerator / (math.sqrt(l2NormPredSess) * math.sqrt(l2NormOldSess))
     return cosineSim
 
-def computeWeightedCosineSimilarity(curSessionSummary, oldSessionSummary, delimiter):
+def computeWeightedCosineSimilarity(curSessionSummary, oldSessionSummary, delimiter, configDict):
     curSessDims = curSessionSummary.split(delimiter)
     oldSessDims = oldSessionSummary.split(delimiter)
-    assert len(curSessDims) == len(oldSessDims)
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+        assert len(curSessDims) == len(oldSessDims)
+    idealSize = min(len(curSessDims), len(oldSessDims))
     numerator = 0.0
     l2NormQuery = 0.0
     l2NormSession = 0.0
     for i in range(len(curSessDims)):
-        numerator = numerator + float(curSessDims[i] * oldSessDims[i])
-        l2NormQuery = l2NormQuery + float(curSessDims[i]*curSessDims[i])
+        l2NormQuery = l2NormQuery + float(curSessDims[i] * curSessDims[i])
+    for i in range(len(oldSessDims)):
         l2NormSession = l2NormSession + float(oldSessDims[i] * oldSessDims[i])
+    for i in range(idealSize):
+        numerator = numerator + float(curSessDims[i] * oldSessDims[i])
+    if l2NormQuery == 0 or l2NormSession == 0:
+        print "L2NormSquares cannot be zero !!"
+        sys.exit(0)
     cosineSim = numerator / (math.sqrt(l2NormQuery) * math.sqrt(l2NormSession))
     return cosineSim
 
-def computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary, delimiter):
+def computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary, delimiter, configDict):
     oldSessDims = oldSessionSummary.split(delimiter)
-    assert len(predSessSummary) == len(oldSessDims)
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+        assert len(predSessSummary) == len(oldSessDims)
+    idealSize = min(len(predSessSummary), len(oldSessDims))
     numerator = 0.0
     l2NormQuery = 0.0
     l2NormSession = 0.0
     for i in range(len(predSessSummary)):
-        numerator = numerator + float(predSessSummary[i] * oldSessDims[i])
         l2NormQuery = l2NormQuery + float(predSessSummary[i] * predSessSummary[i])
+    for i in range(len(oldSessDims)):
         l2NormSession = l2NormSession + float(oldSessDims[i] * oldSessDims[i])
+    for i in range(idealSize):
+        numerator = numerator + float(predSessSummary[i] * oldSessDims[i])
+    if l2NormQuery == 0 or l2NormSession == 0:
+        print "L2NormSquares cannot be zero !!"
+        sys.exit(0)
     cosineSim = numerator / (math.sqrt(l2NormQuery) * math.sqrt(l2NormSession))
     return cosineSim
 
@@ -152,9 +192,9 @@ def insertIntoMinHeap(minheap, elemList, elemIndex, configDict, cosineSimDict, p
     cosineSim = 0.0
     assert configDict['BIT_OR_WEIGHTED'] == 'BIT' or configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED'
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        cosineSim = computeListBitCosineSimilarity(predSessSummary, elem)
+        cosineSim = computeListBitCosineSimilarity(predSessSummary, elem, configDict)
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        cosineSim = computeListWeightedCosineSimilarity(predSessSummary, elem, ";")
+        cosineSim = computeListWeightedCosineSimilarity(predSessSummary, elem, ";", configDict)
     heapq.heappush(minheap, -cosineSim)  # insert -ve cosineSim
     if cosineSim not in cosineSimDict:
         cosineSimDict[cosineSim] = list()
@@ -210,9 +250,9 @@ def refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, 
         (predSessSummary, sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
     return (predSessSummary, sessionDict, sessionSummaries)
 
-def appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpochs, configDict, outputIntentFileName):
+def appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName):
     startAppendTime = time.time()
-    output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Epochs:"+str(numEpochs)+";CurQueryIntent:"
+    output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";CurQueryIntent:"
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
         output_str += curQueryIntent.tostring()
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
@@ -222,28 +262,28 @@ def appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQuery
     for k in range(len(topKPredictedIntents)):
         output_str += ";TOP_" +str(k)+"_PREDICTED_INTENT:"
         if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-            output_str += curQueryIntent.tostring()
+            output_str += topKPredictedIntents[k].tostring()
         elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-            output_str += curQueryIntent.replace(";",",")
+            output_str += topKPredictedIntents[k].replace(";",",")
     ti.appendToFile(outputIntentFileName, output_str)
     print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
     elapsedAppendTime = float(time.time()-startAppendTime)
     return elapsedAppendTime
 
-def updateResponseTime(epochResponseTime, numEpochs, startEpoch, elapsedAppendTime):
-    epochResponseTime[numEpochs] = float(time.time()-startEpoch) - elapsedAppendTime # we exclude the time consumed by appending predicted intents to the output intent file
-    startEpoch = time.time()
-    return (epochResponseTime, startEpoch)
+def updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime):
+    episodeResponseTime[numEpisodes] = float(time.time()-startEpisode) - elapsedAppendTime # we exclude the time consumed by appending predicted intents to the output intent file
+    startEpisode = time.time()
+    return (episodeResponseTime, startEpisode)
 
 def runCFCosineSim(intentSessionFile, configDict):
     sessionSummaries = {} # key is sessionID and value is summary
     sessionDict = {} # key is session ID and value is a list of query intent vectors; no need to store the query itself
-    numEpochs = 0
+    numEpisodes = 0
     queryLinesSetAside = []
-    epochResponseTime = {}
-    startEpoch = time.time()
+    episodeResponseTime = {}
+    startEpisode = time.time()
     predSessSummary = None
-    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPOCH_IN_QUERIES_"+configDict['EPISODE_IN_SECONDS']
+    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']
     try:
         os.remove(outputIntentFileName)
     except OSError:
@@ -253,15 +293,17 @@ def runCFCosineSim(intentSessionFile, configDict):
         topKPredictedIntents = None
         for line in f:
             (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
+            if sessID > 0:
+                debug = True
             # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
             elapsedAppendTime = 0.0
             if topKPredictedIntents is not None:
-                elapsedAppendTime = appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpochs,
+                elapsedAppendTime = appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes,
                                              configDict, outputIntentFileName)
             numQueries += 1
             queryLinesSetAside.append(line)
-            if numQueries % int(configDict['EPOCH_IN_QUERIES']) == 0:
-                numEpochs += 1
+            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+                numEpisodes += 1
                 (predSessSummary,sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, sessionDict, sessionSummaries)
                 del queryLinesSetAside
                 queryLinesSetAside = []
@@ -270,6 +312,6 @@ def runCFCosineSim(intentSessionFile, configDict):
                 topKPredictedIntents = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
             else:
                 topKPredictedIntents = None
-            if numQueries % int(configDict['EPOCH_IN_QUERIES']) == 0:
-                (epochResponseTime, startEpoch) = updateResponseTime(epochResponseTime, numEpochs, startEpoch, elapsedAppendTime)
-    return (outputIntentFileName, epochResponseTime)
+            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+                (episodeResponseTime, startEpisode) = updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+    return (outputIntentFileName, episodeResponseTime)

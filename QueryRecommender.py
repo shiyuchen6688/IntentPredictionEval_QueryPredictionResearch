@@ -8,8 +8,8 @@ import CFCosineSim
 import TupleIntent as ti
 import ParseConfigFile as parseConfig
 
-def evaluatePredictions(outputIntentFileName, epochResponseTime, configDict):
-    outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPOCH_IN_QUERIES_" + configDict['EPOCH_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
+def evaluatePredictions(outputIntentFileName, episodeResponseTime, configDict):
+    outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
     try:
         os.remove(outputEvalQualityFileName)
     except OSError:
@@ -19,7 +19,7 @@ def evaluatePredictions(outputIntentFileName, epochResponseTime, configDict):
             tokens = line.strip().split(";")
             sessID = tokens[0].split(":")[1]
             queryID = tokens[1].split(":")[1]
-            numEpochs = tokens[2].split(":")[1]
+            numEpisodes = tokens[2].split(":")[1]
             precision = 0.0
             recall = 0.0
             maxCosineSim =0.0
@@ -33,22 +33,22 @@ def evaluatePredictions(outputIntentFileName, epochResponseTime, configDict):
                     cosineSim = CFCosineSim.computeBitCosineSimilarity(curQueryIntent, topKQueryIntent)
                 elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                     topKQueryIntent = tokens[i].split(":")[1]
-                    cosineSim = CFCosineSim.computeWeightedCosineSimilarity(curQueryIntent, topKQueryIntent, ",")
+                    cosineSim = CFCosineSim.computeWeightedCosineSimilarity(curQueryIntent, topKQueryIntent, ",", configDict)
                 if cosineSim >= float(configDict['ACCURACY_THRESHOLD']):
                     recall = 1.0
                     precision += 1.0
                 if cosineSim > maxCosineSim:
                     maxCosineSim = cosineSim
             precision /= float(len(tokens)-4+1)
-            outputEvalQualityStr = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Epochs:"+str(numEpochs)+";Precision:"+str(precision)+";Recall:"+str(recall)+";Accuracy:"+str(maxCosineSim)
+            outputEvalQualityStr = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";Precision:"+str(precision)+";Recall:"+str(recall)+";Accuracy:"+str(maxCosineSim)
             ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
-    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPOCH_IN_QUERIES_" + configDict['EPOCH_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
+    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
     try:
         os.remove(outputEvalTimeFileName)
     except OSError:
         pass
-    for epochs in range(1,len(epochResponseTime)):
-        outputEvalTimeStr = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Epochs:"+str(epochs)+";ResponseTime(secs):"+str(epochResponseTime[epochs])
+    for episodes in range(1,len(episodeResponseTime)):
+        outputEvalTimeStr = "#Episodes:"+str(episodes)+";ResponseTime(secs):"+str(episodeResponseTime[episodes])
         ti.appendToFile(outputEvalTimeFileName, outputEvalTimeStr)
     print "--Completed Evaluation--"
     return
