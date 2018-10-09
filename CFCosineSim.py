@@ -7,6 +7,7 @@ from bitmap import BitMap
 import math
 import heapq
 import TupleIntent as ti
+import ParseConfigFile as parseConfig
 
 def OR(sessionSummary, curQueryIntent, configDict):
     if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
@@ -318,4 +319,21 @@ def runCFCosineSim(intentSessionFile, configDict):
                 topKSessQueryIndices = None
             if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
                 (episodeResponseTime, startEpisode) = updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
-    return (outputIntentFileName, episodeResponseTime)
+    episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
+    QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
+    return (outputIntentFileName, episodeResponseTimeDictName)
+
+if __name__ == "__main__":
+    configDict = parseConfig.parseConfigFile("configFile.txt")
+    if configDict['INTENT_REP']=='TUPLE':
+        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
+    elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='BIT':
+        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
+        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP']=='QUERY':
+        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
+    else:
+        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
+        sys.exit(0)
+    runCFCosineSim(intentSessionFile, configDict)

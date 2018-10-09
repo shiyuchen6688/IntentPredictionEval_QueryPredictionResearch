@@ -7,8 +7,47 @@ from bitmap import BitMap
 import CFCosineSim
 import TupleIntent as ti
 import ParseConfigFile as parseConfig
+import pickle
 
-def evaluatePredictions(outputIntentFileName, episodeResponseTime, configDict):
+def createQueryExecIntentCreationTimes(configDict):
+    numQueries = 0
+    episodeQueryExecutionTime = {}
+    episodeIntentCreationTime = {}
+    numEpisodes = 1
+    with open(configDict['QUERYSESSIONS']) as f:
+        for line in f:
+            sessQueries = line.split(";")
+            sessName = sessQueries[0]
+            for i in range(1, len(sessQueries) - 1):  # we need to ignore the empty query coming from the end of line semicolon ;
+                sessQuery = sessQueries[i].split("~")[0]
+                sessQuery = ' '.join(sessQuery.split())
+                # sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
+                queryVocabulary = {}
+                (queryVocabulary, resObj, queryExecutionTime, intentCreationTime) = QExec.executeQueryWithIntent(sessQuery, configDict, queryVocabulary)
+                if numEpisodes not in episodeIntentCreationTime:
+                    episodeIntentCreationTime[numEpisodes] = intentCreationTime
+                else:
+                    episodeIntentCreationTime[numEpisodes] += intentCreationTime
+                if numEpisodes not in episodeQueryExecutionTime:
+                    episodeQueryExecutionTime[numEpisodes] = queryExecutionTime
+                else:
+                    episodeQueryExecutionTime[numEpisodes] += queryExecutionTime
+                print "Executed and obtained intent for "+sessName+", Query "+str(i)
+                numQueries += 1
+                if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+                    numEpisodes += 1
+    return (episodeQueryExecutionTime, episodeIntentCreationTime)
+
+def readFromPickleFile(fileName):
+    with open(fileName, 'rb') as handle:
+        readObj = pickle.load(handle)
+    return readObj
+
+def writeToPickleFile(fileName, writeObj):
+    with open(fileName, 'wb') as handle:
+        pickle.dump(writeObj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+def evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict):
     outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
     try:
         os.remove(outputEvalQualityFileName)
@@ -47,33 +86,20 @@ def evaluatePredictions(outputIntentFileName, episodeResponseTime, configDict):
         os.remove(outputEvalTimeFileName)
     except OSError:
         pass
-    # Simulate query execution and intent creation to record their times #
-    numQueries = 0
-    episodeQueryExecutionTime = {}
-    episodeIntentCreationTime = {}
-    numEpisodes =1
-    with open(configDict['QUERYSESSIONS']) as f:
-        for line in f:
-            numQueries+=1
-            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
-                numEpisodes += 1
-            sessQueries = line.split(";")
-            sessName = sessQueries[0]
-            for i in range(1, len(sessQueries) - 1):  # we need to ignore the empty query coming from the end of line semicolon ;
-                sessQuery = sessQueries[i].split("~")[0]
-                sessQuery = ' '.join(sessQuery.split())
-                # sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
-                queryVocabulary = {}
-                (queryVocabulary, resObj, queryExecutionTime, intentCreationTime) = QExec.executeQueryWithIntent(sessQuery, configDict, queryVocabulary)
-                if numEpisodes not in episodeIntentCreationTime:
-                    episodeIntentCreationTime[numEpisodes] = intentCreationTime
-                else:
-                    episodeIntentCreationTime[numEpisodes] += intentCreationTime
-                if numEpisodes not in episodeQueryExecutionTime:
-                    episodeQueryExecutionTime[numEpisodes] = queryExecutionTime
-                else:
-                    episodeQueryExecutionTime[numEpisodes] += queryExecutionTime
-                print "Executed and obtained intent for "+sessName+", Query "+str(i)
+    # Simulate or borrow query execution and intent creation to record their times #
+    intentCreationTimeDictName = configDict['OUTPUT_DIR'] + "/IntentCreationTimeDict_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED']+".pickle"
+    queryExecutionTimeDictName = configDict['OUTPUT_DIR'] + "/QueryExecutionTimeDict_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED']+".pickle"
+    if os.path.exists(intentCreationTimeDictName) and os.path.exists(queryExecutionTimeDictName):
+        episodeQueryExecutionTime = readFromPickleFile(queryExecutionTimeDictName)
+        episodeIntentCreationTime = readFromPickleFile(intentCreationTimeDictName)
+    else:
+        (episodeQueryExecutionTime, episodeIntentCreationTime) = createQueryExecIntentCreationTimes(configDict)
+        writeToPickleFile(queryExecutionTimeDictName, episodeQueryExecutionTime)
+        writeToPickleFile(intentCreationTimeDictName, episodeIntentCreationTime)
+
+    episodeResponseTime = readFromPickleFile(episodeResponseTimeDictName)
+
+    print "len(episodeQueryExecutionTime) = "+str(len(episodeQueryExecutionTime))+", len(episodeIntentCreationTime) = "+str(len(episodeIntentCreationTime))+", len(episodeResponseTime) = "+str(len(episodeResponseTime))
 
     assert len(episodeQueryExecutionTime) == len(episodeResponseTime) and len(episodeIntentCreationTime) == len(episodeResponseTime)
     for episodes in range(1,len(episodeResponseTime)):
@@ -82,6 +108,12 @@ def evaluatePredictions(outputIntentFileName, episodeResponseTime, configDict):
         ti.appendToFile(outputEvalTimeFileName, outputEvalTimeStr)
     print "--Completed Evaluation--"
     return
+
+if __name__ == "__main__":
+    configDict = parseConfig.parseConfigFile("configFile.txt")
+    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']
+    episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
+    evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
 
 '''
 class TimeStep(object):
