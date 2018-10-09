@@ -47,8 +47,38 @@ def evaluatePredictions(outputIntentFileName, episodeResponseTime, configDict):
         os.remove(outputEvalTimeFileName)
     except OSError:
         pass
+    # Simulate query execution and intent creation to record their times #
+    numQueries = 0
+    episodeQueryExecutionTime = {}
+    episodeIntentCreationTime = {}
+    numEpisodes =1
+    with open(configDict['QUERYSESSIONS']) as f:
+        for line in f:
+            numQueries+=1
+            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+                numEpisodes += 1
+            sessQueries = line.split(";")
+            sessName = sessQueries[0]
+            for i in range(1, len(sessQueries) - 1):  # we need to ignore the empty query coming from the end of line semicolon ;
+                sessQuery = sessQueries[i].split("~")[0]
+                sessQuery = ' '.join(sessQuery.split())
+                # sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
+                queryVocabulary = {}
+                (queryVocabulary, resObj, queryExecutionTime, intentCreationTime) = QExec.executeQueryWithIntent(sessQuery, configDict, queryVocabulary)
+                if numEpisodes not in episodeIntentCreationTime:
+                    episodeIntentCreationTime[numEpisodes] = intentCreationTime
+                else:
+                    episodeIntentCreationTime[numEpisodes] += intentCreationTime
+                if numEpisodes not in episodeQueryExecutionTime:
+                    episodeQueryExecutionTime[numEpisodes] = queryExecutionTime
+                else:
+                    episodeQueryExecutionTime[numEpisodes] += queryExecutionTime
+                print "Executed and obtained intent for "+sessName+", Query "+str(i)
+
+    assert len(episodeQueryExecutionTime) == len(episodeResponseTime) and len(episodeIntentCreationTime) == len(episodeResponseTime)
     for episodes in range(1,len(episodeResponseTime)):
-        outputEvalTimeStr = "#Episodes:"+str(episodes)+";ResponseTime(secs):"+str(episodeResponseTime[episodes])
+        totalResponseTime = float(episodeIntentCreationTime[episodes]) + float(episodeQueryExecutionTime[episodes]) + float(episodeResponseTime[episodes])
+        outputEvalTimeStr = "#Episodes:"+str(episodes)+";QueryExecutionTime(secs):"+str(episodeQueryExecutionTime[episodes])+";IntentCreationTime(secs):"+str(episodeIntentCreationTime[episodes])+";IntentPredictionTime(secs):"+str(episodeResponseTime[episodes])+";TotalResponseTime(secs):"+str(totalResponseTime)
         ti.appendToFile(outputEvalTimeFileName, outputEvalTimeStr)
     print "--Completed Evaluation--"
     return

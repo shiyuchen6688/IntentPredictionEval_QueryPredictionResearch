@@ -53,16 +53,20 @@ def executeQuery(sessQuery, configDict):
         print "cannot execute the query on Postgres"
         exit(0)
 
-def executeQueryWithIntent(sessQuery, configDict):
+def executeQueryWithIntent(sessQuery, configDict, queryVocabulary):
+    startTime = time.time()
     cur = executeQuery(sessQuery, configDict)
+    queryExecutionTime = float(time.time()-startTime)
+    startTime = time.time()
     if configDict['INTENT_REP']=='TUPLE':
         rowIDs = getRowIDs(cur)
-        resObj = tupleIntent.createTupleIntentRep(rowIDs, sessQuery, configDict)
+        (newQuery,resObj) = tupleIntent.createTupleIntentRep(rowIDs, sessQuery, configDict)
     elif configDict['INTENT_REP']=='FRAGMENT':
         resObj = fragmentIntent.createFragmentIntentRep(sessQuery, configDict)
     elif configDict['INTENT_REP'] == 'QUERY':
-        resObj = queryIntent.createQueryIntentRep(sessQuery, configDict)
-    return resObj
+        (queryVocabulary,resObj) = queryIntent.createQueryIntentRep(sessQuery, configDict, queryVocabulary)
+    intentCreationTime = float(time.time() - startTime)
+    return (queryVocabulary, resObj, queryExecutionTime, intentCreationTime)
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")

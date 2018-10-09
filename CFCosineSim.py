@@ -211,12 +211,13 @@ def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, c
     if len(minheap) > 0:
         (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
     else:
-        return None
+        return (None, None)
 
     del minheap
     minheap = []
     del cosineSimDict
     cosineSimDict = {}
+    topKSessQueryIndices = None
     for topKSessIndex in topKSessIndices:
         for queryIndex in range(len(sessionDict[topKSessIndex])):
             (minheap, cosineSimDict) = insertIntoMinHeap(minheap, sessionDict[topKSessIndex], queryIndex, configDict, cosineSimDict, predSessSummary, str(topKSessIndex)+","+str(queryIndex))
@@ -229,7 +230,7 @@ def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, c
         topKQueryIndex = int(topKSessQueryIndex.split(",")[1])
         topKIntent = sessionDict[topKSessIndex][topKQueryIndex]
         topKPredictedIntents.append(topKIntent)
-    return topKPredictedIntents
+    return (topKSessQueryIndices,topKPredictedIntents)
 
 def retrieveSessIDQueryIDIntent(line, configDict):
     tokens = line.strip().split(";")
@@ -250,7 +251,7 @@ def refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, 
         (predSessSummary, sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
     return (predSessSummary, sessionDict, sessionSummaries)
 
-def appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName):
+def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName):
     startAppendTime = time.time()
     output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";CurQueryIntent:"
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
@@ -259,8 +260,9 @@ def appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQuery
         if ";" in curQueryIntent:
             curQueryIntent.replace(";",",")
         output_str += curQueryIntent
+    assert len(topKSessQueryIndices) == len(topKPredictedIntents)
     for k in range(len(topKPredictedIntents)):
-        output_str += ";TOP_" +str(k)+"_PREDICTED_INTENT:"
+        output_str += ";TOP_" +str(k)+"_PREDICTED_INTENT_"+str(topKSessQueryIndices[k])+":"
         if configDict['BIT_OR_WEIGHTED'] == 'BIT':
             output_str += topKPredictedIntents[k].tostring()
         elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
@@ -291,6 +293,7 @@ def runCFCosineSim(intentSessionFile, configDict):
     numQueries = 0
     with open(intentSessionFile) as f:
         topKPredictedIntents = None
+        topKSessQueryIndices = None
         for line in f:
             (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
             if sessID > 0:
@@ -298,7 +301,7 @@ def runCFCosineSim(intentSessionFile, configDict):
             # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
             elapsedAppendTime = 0.0
             if topKPredictedIntents is not None:
-                elapsedAppendTime = appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes,
+                elapsedAppendTime = appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes,
                                              configDict, outputIntentFileName)
             numQueries += 1
             queryLinesSetAside.append(line)
@@ -309,9 +312,10 @@ def runCFCosineSim(intentSessionFile, configDict):
                 queryLinesSetAside = []
 
             if len(sessionSummaries)>0 and sessID in sessionSummaries:
-                topKPredictedIntents = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
+                (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
             else:
                 topKPredictedIntents = None
+                topKSessQueryIndices = None
             if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
                 (episodeResponseTime, startEpisode) = updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
     return (outputIntentFileName, episodeResponseTime)
