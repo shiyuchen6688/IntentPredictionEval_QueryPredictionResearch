@@ -191,14 +191,6 @@ def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, c
         topKPredictedIntents.append(topKIntent)
     return topKPredictedIntents
 
-def checkEpisodeCompletion(startEpisode, configDict):
-    timeElapsed = time.time() - startEpisode
-    if timeElapsed > float(configDict['EPISODE_IN_SECONDS']):
-        startEpisode = time.time()
-        return (True, startEpisode)
-    else:
-        return (False, startEpisode)
-
 def retrieveSessIDQueryIDIntent(line, configDict):
     tokens = line.strip().split(";")
     sessQueryName = tokens[0]
@@ -218,8 +210,9 @@ def refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, 
         (predSessSummary, sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
     return (predSessSummary, sessionDict, sessionSummaries)
 
-def appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName):
-    output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";CurQueryIntent:"
+def appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpochs, configDict, outputIntentFileName):
+    startAppendTime = time.time()
+    output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Epochs:"+str(numEpochs)+";CurQueryIntent:"
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
         output_str += curQueryIntent.tostring()
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
@@ -234,35 +227,49 @@ def appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQuery
             output_str += curQueryIntent.replace(";",",")
     ti.appendToFile(outputIntentFileName, output_str)
     print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
+    elapsedAppendTime = float(time.time()-startAppendTime)
+    return elapsedAppendTime
+
+def updateResponseTime(epochResponseTime, numEpochs, startEpoch, elapsedAppendTime):
+    epochResponseTime[numEpochs] = float(time.time()-startEpoch) - elapsedAppendTime # we exclude the time consumed by appending predicted intents to the output intent file
+    startEpoch = time.time()
+    return (epochResponseTime, startEpoch)
 
 def runCFCosineSim(intentSessionFile, configDict):
     sessionSummaries = {} # key is sessionID and value is summary
     sessionDict = {} # key is session ID and value is a list of query intent vectors; no need to store the query itself
-    numEpisodes = 0
+    numEpochs = 0
     queryLinesSetAside = []
-    startEpisode = time.time()
+    epochResponseTime = {}
+    startEpoch = time.time()
     predSessSummary = None
-    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_K_"+configDict['TOP_K']+"_EPISODE_SECS_"+configDict['EPISODE_IN_SECONDS']
+    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPOCH_IN_QUERIES_"+configDict['EPISODE_IN_SECONDS']
     try:
         os.remove(outputIntentFileName)
     except OSError:
         pass
+    numQueries = 0
     with open(intentSessionFile) as f:
         topKPredictedIntents = None
         for line in f:
-            (episodeDone, startEpisode) = checkEpisodeCompletion(startEpisode, configDict)
+            (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
+            # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
+            elapsedAppendTime = 0.0
+            if topKPredictedIntents is not None:
+                elapsedAppendTime = appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpochs,
+                                             configDict, outputIntentFileName)
+            numQueries += 1
             queryLinesSetAside.append(line)
-            if episodeDone:
-                numEpisodes += 1
+            if numQueries % int(configDict['EPOCH_IN_QUERIES']) == 0:
+                numEpochs += 1
                 (predSessSummary,sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, sessionDict, sessionSummaries)
                 del queryLinesSetAside
                 queryLinesSetAside = []
-            (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
-            # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
-            if topKPredictedIntents is not None:
-                appendPredictedIntentsToFile(topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName)
+
             if len(sessionSummaries)>0 and sessID in sessionSummaries:
                 topKPredictedIntents = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
             else:
                 topKPredictedIntents = None
-    return outputIntentFileName
+            if numQueries % int(configDict['EPOCH_IN_QUERIES']) == 0:
+                (epochResponseTime, startEpoch) = updateResponseTime(epochResponseTime, numEpochs, startEpoch, elapsedAppendTime)
+    return (outputIntentFileName, epochResponseTime)

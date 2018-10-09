@@ -18,14 +18,14 @@ def runCosineSimOrMF(configDict):
         print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
         sys.exit(0)
     if configDict['CF_COSINESIM_MF']=='COSINESIM':
-        outputIntentFileName = CFCosineSim.runCFCosineSim(intentSessionFile, configDict)
+        (outputIntentFileName, epochResponseTime) = CFCosineSim.runCFCosineSim(intentSessionFile, configDict)
     elif configDict['CF_COSINESIM_MF']=='MF':
-        outputIntentFileName = CFMF.runCF(intentSessionFile, configDict)
+        (outputIntentFileName, epochResponseTime) = CFMF.runCF(intentSessionFile, configDict)
     else:
         print "CF can either be COSINESIM or MF !!"
         sys.exit(0)
-    QR.evaluatePredictions(outputIntentFileName, configDict)
-    return outputIntentFileName
+    QR.evaluatePredictions(outputIntentFileName, epochResponseTime, configDict)
+    return
 
 def runIntentPrediction(configDict):
     runCosineSimOrMF(configDict)
