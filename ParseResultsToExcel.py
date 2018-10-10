@@ -10,20 +10,38 @@ def parseQualityFile(fileName, outputExcel):
     recall = []
     FMeasure = []
     accuracy = []
+    precisionPerEpisode = 0.0
+    recallPerEpisode = 0.0
+    FMeasurePerEpisode = 0.0
+    accuracyPerEpisode = 0.0
+    numEpisodes = 0
+    numQueries = 0
     with open(fileName) as f:
         for line in f:
+            numQueries += 1
             tokens = line.split(";")
-            episodes.append(int(tokens[2].split(":")[1]))
-            p = float(tokens[3].split(":")[1])
-            r = float(tokens[4].split(":")[1])
-            if p == 0 or r == 0:
-                f = 0
+            precisionPerEpisode += float(tokens[3].split(":")[1])
+            recallPerEpisode += float(tokens[4].split(":")[1])
+            if precisionPerEpisode == 0 or recallPerEpisode == 0:
+                FMeasurePerEpisode = 0
             else:
-                f = 2 * p * r / (p+r)
-            precision.append(p)
-            recall.append(r)
-            FMeasure.append(f)
-            accuracy.append(float(tokens[5].split(":")[1]))
+                FMeasurePerEpisode = 2 * precisionPerEpisode * recallPerEpisode / (precisionPerEpisode+recallPerEpisode)
+            accuracyPerEpisode += float(tokens[5].split(":")[1])
+            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+                numEpisodes += 1
+                precisionPerEpisode /= int(configDict['EPISODE_IN_QUERIES'])
+                recallPerEpisode /= int(configDict['EPISODE_IN_QUERIES'])
+                FMeasurePerEpisode /= int(configDict['EPISODE_IN_QUERIES'])
+                accuracyPerEpisode /= int(configDict['EPISODE_IN_QUERIES'])
+                episodes.append(numEpisodes)
+                precision.append(precisionPerEpisode)
+                recall.append(recallPerEpisode)
+                FMeasure.append(FMeasurePerEpisode)
+                accuracy.append(accuracyPerEpisode)
+                precisionPerEpisode = 0.0
+                recallPerEpisode = 0.0
+                FMeasurePerEpisode = 0.0
+                accuracyPerEpisode = 0.0
     print "Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy))
     df = DataFrame(
         {'episodes':episodes, 'precision': precision,

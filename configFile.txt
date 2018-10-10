@@ -1,6 +1,6 @@
 ALGORITHM=CF
 CF_COSINESIM_MF=COSINESIM
-INTENT_REP=FRAGMENT
+INTENT_REP=QUERY
 DATASET=NYCTaxiTrips
 QUERYSESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCCleanedSessions
 TUPLEINTENTSESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCTupleIntentSessions
@@ -17,6 +17,6 @@ SAMPLETABLE=nyc_yellow_tripdata_2016_06_sample_1_percent
 SAMPLETABLESIZE=109673
 EXEC_SAMPLE=True
 TOP_K=3
-EPISODE_IN_QUERIES=1
+EPISODE_IN_QUERIES=5
 OUTPUT_DIR=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/
 ACCURACY_THRESHOLD=0.85
