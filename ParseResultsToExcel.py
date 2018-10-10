@@ -72,12 +72,15 @@ def parseTimeFile(fileName, outputExcel):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
-    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
-    outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD']+".xlsx")
-    outputExcelEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD']+".xlsx")
-    parseQualityFile(outputEvalQualityFileName, outputExcelQuality)
-    parseTimeFile(outputEvalTimeFileName, outputExcelEval)
+    accThresList = [0.01, 0.25, 0.5, 0.75, 0.95]
+    for accThres in accThresList:
+        outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)
+        outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
+        parseQualityFile(outputEvalQualityFileName, outputExcelQuality)
+
+    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
+    parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
 
     '''
     trainSize, testSize, posTrain, posTest, precision, recall, accuracy, FMeasure = read(readFile)

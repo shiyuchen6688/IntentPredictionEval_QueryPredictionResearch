@@ -47,8 +47,10 @@ def writeToPickleFile(fileName, writeObj):
     with open(fileName, 'wb') as handle:
         pickle.dump(writeObj, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-def evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict):
-    outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
+def evaluateQualityPredictions(outputIntentFileName, configDict, accThres):
+    outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict[
+        'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                                configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
     try:
         os.remove(outputEvalQualityFileName)
     except OSError:
@@ -61,34 +63,46 @@ def evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, confi
             numEpisodes = tokens[2].split(":")[1]
             precision = 0.0
             recall = 0.0
-            maxCosineSim =0.0
+            maxCosineSim = 0.0
             if configDict['BIT_OR_WEIGHTED'] == 'BIT':
                 curQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 curQueryIntent = tokens[3].split(":")[1]
-            for i in range(4,len(tokens)):
+            for i in range(4, len(tokens)):
                 if configDict['BIT_OR_WEIGHTED'] == 'BIT':
                     topKQueryIntent = BitMap.fromstring(tokens[i].split(":")[1])
                     cosineSim = CFCosineSim.computeBitCosineSimilarity(curQueryIntent, topKQueryIntent)
                 elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                     topKQueryIntent = tokens[i].split(":")[1]
-                    cosineSim = CFCosineSim.computeWeightedCosineSimilarity(curQueryIntent, topKQueryIntent, ",", configDict)
-                if cosineSim >= float(configDict['ACCURACY_THRESHOLD']):
+                    cosineSim = CFCosineSim.computeWeightedCosineSimilarity(curQueryIntent, topKQueryIntent, ",",
+                                                                            configDict)
+                if cosineSim >= float(accThres):
                     recall = 1.0
                     precision += 1.0
                 if cosineSim > maxCosineSim:
                     maxCosineSim = cosineSim
-            precision /= float(len(tokens)-4+1)
-            outputEvalQualityStr = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";Precision:"+str(precision)+";Recall:"+str(recall)+";Accuracy:"+str(maxCosineSim)
+            # print "float(len(tokens)-4 ="+str(len(tokens)-4)+", precision = "+str(precision/float(len(tokens)-4))
+            precision /= float(len(tokens) - 4)
+            outputEvalQualityStr = "Session:" + str(sessID) + ";Query:" + str(queryID) + ";#Episodes:" + str(
+                numEpisodes) + ";Precision:" + str(precision) + ";Recall:" + str(recall) + ";Accuracy:" + str(
+                maxCosineSim)
             ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
-    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(configDict['ACCURACY_THRESHOLD'])
+
+def evaluateTimePredictions(episodeResponseTimeDictName, configDict):
+    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict[
+        'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES']
     try:
         os.remove(outputEvalTimeFileName)
     except OSError:
         pass
     # Simulate or borrow query execution and intent creation to record their times #
-    intentCreationTimeDictName = configDict['OUTPUT_DIR'] + "/IntentCreationTimeDict_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED']+ "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".pickle"
-    queryExecutionTimeDictName = configDict['OUTPUT_DIR'] + "/QueryExecutionTimeDict_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED']+ "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".pickle"
+    intentCreationTimeDictName = configDict['OUTPUT_DIR'] + "/IntentCreationTimeDict_" + configDict[
+        'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                     'EPISODE_IN_QUERIES'] + ".pickle"
+    queryExecutionTimeDictName = configDict['OUTPUT_DIR'] + "/QueryExecutionTimeDict_" + configDict[
+        'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                     'EPISODE_IN_QUERIES'] + ".pickle"
     if os.path.exists(intentCreationTimeDictName) and os.path.exists(queryExecutionTimeDictName):
         episodeQueryExecutionTime = readFromPickleFile(queryExecutionTimeDictName)
         episodeIntentCreationTime = readFromPickleFile(intentCreationTimeDictName)
@@ -99,21 +113,36 @@ def evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, confi
 
     episodeResponseTime = readFromPickleFile(episodeResponseTimeDictName)
 
-    print "len(episodeQueryExecutionTime) = "+str(len(episodeQueryExecutionTime))+", len(episodeIntentCreationTime) = "+str(len(episodeIntentCreationTime))+", len(episodeResponseTime) = "+str(len(episodeResponseTime))
+    print "len(episodeQueryExecutionTime) = " + str(
+        len(episodeQueryExecutionTime)) + ", len(episodeIntentCreationTime) = " + str(
+        len(episodeIntentCreationTime)) + ", len(episodeResponseTime) = " + str(len(episodeResponseTime))
 
-    assert len(episodeQueryExecutionTime) == len(episodeResponseTime) and len(episodeIntentCreationTime) == len(episodeResponseTime)
-    for episodes in range(1,len(episodeResponseTime)):
-        totalResponseTime = float(episodeIntentCreationTime[episodes]) + float(episodeQueryExecutionTime[episodes]) + float(episodeResponseTime[episodes])
-        outputEvalTimeStr = "#Episodes:"+str(episodes)+";QueryExecutionTime(secs):"+str(episodeQueryExecutionTime[episodes])+";IntentCreationTime(secs):"+str(episodeIntentCreationTime[episodes])+";IntentPredictionTime(secs):"+str(episodeResponseTime[episodes])+";TotalResponseTime(secs):"+str(totalResponseTime)
+    assert len(episodeQueryExecutionTime) == len(episodeResponseTime) and len(episodeIntentCreationTime) == len(
+        episodeResponseTime)
+    for episodes in range(1, len(episodeResponseTime)):
+        totalResponseTime = float(episodeIntentCreationTime[episodes]) + float(
+            episodeQueryExecutionTime[episodes]) + float(episodeResponseTime[episodes])
+        outputEvalTimeStr = "#Episodes:" + str(episodes) + ";QueryExecutionTime(secs):" + str(
+            episodeQueryExecutionTime[episodes]) + ";IntentCreationTime(secs):" + str(
+            episodeIntentCreationTime[episodes]) + ";IntentPredictionTime(secs):" + str(
+            episodeResponseTime[episodes]) + ";TotalResponseTime(secs):" + str(totalResponseTime)
         ti.appendToFile(outputEvalTimeFileName, outputEvalTimeStr)
-    print "--Completed Evaluation--"
+
+def evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict):
+    evaluateQualityPredictions(outputIntentFileName, configDict, configDict['ACCURACY_THRESHOLD'])
+    evaluateTimePredictions(episodeResponseTimeDictName, configDict)
+    print "--Completed Quality and Time Evaluation--"
     return
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
     outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
-    evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
+    #evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
+    accThresList = [0.01, 0.25, 0.5, 0.75, 0.95]
+    for accThres in accThresList:
+        evaluateQualityPredictions(outputIntentFileName, configDict, accThres)
+        print "--Completed Quality Evaluation for accThres:"+str(accThres)
 
 '''
 class TimeStep(object):
