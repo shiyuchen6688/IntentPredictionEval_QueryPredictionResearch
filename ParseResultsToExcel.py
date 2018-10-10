@@ -13,9 +13,9 @@ def parseQualityFile(fileName, outputExcel):
     with open(fileName) as f:
         for line in f:
             tokens = line.split(";")
-            episodes.append(int(tokens[2].split(":")[2]))
-            p = float(tokens[3].split(":")[2])
-            r = float(tokens[4].split(":")[2])
+            episodes.append(int(tokens[2].split(":")[1]))
+            p = float(tokens[3].split(":")[1])
+            r = float(tokens[4].split(":")[1])
             if p == 0 or r == 0:
                 f = 0
             else:
@@ -23,7 +23,7 @@ def parseQualityFile(fileName, outputExcel):
             precision.append(p)
             recall.append(r)
             FMeasure.append(f)
-            accuracy.append(float(tokens[5].split(":")[2]))
+            accuracy.append(float(tokens[5].split(":")[1]))
     print "Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy))
     df = DataFrame(
         {'episodes':episodes, 'precision': precision,
@@ -39,11 +39,11 @@ def parseTimeFile(fileName, outputExcel):
     with open(fileName) as f:
         for line in f:
             tokens = line.split(";")
-            episodes.append(int(tokens[0].split(":")[2]))
-            queryExec.append(float(tokens[1].split(":")[2]))
-            intentCreate.append(float(tokens[2].split(":")[2]))
-            intentPredict.append(float(tokens[3].split(":")[2]))
-            responseTime.append(float(tokens[4].split(":")[2]))
+            episodes.append(int(tokens[0].split(":")[1]))
+            queryExec.append(float(tokens[1].split(":")[1]))
+            intentCreate.append(float(tokens[2].split(":")[1]))
+            intentPredict.append(float(tokens[3].split(":")[1]))
+            responseTime.append(float(tokens[4].split(":")[1]))
     print "Lengths of episodes: " + str(len(episodes)) + ", len(queryExec): " + str(
         len(queryExec)) + ", len(intentCreate): " + str(len(intentCreate)) + ", len(intentPredict): " + str(
         len(intentPredict)) + ", len(responseTime): " + str(len(responseTime))
