@@ -87,8 +87,8 @@ def evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, confi
     except OSError:
         pass
     # Simulate or borrow query execution and intent creation to record their times #
-    intentCreationTimeDictName = configDict['OUTPUT_DIR'] + "/IntentCreationTimeDict_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED']+".pickle"
-    queryExecutionTimeDictName = configDict['OUTPUT_DIR'] + "/QueryExecutionTimeDict_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED']+".pickle"
+    intentCreationTimeDictName = configDict['OUTPUT_DIR'] + "/IntentCreationTimeDict_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED']+ "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".pickle"
+    queryExecutionTimeDictName = configDict['OUTPUT_DIR'] + "/QueryExecutionTimeDict_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED']+ "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".pickle"
     if os.path.exists(intentCreationTimeDictName) and os.path.exists(queryExecutionTimeDictName):
         episodeQueryExecutionTime = readFromPickleFile(queryExecutionTimeDictName)
         episodeIntentCreationTime = readFromPickleFile(intentCreationTimeDictName)
