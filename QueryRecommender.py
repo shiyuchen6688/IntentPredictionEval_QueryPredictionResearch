@@ -13,7 +13,9 @@ def createQueryExecIntentCreationTimes(configDict):
     numQueries = 0
     episodeQueryExecutionTime = {}
     episodeIntentCreationTime = {}
-    numEpisodes = 1
+    numEpisodes = 0
+    tempExecTimeEpisode = 0.0
+    tempIntentTimeEpisode = 0.0
     with open(configDict['QUERYSESSIONS']) as f:
         for line in f:
             sessQueries = line.split(";")
@@ -24,18 +26,16 @@ def createQueryExecIntentCreationTimes(configDict):
                 # sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
                 queryVocabulary = {}
                 (queryVocabulary, resObj, queryExecutionTime, intentCreationTime) = QExec.executeQueryWithIntent(sessQuery, configDict, queryVocabulary)
-                if numEpisodes not in episodeIntentCreationTime:
-                    episodeIntentCreationTime[numEpisodes] = intentCreationTime
-                else:
-                    episodeIntentCreationTime[numEpisodes] += intentCreationTime
-                if numEpisodes not in episodeQueryExecutionTime:
-                    episodeQueryExecutionTime[numEpisodes] = queryExecutionTime
-                else:
-                    episodeQueryExecutionTime[numEpisodes] += queryExecutionTime
+                tempExecTimeEpisode += float(queryExecutionTime)
+                tempIntentTimeEpisode += float(intentCreationTime)
                 print "Executed and obtained intent for "+sessName+", Query "+str(i)
                 numQueries += 1
                 if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
                     numEpisodes += 1
+                    episodeQueryExecutionTime[numEpisodes] = tempExecTimeEpisode
+                    episodeIntentCreationTime[numEpisodes] = tempIntentTimeEpisode
+                    tempExecTimeEpisode = 0.0
+                    tempIntentTimeEpisode = 0.0
     return (episodeQueryExecutionTime, episodeIntentCreationTime)
 
 def readFromPickleFile(fileName):

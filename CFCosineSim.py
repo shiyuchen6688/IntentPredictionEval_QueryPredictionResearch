@@ -306,18 +306,17 @@ def runCFCosineSim(intentSessionFile, configDict):
                                              configDict, outputIntentFileName)
             numQueries += 1
             queryLinesSetAside.append(line)
+            # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
             if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
                 numEpisodes += 1
                 (predSessSummary,sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, sessionDict, sessionSummaries)
                 del queryLinesSetAside
                 queryLinesSetAside = []
-
-            if len(sessionSummaries)>0 and sessID in sessionSummaries:
-                (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
-            else:
-                topKPredictedIntents = None
-                topKSessQueryIndices = None
-            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+                if len(sessionSummaries)>0 and sessID in sessionSummaries:
+                    (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
+                else:
+                    topKPredictedIntents = None
+                    topKSessQueryIndices = None
                 (episodeResponseTime, startEpisode) = updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
