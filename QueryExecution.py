@@ -59,8 +59,8 @@ def executeQueryWithIntent(sessQuery, configDict, queryVocabulary):
     queryExecutionTime = float(time.time()-startTime)
     startTime = time.time()
     if configDict['INTENT_REP']=='TUPLE':
-        rowIDs = getRowIDs(cur)
-        (newQuery,resObj) = tupleIntent.createTupleIntentRep(rowIDs, sessQuery, configDict)
+        #rowIDs = getRowIDs(cur)
+        (newQuery,resObj) = tupleIntent.createTupleIntentRep(None, sessQuery, configDict)
     elif configDict['INTENT_REP']=='FRAGMENT':
         resObj = fragmentIntent.createFragmentIntentRep(sessQuery, configDict)
     elif configDict['INTENT_REP'] == 'QUERY':
