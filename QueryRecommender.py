@@ -143,6 +143,7 @@ if __name__ == "__main__":
     for accThres in accThresList:
         evaluateQualityPredictions(outputIntentFileName, configDict, accThres)
         print "--Completed Quality Evaluation for accThres:"+str(accThres)
+    evaluateTimePredictions(episodeResponseTimeDictName, configDict)
 
 '''
 class TimeStep(object):

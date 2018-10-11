@@ -24,7 +24,14 @@ def runCosineSimOrMF(configDict):
     else:
         print "CF can either be COSINESIM or MF !!"
         sys.exit(0)
-    QR.evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
+    #QR.evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
+    accThresList = [0.01, 0.25, 0.5, 0.75, 0.95]
+    for accThres in accThresList:
+        QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres)
+        print "--Completed Quality Evaluation for accThres:" + str(accThres)+"---"
+    QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict)
+    print "--Completed Time Evaluation---"
+
     return
 
 def runIntentPrediction(configDict):
