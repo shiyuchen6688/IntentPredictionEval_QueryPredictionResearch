@@ -18,6 +18,6 @@ SAMPLETABLE=nyc_yellow_tripdata_2016_06_sample_1_percent
 SAMPLETABLESIZE=109673
 EXEC_SAMPLE=True
 TOP_K=3
-EPISODE_IN_QUERIES=5
+EPISODE_IN_QUERIES=1
 OUTPUT_DIR=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/outputDir/
 ACCURACY_THRESHOLD=0.85

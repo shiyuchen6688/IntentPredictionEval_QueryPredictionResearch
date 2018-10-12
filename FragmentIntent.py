@@ -189,7 +189,7 @@ if __name__ == "__main__":
         for line in f:
             tokens = line.split(";")
             sessQueryName = tokens[0]
-            sessQuery = tokens[1]
+            sessQuery = tokens[1].strip()
             resObj = createFragmentIntentRep(sessQuery,
                                              configDict)  # rowIDs passed should be None, else it won't fill up
             outputIntentLine = sessQueryName + "; OrigQuery: " + sessQuery + ";" + str(resObj)

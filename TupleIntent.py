@@ -36,7 +36,7 @@ if __name__ == "__main__":
         for line in f:
             sessQueries = line.split(";")
             sessQueryName = sessQueries[0]
-            sessQuery = sessQueries[1]
+            sessQuery = sessQueries[1].strip()
             (newQuery, resObj) = createTupleIntentRep(None, sessQuery,
                                                       configDict)  # rowIDs passed should be None, else it won't fill up
             if newQuery is None:
