@@ -32,21 +32,19 @@ if __name__ == "__main__":
         os.remove(tupleIntentSessionsFile)
     except OSError:
         pass
-    with open(configDict['QUERYSESSIONS']) as f:
+    with open(configDict['CONCURRENT_QUERY_SESSIONS']) as f:
         for line in f:
             sessQueries = line.split(";")
-            sessName = sessQueries[0]
-            for i in range(1, len(sessQueries) - 1):  # we need to ignore the empty query coming from the end of line semicolon ;
-                sessQuery = sessQueries[i].split("~")[0]
-                # sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
-                sessQuery = ' '.join(sessQuery.split())
-                (newQuery,resObj) = createTupleIntentRep(None, sessQuery, configDict) #rowIDs passed should be None, else it won't fill up
-                queryName = sessName+", Query "+str(i)
-                if newQuery is None:
-                    outputIntentLine = queryName+"; OrigQuery: "+sessQuery+";"+str(resObj)
-                else:
-                    outputIntentLine = queryName+";"+newQuery+";"+str(resObj)
-                appendToFile(tupleIntentSessionsFile,outputIntentLine)
-                print "Executed "+queryName
+            sessQueryName = sessQueries[0]
+            sessQuery = sessQueries[1]
+            (newQuery, resObj) = createTupleIntentRep(None, sessQuery,
+                                                      configDict)  # rowIDs passed should be None, else it won't fill up
+            if newQuery is None:
+                outputIntentLine = sessQueryName + "; OrigQuery: " + sessQuery + ";" + str(resObj)
+            else:
+                outputIntentLine = sessQueryName + ";" + newQuery + ";" + str(resObj)
+            appendToFile(tupleIntentSessionsFile, outputIntentLine)
+            print "Executed " + sessQueryName
+
 
 
