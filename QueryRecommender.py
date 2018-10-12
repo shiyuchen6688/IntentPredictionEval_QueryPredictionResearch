@@ -139,7 +139,7 @@ if __name__ == "__main__":
     outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
     #evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
-    accThresList = [0.01, 0.25, 0.5, 0.75, 0.95]
+    accThresList = [0.75, 0.8, 0.85, 0.9, 0.95]
     for accThres in accThresList:
         evaluateQualityPredictions(outputIntentFileName, configDict, accThres)
         print "--Completed Quality Evaluation for accThres:"+str(accThres)
