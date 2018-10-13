@@ -6,6 +6,7 @@ import os
 import time
 import ParseConfigFile as parseConfig
 import CF
+import RNN
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
@@ -13,3 +14,5 @@ if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile(args.config)
     if configDict["ALGORITHM"]=="CF":
         CF.runIntentPrediction(configDict)
+    elif configDict["ALGORITHM"]=="RNN":
+        RNN.runIntentPrediction(configDict)

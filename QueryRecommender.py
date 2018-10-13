@@ -9,6 +9,56 @@ import TupleIntent as ti
 import ParseConfigFile as parseConfig
 import pickle
 
+def normalizeWeightedVector(curQueryIntent):
+    tokens = curQueryIntent.split(";")
+    total = 0.0
+    for token in tokens:
+        total = total+float(token)
+    normalizedVector = []
+    for token in tokens:
+        normalizedVector.append(float(token)/total)
+    res = ';'.join(normalizedVector)
+    return res
+
+def retrieveSessIDQueryIDIntent(line, configDict):
+    tokens = line.strip().split(";")
+    sessQueryName = tokens[0]
+    sessID = int(sessQueryName.split(", ")[0].split(" ")[1])
+    queryID = int(sessQueryName.split(", ")[1].split(" ")[1]) - 1  # coz queryID starts from 1 instead of 0
+    curQueryIntent = ';'.join(tokens[2:])
+    if ";" not in curQueryIntent and configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        curQueryIntent = BitMap.fromstring(curQueryIntent)
+    else:
+        curQueryIntent = normalizeWeightedVector(curQueryIntent)
+    return (sessID, queryID, curQueryIntent)
+
+
+def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName):
+    startAppendTime = time.time()
+    output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";CurQueryIntent:"
+    if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        output_str += curQueryIntent.tostring()
+    elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+        if ";" in curQueryIntent:
+            curQueryIntent.replace(";",",")
+        output_str += curQueryIntent
+    assert len(topKSessQueryIndices) == len(topKPredictedIntents)
+    for k in range(len(topKPredictedIntents)):
+        output_str += ";TOP_" +str(k)+"_PREDICTED_INTENT_"+str(topKSessQueryIndices[k])+":"
+        if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+            output_str += topKPredictedIntents[k].tostring()
+        elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+            output_str += topKPredictedIntents[k].replace(";",",")
+    ti.appendToFile(outputIntentFileName, output_str)
+    print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
+    elapsedAppendTime = float(time.time()-startAppendTime)
+    return elapsedAppendTime
+
+def updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime):
+    episodeResponseTime[numEpisodes] = float(time.time()-startEpisode) - elapsedAppendTime # we exclude the time consumed by appending predicted intents to the output intent file
+    startEpisode = time.time()
+    return (episodeResponseTime, startEpisode)
+
 def createQueryExecIntentCreationTimes(configDict):
     numQueries = 0
     episodeQueryExecutionTime = {}

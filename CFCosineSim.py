@@ -18,17 +18,6 @@ def OR(sessionSummary, curQueryIntent, configDict):
             sessionSummary.set(i)
     return sessionSummary
 
-def normalizeWeightedVector(curQueryIntent):
-    tokens = curQueryIntent.split(";")
-    total = 0.0
-    for token in tokens:
-        total = total+float(token)
-    normalizedVector = []
-    for token in tokens:
-        normalizedVector.append(float(token)/total)
-    res = ';'.join(normalizedVector)
-    return res
-
 def ADD(sessionSummary, curQueryIntent, configDict):
     queryTokens = curQueryIntent.split(";")
     sessTokens = sessionSummary.split(";")
@@ -37,7 +26,7 @@ def ADD(sessionSummary, curQueryIntent, configDict):
     idealSize = min(len(queryTokens), len(sessTokens))
     for i in range(idealSize):
         sessTokens[i] = float(sessTokens[i])+float(queryTokens[i])
-    sessionSummary = normalizeWeightedVector(';'.join(sessTokens))
+    sessionSummary = QR.normalizeWeightedVector(';'.join(sessTokens))
     return sessionSummary
 
 def computePredSessSummary(sessionSummaries, sessID, configDict):
@@ -233,50 +222,14 @@ def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, c
         topKPredictedIntents.append(topKIntent)
     return (topKSessQueryIndices,topKPredictedIntents)
 
-def retrieveSessIDQueryIDIntent(line, configDict):
-    tokens = line.strip().split(";")
-    sessQueryName = tokens[0]
-    sessID = int(sessQueryName.split(", ")[0].split(" ")[1])
-    queryID = int(sessQueryName.split(", ")[1].split(" ")[1]) - 1  # coz queryID starts from 1 instead of 0
-    curQueryIntent = ';'.join(tokens[2:])
-    if ";" not in curQueryIntent and configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        curQueryIntent = BitMap.fromstring(curQueryIntent)
-    else:
-        curQueryIntent = normalizeWeightedVector(curQueryIntent)
-    return (sessID, queryID, curQueryIntent)
 
 def refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, sessionDict, sessionSummaries):
     predSessSummary = None
     for line in queryLinesSetAside:
-        (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
+        (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
         (predSessSummary, sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
     return (predSessSummary, sessionDict, sessionSummaries)
 
-def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName):
-    startAppendTime = time.time()
-    output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";CurQueryIntent:"
-    if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        output_str += curQueryIntent.tostring()
-    elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        if ";" in curQueryIntent:
-            curQueryIntent.replace(";",",")
-        output_str += curQueryIntent
-    assert len(topKSessQueryIndices) == len(topKPredictedIntents)
-    for k in range(len(topKPredictedIntents)):
-        output_str += ";TOP_" +str(k)+"_PREDICTED_INTENT_"+str(topKSessQueryIndices[k])+":"
-        if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-            output_str += topKPredictedIntents[k].tostring()
-        elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-            output_str += topKPredictedIntents[k].replace(";",",")
-    ti.appendToFile(outputIntentFileName, output_str)
-    print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
-    elapsedAppendTime = float(time.time()-startAppendTime)
-    return elapsedAppendTime
-
-def updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime):
-    episodeResponseTime[numEpisodes] = float(time.time()-startEpisode) - elapsedAppendTime # we exclude the time consumed by appending predicted intents to the output intent file
-    startEpisode = time.time()
-    return (episodeResponseTime, startEpisode)
 
 def runCFCosineSim(intentSessionFile, configDict):
     sessionSummaries = {} # key is sessionID and value is summary
@@ -296,13 +249,13 @@ def runCFCosineSim(intentSessionFile, configDict):
         topKPredictedIntents = None
         topKSessQueryIndices = None
         for line in f:
-            (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
+            (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
             if sessID > 0:
                 debug = True
             # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
             elapsedAppendTime = 0.0
             if topKPredictedIntents is not None:
-                elapsedAppendTime = appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes,
+                elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes,
                                              configDict, outputIntentFileName)
             numQueries += 1
             queryLinesSetAside.append(line)
@@ -317,7 +270,7 @@ def runCFCosineSim(intentSessionFile, configDict):
                 else:
                     topKPredictedIntents = None
                     topKSessQueryIndices = None
-                (episodeResponseTime, startEpisode) = updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+                (episodeResponseTime, startEpisode) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     return (outputIntentFileName, episodeResponseTimeDictName)
