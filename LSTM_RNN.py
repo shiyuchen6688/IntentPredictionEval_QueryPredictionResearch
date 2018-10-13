@@ -303,9 +303,7 @@ def executeRNN(intentSessionFile, configDict):
                 actual_vector = np.array(curIntentList)
                 actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
                 cos_sim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
-                elapsedAppendTime = QR.appendPredictedIntentsRNN(predictedY, cos_sim, sessID,
-                                                                    queryID, curQueryIntent, numEpisodes,
-                                                                    configDict, outputIntentFileName)
+                #elapsedAppendTime = QR.appendPredictedIntentsRNN(predictedY, cos_sim, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName)
             numQueries += 1
             queryLinesSetAside.append(line)
             # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
