@@ -1,6 +1,6 @@
 ALGORITHM=RNN
 CF_COSINESIM_MF=COSINESIM
-INTENT_REP=TUPLE
+INTENT_REP=FRAGMENT
 DATASET=NYCTaxiTrips
 QUERYSESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCCleanedSessions
 CONCURRENT_QUERY_SESSIONS=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/NYCConcurrentSessions
@@ -21,4 +21,4 @@ TOP_K=1
 EPISODE_IN_QUERIES=1
 OUTPUT_DIR=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/outputDir/
 ACCURACY_THRESHOLD=0.85
-RNN_BACKPROP_LSTM_GRU=BACKPROP
+RNN_BACKPROP_LSTM_GRU=GRU

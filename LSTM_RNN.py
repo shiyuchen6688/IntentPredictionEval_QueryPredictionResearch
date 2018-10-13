@@ -21,6 +21,7 @@ from keras import regularizers
 from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
 from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU
+
 '''
 # convert an array of values into a dataset matrix
 def create_dataset(dataset, look_back=1):
@@ -203,11 +204,11 @@ if __name__ == '__main__':
 '''
 
 def createCharListFromIntent(prevIntent, configDict):
-    intentStrList = None
+    intentStrList = []
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
         intentStr = prevIntent.tostring()
         for i in range(len(intentStr)):
-            intentStrList.add(intentStr[i])
+            intentStrList.append(intentStr[i])
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
         intentStrList = prevIntent.split(';')
     return intentStrList
@@ -221,7 +222,7 @@ def appendTrainingXY(sessIntentList, configDict, dataX, dataY):
         xList.append(intentStrList)
     yList = createCharListFromIntent(sessIntentList[numQueries-1], configDict)
     dataX.append(xList)
-    dataY.append(yList)
+    dataY.append([yList])
     return (dataX, dataY)
 
 def updateRNNIncrementalTrain(modelRNN, x_train, y_train):
@@ -255,22 +256,24 @@ def refineTemporalPredictor(queryLinesSetAside, configDict, sessionDict, modelRN
         else:
             sessionDict[sessID] = []
             sessionDict[sessID].append(curQueryIntent)
+        if int(queryID) == 0:
+            return (modelRNN, sessionDict)
         (dataX, dataY) = appendTrainingXY(sessionDict[sessID], configDict, dataX, dataY)
         n_features = len(dataX[0][0])
         if modelRNN is None:
             modelRNN = initializeRNN(n_features, configDict)
-        else:
-            modelRNN = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
+        modelRNN = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
     return (modelRNN, sessionDict)
 
-def predictTopKIntents(sessIntentList, modelRNN, configDict):
+def predictTopKIntents(modelRNN, sessIntentList, configDict):
     # top-K is 1
     numQueries = len(sessIntentList)
     testX = []
-    for i in range(numQueries - 1):
+    for i in range(numQueries):
         prevIntent = sessIntentList[i]
         intentStrList = createCharListFromIntent(prevIntent, configDict)
         testX.append(intentStrList)
+    testX = np.array(testX)
     predictedY = modelRNN.predict(testX.reshape(1, testX.shape[0], testX.shape[1]))
     predictedY = predictedY[0][predictedY.shape[1] - 1]
     return predictedY
@@ -298,11 +301,12 @@ def executeRNN(intentSessionFile, configDict):
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
             # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
             elapsedAppendTime = 0.0
-            if predictedY is not None:
+            if predictedY is not None and queryID > 0:
                 curIntentList = createCharListFromIntent(curQueryIntent, configDict)
-                actual_vector = np.array(curIntentList)
-                actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
+                actual_vector = np.array(curIntentList).astype(np.int)
+                #actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
                 cos_sim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
+                print "cosine similarity at sessID: "+str(sessID)+", queryID: "+str(queryID)+" is "+str(cos_sim)
                 #elapsedAppendTime = QR.appendPredictedIntentsRNN(predictedY, cos_sim, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName)
             numQueries += 1
             queryLinesSetAside.append(line)
@@ -322,7 +326,20 @@ def executeRNN(intentSessionFile, configDict):
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
-
+if __name__ == "__main__":
+    configDict = parseConfig.parseConfigFile("configFile.txt")
+    if configDict['INTENT_REP']=='TUPLE':
+        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
+    elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='BIT':
+        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
+        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP']=='QUERY':
+        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
+    else:
+        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
+        sys.exit(0)
+    executeRNN(intentSessionFile, configDict)
 
 
 
