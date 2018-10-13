@@ -12,7 +12,7 @@ import ConcurrentSessions
 import ParseResultsToExcel
 
 def OR(sessionSummary, curQueryIntent, configDict):
-    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
         assert sessionSummary.size() == curQueryIntent.size()
     idealSize = min(sessionSummary.size(), curQueryIntent.size())
     for i in range(idealSize):
@@ -23,7 +23,7 @@ def OR(sessionSummary, curQueryIntent, configDict):
 def ADD(sessionSummary, curQueryIntent, configDict):
     queryTokens = curQueryIntent.split(";")
     sessTokens = sessionSummary.split(";")
-    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
         assert len(queryTokens) == len(sessTokens)
     idealSize = min(len(queryTokens), len(sessTokens))
     for i in range(idealSize):
@@ -54,7 +54,7 @@ def computePredSessSummary(sessionSummaries, sessID, configDict):
             elif configDict['BIT_OR_WEIGHTED'] == 'BIT':
                 cosineSim = computeBitCosineSimilarity(curSessSummary, oldSessionSummary)
                 idealSize = min(len(predSessSummary), oldSessionSummary.size())
-            if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+            if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
                 if configDict['BIT_OR_WEIGHTED'] == 'BIT':
                     assert len(predSessSummary) == oldSessionSummary.size()
                 elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
@@ -98,7 +98,7 @@ def computeBitCosineSimilarity(curSessionSummary, oldSessionSummary):
     return cosineSim
 
 def computeListBitCosineSimilarity(predSessSummary, oldSessionSummary, configDict):
-    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
         assert(len(predSessSummary))==oldSessionSummary.size()
     idealSize = min(len(predSessSummary), oldSessionSummary.size())
     numerator = 0.0
@@ -122,7 +122,7 @@ def computeListBitCosineSimilarity(predSessSummary, oldSessionSummary, configDic
 def computeWeightedCosineSimilarity(curSessionSummary, oldSessionSummary, delimiter, configDict):
     curSessDims = curSessionSummary.split(delimiter)
     oldSessDims = oldSessionSummary.split(delimiter)
-    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
         assert len(curSessDims) == len(oldSessDims)
     idealSize = min(len(curSessDims), len(oldSessDims))
     numerator = 0.0
@@ -142,7 +142,7 @@ def computeWeightedCosineSimilarity(curSessionSummary, oldSessionSummary, delimi
 
 def computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary, delimiter, configDict):
     oldSessDims = oldSessionSummary.split(delimiter)
-    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT':
+    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
         assert len(predSessSummary) == len(oldSessDims)
     idealSize = min(len(predSessSummary), len(oldSessDims))
     numerator = 0.0
@@ -232,31 +232,17 @@ def refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, 
         (predSessSummary, sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
     return (predSessSummary, sessionDict, sessionSummaries)
 
-def findLatestIntentPredictedSoFar(sessID, queryID, topKPredictedIntentDict, topKSessQueryIndicesDict, sessionLengthDict):
-    curSessID = sessID
-    while curSessID >= 0:
-        if curSessID in topKPredictedIntentDict:
-            if curSessID == sessID:
-                curQueryID = queryID-1 # u shd start with the prev queryID to check if there was a prediction made at that query
-            else:
-                curQueryID = sessionLengthDict[sessID]-1 # last index in a session is count-1
-            while curQueryID >= 0:
-                if curQueryID in topKPredictedIntentDict:
-                    return (topKSessQueryIndicesDict[curSessID][curQueryID], topKPredictedIntentDict[curSessID][curQueryID])
-                curQueryID = curQueryID-1
-        curSessID = curSessID - 1
-    print "Could not find sessID, queryID !!"
-    sys.exit(0)
 
-def insertIntoTopKDict(sessID, queryID, topKIndices, topKIndicesDict):
-    if sessID in topKIndicesDict:
-        if queryID in topKIndicesDict:
-            print "raise error sessID queryID already exists !!"
-            sys.exit(0)
-    else:
-        topKIndicesDict[sessID] = {}
-    topKIndicesDict[sessID][queryID] = topKIndices
-    return topKIndicesDict
+
+def findNextQueryIntent(intentSessionFile, sessID, queryID):
+    with open(intentSessionFile) as f:
+        for line in f:
+            (curSessID, curQueryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
+            if curSessID == sessID and curQueryID == queryID:
+                f.close()
+                return curQueryIntent
+    print "Error: Could not find the nextQueryIntent !!"
+    sys.exit(0)
 
 
 def runCFCosineSim(intentSessionFile, configDict):
@@ -266,7 +252,6 @@ def runCFCosineSim(intentSessionFile, configDict):
     queryLinesSetAside = []
     episodeResponseTime = {}
     startEpisode = time.time()
-    predSessSummary = None
     outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
                            configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']
     sessionLengthDict = ConcurrentSessions.countQueries(configDict['QUERYSESSIONS'])
@@ -276,30 +261,26 @@ def runCFCosineSim(intentSessionFile, configDict):
         pass
     numQueries = 0
     with open(intentSessionFile) as f:
-        topKPredictedIntentDict = {}
-        topKSessQueryIndicesDict = {}
         for line in f:
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
             if sessID > 0:
                 debug = True
             # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
             elapsedAppendTime = 0.0
-            if topKPredictedIntentDict is not None and queryID > 0: # because u never consider the predictions for the first query in a session out of the last query in the prev session
-                (topKSessQueryIndices, topKPredictedIntents) = findLatestIntentPredictedSoFar(sessID, queryID, topKPredictedIntentDict, topKSessQueryIndicesDict, sessionLengthDict)
-                elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes,
-                                             configDict, outputIntentFileName)
-            numQueries += 1
             queryLinesSetAside.append(line)
+            numQueries += 1
             # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
             if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
                 numEpisodes += 1
                 (predSessSummary,sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, sessionDict, sessionSummaries)
                 del queryLinesSetAside
                 queryLinesSetAside = []
-                if len(sessionSummaries)>0 and sessID in sessionSummaries:
+                if len(sessionSummaries)>1 and sessID in sessionSummaries and queryID < sessionLengthDict[sessID]-1: # because we do not predict intent for last query in a session
                     (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
-                    topKSessQueryIndicesDict = insertIntoTopKDict(sessID, queryID, topKSessQueryIndices, topKSessQueryIndicesDict)
-                    topKPredictedIntentDict = insertIntoTopKDict(sessID, queryID, topKPredictedIntents, topKPredictedIntentDict)
+                    nextQueryIntent = findNextQueryIntent(intentSessionFile, sessID, queryID+1)
+                    elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
+                                                                        sessID, queryID, nextQueryIntent, numEpisodes,
+                                                                        configDict, outputIntentFileName)
                 (episodeResponseTime, startEpisode) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
                                   configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
@@ -321,7 +302,7 @@ def runCFCosineSim(intentSessionFile, configDict):
                              configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                  'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
                                  'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + ".xlsx"
-        ParseResultsToExcel.parseQualityFile(outputEvalQualityFileName, outputExcelQuality, configDict)
+        ParseResultsToExcel.parseQualityFileCFCosineSim(outputEvalQualityFileName, outputExcelQuality, configDict)
 
     outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict[
         'ALGORITHM'] + "_" +configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
@@ -347,3 +328,32 @@ if __name__ == "__main__":
         sys.exit(0)
     (outputIntentFileName, episodeResponseTimeDictName) = runCFCosineSim(intentSessionFile, configDict)
 
+
+
+'''
+def findLatestIntentPredictedSoFar(sessID, queryID, topKPredictedIntentDict, topKSessQueryIndicesDict, sessionLengthDict):
+    curSessID = sessID
+    while curSessID >= 0:
+        if curSessID in topKPredictedIntentDict:
+            if curSessID == sessID:
+                curQueryID = queryID-1 # u shd start with the prev queryID to check if there was a prediction made at that query
+            else:
+                curQueryID = sessionLengthDict[sessID]-1 # last index in a session is count-1
+            while curQueryID >= 0:
+                if curQueryID in topKPredictedIntentDict:
+                    return (topKSessQueryIndicesDict[curSessID][curQueryID], topKPredictedIntentDict[curSessID][curQueryID])
+                curQueryID = curQueryID-1
+        curSessID = curSessID - 1
+    print "Could not find sessID, queryID !!"
+    sys.exit(0)
+
+def insertIntoTopKDict(sessID, queryID, topKIndices, topKIndicesDict):
+    if sessID in topKIndicesDict:
+        if queryID in topKIndicesDict:
+            print "raise error sessID queryID already exists !!"
+            sys.exit(0)
+    else:
+        topKIndicesDict[sessID] = {}
+    topKIndicesDict[sessID][queryID] = topKIndices
+    return topKIndicesDict
+'''

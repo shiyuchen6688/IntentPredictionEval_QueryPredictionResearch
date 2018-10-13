@@ -14,6 +14,16 @@ def createQueryIntentRep(sessQuery, configDict, queryVocabulary):
     resObj.set(queryVocabulary[sessQuery])
     return (queryVocabulary,resObj)
 
+def createQueryIntentRepFullDimensionality(sessQuery, configDict, queryVocabulary):
+    FIXED_SIZE = int(configDict['NUMQUERIES'])
+    if sessQuery not in queryVocabulary:
+        newBitPos = len(queryVocabulary)
+        queryVocabulary[sessQuery] = newBitPos
+    resObj = BitMap(FIXED_SIZE)
+    resObj.set(queryVocabulary[sessQuery])
+    return (queryVocabulary,resObj)
+
+
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
     if configDict["INTENT_REP"] == "QUERY":
@@ -32,7 +42,7 @@ if __name__ == "__main__":
             tokens = line.split(";")
             sessQueryName = tokens[0]
             sessQuery = tokens[1].strip()
-            (queryVocabulary, resObj) = createQueryIntentRep(sessQuery, configDict,
+            (queryVocabulary, resObj) = createQueryIntentRepFullDimensionality(sessQuery, configDict,
                                                              queryVocabulary)  # rowIDs passed should be None, else it won't fill up
             outputIntentLine = sessQueryName + "; OrigQuery: " + sessQuery + ";" + str(resObj)
             ti.appendToFile(queryIntentSessionsFile, outputIntentLine)

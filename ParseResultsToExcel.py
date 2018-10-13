@@ -26,6 +26,33 @@ def parseQualityFileRNN(fileName, outputExcel, configDict):
         {'episodes':episodes, 'accuracy': accuracy})
     df.to_excel(outputExcel, sheet_name='sheet1', index=False)
 
+def parseQualityFileCFCosineSim(fileName, outputExcel, configDict):
+    episodes = []
+    precision = []
+    recall = []
+    FMeasure = []
+    accuracy = []
+    with open(fileName) as f:
+        for line in f:
+            tokens = line.split(";")
+            numEpisodes = float(tokens[2].split(":")[1])
+            precisionPerEpisode = float(tokens[3].split(":")[1])
+            recallPerEpisode = float(tokens[4].split(":")[1])
+            if precisionPerEpisode == 0 or recallPerEpisode == 0:
+                FMeasurePerEpisode = 0
+            else:
+                FMeasurePerEpisode = 2 * precisionPerEpisode * recallPerEpisode / (precisionPerEpisode+recallPerEpisode)
+            accuracyPerEpisode = float(tokens[5].split(":")[1])
+            episodes.append(numEpisodes)
+            precision.append(precisionPerEpisode)
+            recall.append(recallPerEpisode)
+            FMeasure.append(FMeasurePerEpisode)
+            accuracy.append(accuracyPerEpisode)
+    print "Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy))
+    df = DataFrame(
+        {'episodes':episodes, 'precision': precision,
+         'recall': recall, 'FMeasure': FMeasure, 'accuracy': accuracy})
+    df.to_excel(outputExcel, sheet_name='sheet1', index=False)
 
 def parseQualityFile(fileName, outputExcel, configDict):
     episodes = []
@@ -46,9 +73,9 @@ def parseQualityFile(fileName, outputExcel, configDict):
             precisionPerEpisode += float(tokens[3].split(":")[1])
             recallPerEpisode += float(tokens[4].split(":")[1])
             if precisionPerEpisode == 0 or recallPerEpisode == 0:
-                FMeasurePerEpisode = 0
+                FMeasurePerEpisode += 0
             else:
-                FMeasurePerEpisode = 2 * precisionPerEpisode * recallPerEpisode / (precisionPerEpisode+recallPerEpisode)
+                FMeasurePerEpisode += 2 * precisionPerEpisode * recallPerEpisode / (precisionPerEpisode+recallPerEpisode)
             accuracyPerEpisode += float(tokens[5].split(":")[1])
             if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
                 numEpisodes += 1
@@ -95,14 +122,14 @@ def parseTimeFile(fileName, outputExcel):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    accThresList = [0.75, 0.8, 0.85, 0.9, 0.95]
+    accThresList = [0.95]
     for accThres in accThresList:
-        outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)
-        outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
-        parseQualityFile(outputEvalQualityFileName, outputExcelQuality, configDict)
+        outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)
+        outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
+        parseQualityFileCFCosineSim(outputEvalQualityFileName, outputExcelQuality, configDict)
 
-    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
-    outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
+    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
     parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
 
     '''

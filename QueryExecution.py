@@ -64,7 +64,7 @@ def executeQueryWithIntent(sessQuery, configDict, queryVocabulary):
     elif configDict['INTENT_REP']=='FRAGMENT':
         resObj = fragmentIntent.createFragmentIntentRep(sessQuery, configDict)
     elif configDict['INTENT_REP'] == 'QUERY':
-        (queryVocabulary,resObj) = queryIntent.createQueryIntentRep(sessQuery, configDict, queryVocabulary)
+        (queryVocabulary,resObj) = queryIntent.createQueryIntentRepFullDimensionality(sessQuery, configDict, queryVocabulary)
     intentCreationTime = float(time.time() - startTime)
     return (queryVocabulary, resObj, queryExecutionTime, intentCreationTime)
 
