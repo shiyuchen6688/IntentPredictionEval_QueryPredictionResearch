@@ -8,6 +8,7 @@ import math
 import heapq
 import TupleIntent as ti
 import ParseConfigFile as parseConfig
+import ParseResultsToExcel
 
 import numpy as np
 import pandas as pd
@@ -285,7 +286,7 @@ def executeRNN(intentSessionFile, configDict):
     episodeResponseTime = {}
     startEpisode = time.time()
     outputIntentFileName = configDict['OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + \
-                           configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+ \
+                           configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ \
                            configDict['INTENT_REP'] + "_" + \
                            configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                            configDict['EPISODE_IN_QUERIES']
@@ -305,8 +306,9 @@ def executeRNN(intentSessionFile, configDict):
                 curIntentList = createCharListFromIntent(curQueryIntent, configDict)
                 actual_vector = np.array(curIntentList).astype(np.int)
                 #actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
-                cos_sim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
-                print "cosine similarity at sessID: "+str(sessID)+", queryID: "+str(queryID)+" is "+str(cos_sim)
+                cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
+                elapsedAppendTime = QR.appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes, outputIntentFileName)
+                print "cosine similarity at sessID: "+str(sessID)+", queryID: "+str(queryID)+" is "+str(cosineSim)
                 #elapsedAppendTime = QR.appendPredictedIntentsRNN(predictedY, cos_sim, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName)
             numQueries += 1
             queryLinesSetAside.append(line)
@@ -320,10 +322,21 @@ def executeRNN(intentSessionFile, configDict):
                 predictedY = predictTopKIntents(modelRNN, sessionDict[sessID], configDict)
             (episodeResponseTime, startEpisode) = QR.updateResponseTime(episodeResponseTime, numEpisodes,
                                                                             startEpisode, elapsedAppendTime)
-    episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['INTENT_REP'] + "_" + \
+    episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+configDict['INTENT_REP'] + "_" + \
                                   configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
+    QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"])
+    accThresList = [0.95]
+    for accThres in accThresList:
+        outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
+        ParseResultsToExcel.parseQualityFile(outputIntentFileName, outputExcelQuality)
+
+    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
+    ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
+
+    print "--Completed Quality and Time Evaluation--"
     return (outputIntentFileName, episodeResponseTimeDictName)
 
 if __name__ == "__main__":
@@ -339,7 +352,7 @@ if __name__ == "__main__":
     else:
         print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
         sys.exit(0)
-    executeRNN(intentSessionFile, configDict)
+    (outputIntentFileName, episodeResponseTimeDictName) = executeRNN(intentSessionFile, configDict)
 
 
 

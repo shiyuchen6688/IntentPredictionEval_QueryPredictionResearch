@@ -27,9 +27,9 @@ def runCosineSimOrMF(configDict):
     #QR.evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
     accThresList = [0.75, 0.8, 0.85, 0.9, 0.95]
     for accThres in accThresList:
-        QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres)
+        QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres, configDict['ALGORITHM'])
         print "--Completed Quality Evaluation for accThres:" + str(accThres)+"---"
-    QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict)
+    QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict, configDict['ALGORITHM'])
     print "--Completed Time Evaluation---"
 
     return
