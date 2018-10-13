@@ -9,7 +9,7 @@ import heapq
 import TupleIntent as ti
 import ParseConfigFile as parseConfig
 import ParseResultsToExcel
-
+import ConcurrentSessions
 import numpy as np
 import pandas as pd
 from numpy import dot
@@ -294,6 +294,7 @@ def executeRNN(intentSessionFile, configDict):
                            configDict['INTENT_REP'] + "_" + \
                            configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                            configDict['EPISODE_IN_QUERIES']
+    sessionLengthDict = ConcurrentSessions.countQueries(configDict['QUERYSESSIONS'])
     try:
         os.remove(outputIntentFileName)
     except OSError:
@@ -306,14 +307,6 @@ def executeRNN(intentSessionFile, configDict):
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
             # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
             elapsedAppendTime = 0.0
-            if predictedY is not None and queryID > 0:
-                curIntentList = createCharListFromIntent(curQueryIntent, configDict)
-                actual_vector = np.array(curIntentList).astype(np.int)
-                #actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
-                cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
-                elapsedAppendTime = QR.appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes, outputIntentFileName)
-                print "cosine similarity at sessID: "+str(sessID)+", queryID: "+str(queryID)+" is "+str(cosineSim)
-                #elapsedAppendTime = QR.appendPredictedIntentsRNN(predictedY, cos_sim, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName)
             numQueries += 1
             queryLinesSetAside.append(line)
             # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
@@ -322,8 +315,15 @@ def executeRNN(intentSessionFile, configDict):
                 (modelRNN, sessionDict) = refineTemporalPredictor(queryLinesSetAside, configDict, sessionDict, modelRNN)
                 del queryLinesSetAside
                 queryLinesSetAside = []
-            if modelRNN is not None:
+            if modelRNN is not None and queryID < sessionLengthDict[sessID]-1:
                 predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
+                nextQueryIntent = QR.findNextQueryIntent(intentSessionFile, sessID, queryID + 1)
+                nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
+                actual_vector = np.array(nextIntentList).astype(np.int)
+                # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
+                cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
+                elapsedAppendTime = QR.appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes,
+                                                                      outputIntentFileName)
             (episodeResponseTime, startEpisode) = QR.updateResponseTime(episodeResponseTime, numEpisodes,
                                                                             startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+configDict['INTENT_REP'] + "_" + \

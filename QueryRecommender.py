@@ -9,6 +9,16 @@ import TupleIntent as ti
 import ParseConfigFile as parseConfig
 import pickle
 
+def findNextQueryIntent(intentSessionFile, sessID, queryID):
+    with open(intentSessionFile) as f:
+        for line in f:
+            (curSessID, curQueryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
+            if curSessID == sessID and curQueryID == queryID:
+                f.close()
+                return curQueryIntent
+    print "Error: Could not find the nextQueryIntent !!"
+    sys.exit(0)
+
 def normalizeWeightedVector(curQueryIntent):
     tokens = curQueryIntent.split(";")
     total = 0.0
@@ -36,6 +46,7 @@ def appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes, outp
     startAppendTime = time.time()
     outputEvalQualityStr = "Session:" + str(sessID) + ";Query:" + str(queryID) + ";#Episodes:" + str(numEpisodes) + ";Accuracy:" + str(cosineSim)
     ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
+    print "cosine similarity at sessID: " + str(sessID) + ", queryID: " + str(queryID) + " is " + str(cosineSim)
     elapsedAppendTime = float(time.time() - startAppendTime)
     return elapsedAppendTime
 

@@ -233,18 +233,6 @@ def refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, 
     return (predSessSummary, sessionDict, sessionSummaries)
 
 
-
-def findNextQueryIntent(intentSessionFile, sessID, queryID):
-    with open(intentSessionFile) as f:
-        for line in f:
-            (curSessID, curQueryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
-            if curSessID == sessID and curQueryID == queryID:
-                f.close()
-                return curQueryIntent
-    print "Error: Could not find the nextQueryIntent !!"
-    sys.exit(0)
-
-
 def runCFCosineSim(intentSessionFile, configDict):
     sessionSummaries = {} # key is sessionID and value is summary
     sessionDict = {} # key is session ID and value is a list of query intent vectors; no need to store the query itself
@@ -277,7 +265,7 @@ def runCFCosineSim(intentSessionFile, configDict):
                 queryLinesSetAside = []
                 if len(sessionSummaries)>1 and sessID in sessionSummaries and queryID < sessionLengthDict[sessID]-1: # because we do not predict intent for last query in a session
                     (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
-                    nextQueryIntent = findNextQueryIntent(intentSessionFile, sessID, queryID+1)
+                    nextQueryIntent = QR.findNextQueryIntent(intentSessionFile, sessID, queryID+1)
                     elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
                                                                         sessID, queryID, nextQueryIntent, numEpisodes,
                                                                         configDict, outputIntentFileName)
