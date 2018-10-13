@@ -204,14 +204,14 @@ if __name__ == '__main__':
 
 '''
 
-def createCharListFromIntent(prevIntent, configDict):
+def createCharListFromIntent(intent, configDict):
     intentStrList = []
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        intentStr = prevIntent.tostring()
+        intentStr = intent.tostring()
         for i in range(len(intentStr)):
             intentStrList.append(intentStr[i])
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        intentStrList = prevIntent.split(';')
+        intentStrList = intent.split(';')
     return intentStrList
 
 def appendTrainingXY(sessIntentList, configDict, dataX, dataY):
@@ -258,7 +258,7 @@ def refineTemporalPredictor(queryLinesSetAside, configDict, sessionDict, modelRN
             sessionDict[sessID] = []
             sessionDict[sessID].append(curQueryIntent)
         if int(queryID) == 0:
-            return (modelRNN, sessionDict)
+            continue
         (dataX, dataY) = appendTrainingXY(sessionDict[sessID], configDict, dataX, dataY)
         n_features = len(dataX[0][0])
         if modelRNN is None:
@@ -266,13 +266,17 @@ def refineTemporalPredictor(queryLinesSetAside, configDict, sessionDict, modelRN
         modelRNN = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
     return (modelRNN, sessionDict)
 
-def predictTopKIntents(modelRNN, sessIntentList, configDict):
+def predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict):
+    if sessID in sessionDict:
+        sessIntentList = sessionDict[sessID]
+    else:
+        sessIntentList = [curQueryIntent]
     # top-K is 1
     numQueries = len(sessIntentList)
     testX = []
     for i in range(numQueries):
-        prevIntent = sessIntentList[i]
-        intentStrList = createCharListFromIntent(prevIntent, configDict)
+        curSessIntent = sessIntentList[i]
+        intentStrList = createCharListFromIntent(curSessIntent, configDict)
         testX.append(intentStrList)
     testX = np.array(testX)
     predictedY = modelRNN.predict(testX.reshape(1, testX.shape[0], testX.shape[1]))
@@ -319,7 +323,7 @@ def executeRNN(intentSessionFile, configDict):
                 del queryLinesSetAside
                 queryLinesSetAside = []
             if modelRNN is not None:
-                predictedY = predictTopKIntents(modelRNN, sessionDict[sessID], configDict)
+                predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
             (episodeResponseTime, startEpisode) = QR.updateResponseTime(episodeResponseTime, numEpisodes,
                                                                             startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+configDict['INTENT_REP'] + "_" + \
