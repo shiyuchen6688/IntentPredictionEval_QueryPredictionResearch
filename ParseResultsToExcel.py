@@ -14,9 +14,12 @@ def parseQualityFileRNN(fileName, outputExcel, configDict):
         for line in f:
             numQueries += 1
             tokens = line.split(";")
-            accuracyPerEpisode += float(tokens[3].split(":")[1])
+            if tokens[3].split(":")[1] == 'nan' or tokens[3].split(":")[1] == 'inf':
+                accuracyPerEpisode+= 0.0
+            else:
+                accuracyPerEpisode += float(tokens[3].split(":")[1])
             if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
-                numEpisodes += 1
+                numEpisodes = float(tokens[2].split(":")[1])
                 accuracyPerEpisode /= int(configDict['EPISODE_IN_QUERIES'])
                 episodes.append(numEpisodes)
                 accuracy.append(accuracyPerEpisode)
@@ -123,13 +126,27 @@ def parseTimeFile(fileName, outputExcel):
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
     accThresList = [0.95]
+    algoName = None
+    outputEvalQualityFileName = None
     for accThres in accThresList:
-        outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)
-        outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
-        parseQualityFileCFCosineSim(outputEvalQualityFileName, outputExcelQuality, configDict)
-
-    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
-    outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
+        if configDict['ALGORITHM'] == 'CF':
+            algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
+            outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)
+        elif configDict['ALGORITHM'] == 'RNN':
+            algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
+            outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + \
+                                   configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + \
+                                   configDict['INTENT_REP'] + "_" + \
+                                   configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                                   configDict['EPISODE_IN_QUERIES']
+        outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
+        if configDict['ALGORITHM'] == 'CF':
+            parseQualityFileCFCosineSim(outputEvalQualityFileName, outputExcelQuality, configDict)
+        elif configDict['ALGORITHM'] == 'RNN':
+            parseQualityFileRNN(outputEvalQualityFileName, outputExcelQuality, configDict)
+    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
     parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
 
     '''

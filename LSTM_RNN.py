@@ -317,15 +317,15 @@ def executeRNN(intentSessionFile, configDict):
                 queryLinesSetAside = []
             if modelRNN is not None and queryID < sessionLengthDict[sessID]-1:
                 predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
-                nextQueryIntent = QR.findNextQueryIntent(intentSessionFile, sessID, queryID + 1)
+                nextQueryIntent = QR.findNextQueryIntent(intentSessionFile, sessID, queryID + 1, configDict)
                 nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
                 actual_vector = np.array(nextIntentList).astype(np.int)
                 # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
                 cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
-                elapsedAppendTime = QR.appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes,
+                elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes,
                                                                       outputIntentFileName)
-            (episodeResponseTime, startEpisode) = QR.updateResponseTime(episodeResponseTime, numEpisodes,
-                                                                            startEpisode, elapsedAppendTime)
+            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+                (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes,startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+configDict['INTENT_REP'] + "_" + \
                                   configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"

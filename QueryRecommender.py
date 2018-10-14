@@ -9,7 +9,7 @@ import TupleIntent as ti
 import ParseConfigFile as parseConfig
 import pickle
 
-def findNextQueryIntent(intentSessionFile, sessID, queryID):
+def findNextQueryIntent(intentSessionFile, sessID, queryID, configDict):
     with open(intentSessionFile) as f:
         for line in f:
             (curSessID, curQueryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
@@ -73,8 +73,9 @@ def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, ses
 
 def updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime):
     episodeResponseTime[numEpisodes] = float(time.time()-startEpisode) - elapsedAppendTime # we exclude the time consumed by appending predicted intents to the output intent file
+    elapsedAppendTime = 0.0
     startEpisode = time.time()
-    return (episodeResponseTime, startEpisode)
+    return (episodeResponseTime, startEpisode, elapsedAppendTime)
 
 def createQueryExecIntentCreationTimes(configDict):
     numQueries = 0
@@ -202,7 +203,12 @@ def evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, confi
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+ configDict['ALGORITHM']+"_"+\
+    algoName = None
+    if configDict['ALGORITHM'] == 'CF':
+        algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
+    elif configDict['ALGORITHM'] == 'RNN':
+        algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
+    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+ algoName+"_"+\
                            configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['ALGORITHM']+"_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
     #evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
