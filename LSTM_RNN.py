@@ -247,11 +247,13 @@ def initializeRNN(n_features, configDict):
     modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
     return modelRNN
 
-def refineTemporalPredictor(queryLinesSetAside, configDict, sessionDict, modelRNN):
+def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict):
     dataX = []
     dataY = []
-    for line in queryLinesSetAside:
-        (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
+    for key in queryKeysSetAside:
+        sessID = int(key.split(",")[0])
+        queryID = int(key.split(",")[1])
+        curQueryIntent = sessionStreamDict[key]
         if sessID in sessionDict:
             sessionDict[sessID].append(curQueryIntent)
         else:
@@ -286,7 +288,7 @@ def predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict
 def executeRNN(intentSessionFile, configDict):
     sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
     numEpisodes = 0
-    queryLinesSetAside = []
+    queryKeysSetAside = []
     episodeResponseTime = {}
     startEpisode = time.time()
     outputIntentFileName = configDict['OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + \
@@ -300,32 +302,40 @@ def executeRNN(intentSessionFile, configDict):
     except OSError:
         pass
     numQueries = 0
+    sessionStreamDict = {}
+    keyOrder = []
     with open(intentSessionFile) as f:
-        predictedY = None
-        modelRNN = None
         for line in f:
-            (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
-            # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
-            elapsedAppendTime = 0.0
-            numQueries += 1
-            queryLinesSetAside.append(line)
-            # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
-            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
-                numEpisodes += 1
-                (modelRNN, sessionDict) = refineTemporalPredictor(queryLinesSetAside, configDict, sessionDict, modelRNN)
-                del queryLinesSetAside
-                queryLinesSetAside = []
-            if modelRNN is not None and queryID < sessionLengthDict[sessID]-1:
-                predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
-                nextQueryIntent = QR.findNextQueryIntent(intentSessionFile, sessID, queryID + 1, configDict)
-                nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
-                actual_vector = np.array(nextIntentList).astype(np.int)
-                # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
-                cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
-                elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes,
-                                                                      outputIntentFileName)
-            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
-                (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes,startEpisode, elapsedAppendTime)
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict, sessionStreamDict)
+            keyOrder.append(str(sessID)+","+str(queryID))
+    f.close()
+    predictedY = None
+    modelRNN = None
+    for key in keyOrder:
+        sessID = int(key.split(",")[0])
+        queryID = int(key.split(",")[1])
+        curQueryIntent = sessionStreamDict[key]
+        # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
+        elapsedAppendTime = 0.0
+        numQueries += 1
+        queryKeysSetAside.append(key)
+        # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
+        if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+            numEpisodes += 1
+            (modelRNN, sessionDict) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict)
+            del queryKeysSetAside
+            queryKeysSetAside = []
+        if modelRNN is not None and queryID < sessionLengthDict[sessID]-1:
+            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
+            nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]
+            nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
+            actual_vector = np.array(nextIntentList).astype(np.int)
+            # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
+            cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
+            elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes,
+                                                                  outputIntentFileName)
+        if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+            (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes,startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+configDict['INTENT_REP'] + "_" + \
                                   configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"

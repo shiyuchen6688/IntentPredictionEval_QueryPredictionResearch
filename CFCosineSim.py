@@ -225,10 +225,12 @@ def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, c
     return (topKSessQueryIndices,topKPredictedIntents)
 
 
-def refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, sessionDict, sessionSummaries):
+def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionDict, sessionSummaries, sessionStreamDict):
     predSessSummary = None
-    for line in queryLinesSetAside:
-        (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
+    for key in queryKeysSetAside:
+        sessID = int(key.split(",")[0])
+        queryID = int(key.split(",")[1])
+        curQueryIntent = sessionStreamDict[key]
         (predSessSummary, sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
     return (predSessSummary, sessionDict, sessionSummaries)
 
@@ -237,7 +239,7 @@ def runCFCosineSim(intentSessionFile, configDict):
     sessionSummaries = {} # key is sessionID and value is summary
     sessionDict = {} # key is session ID and value is a list of query intent vectors; no need to store the query itself
     numEpisodes = 0
-    queryLinesSetAside = []
+    queryKeysSetAside = []
     episodeResponseTime = {}
     startEpisode = time.time()
     outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
@@ -248,28 +250,36 @@ def runCFCosineSim(intentSessionFile, configDict):
     except OSError:
         pass
     numQueries = 0
+    sessionStreamDict = {}
+    keyOrder = []
     with open(intentSessionFile) as f:
         for line in f:
-            (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
-            if sessID > 0:
-                debug = True
-            # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
-            elapsedAppendTime = 0.0
-            queryLinesSetAside.append(line)
-            numQueries += 1
-            # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
-            if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
-                numEpisodes += 1
-                (predSessSummary,sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryLinesSetAside, configDict, sessionDict, sessionSummaries)
-                del queryLinesSetAside
-                queryLinesSetAside = []
-                if len(sessionSummaries)>1 and sessID in sessionSummaries and queryID < sessionLengthDict[sessID]-1: # because we do not predict intent for last query in a session
-                    (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
-                    nextQueryIntent = QR.findNextQueryIntent(intentSessionFile, sessID, queryID+1, configDict)
-                    elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
-                                                                        sessID, queryID, nextQueryIntent, numEpisodes,
-                                                                        configDict, outputIntentFileName)
-                (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict, sessionStreamDict)
+            keyOrder.append(str(sessID)+","+str(queryID))
+    f.close()
+    for key in keyOrder:
+        sessID = int(key.split(",")[0])
+        queryID = int(key.split(",")[1])
+        curQueryIntent = sessionStreamDict[key]
+        if sessID > 0:
+            debug = True
+        # Here we are putting together the predictedIntent from previous step and the actualIntent from the current query, so that it will be easier for evaluation
+        elapsedAppendTime = 0.0
+        queryKeysSetAside.append(key)
+        numQueries += 1
+        # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
+        if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
+            numEpisodes += 1
+            (predSessSummary,sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionDict, sessionSummaries, sessionStreamDict)
+            del queryKeysSetAside
+            queryKeysSetAside = []
+            if len(sessionSummaries)>1 and sessID in sessionSummaries and queryID < sessionLengthDict[sessID]-1: # because we do not predict intent for last query in a session
+                (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
+                nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]
+                elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
+                                                                    sessID, queryID, nextQueryIntent, numEpisodes,
+                                                                    configDict, outputIntentFileName)
+            (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
                                   configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)

@@ -9,13 +9,21 @@ import TupleIntent as ti
 import ParseConfigFile as parseConfig
 import pickle
 
-def findNextQueryIntent(intentSessionFile, sessID, queryID, configDict):
-    with open(intentSessionFile) as f:
-        for line in f:
-            (curSessID, curQueryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
-            if curSessID == sessID and curQueryID == queryID:
-                f.close()
-                return curQueryIntent
+def updateSessionDict(line, configDict, sessionStreamDict):
+    (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
+    if str(sessID)+","+str(queryID) in sessionStreamDict:
+        print str(sessID)+","+str(queryID)+ " already exists !!"
+        sys.exit(0)
+    sessionStreamDict[str(sessID)+","+str(queryID)] = curQueryIntent
+    return (sessID, queryID, curQueryIntent, sessionStreamDict)
+
+def findNextQueryIntent(intentSessionFile, sessID, queryID, configDict, lines):
+    #with open(intentSessionFile) as f:
+    for line in lines:
+        (curSessID, curQueryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
+        if curSessID == sessID and curQueryID == queryID:
+            #f.close()
+            return curQueryIntent
     print "Error: Could not find the nextQueryIntent !!"
     sys.exit(0)
 
