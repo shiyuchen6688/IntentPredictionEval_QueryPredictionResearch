@@ -267,7 +267,7 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN
         #if configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
          #   n_memUnits = len(dataX[0][0])
         #elif configDict['INTENT_REP'] == 'TUPLE':
-        n_memUnits = int(configDict['NUM_MEM_UNITS'])
+        n_memUnits = int(configDict['RNN_NUM_MEM_UNITS'])
         if modelRNN is None:
             modelRNN = initializeRNN(n_features, n_memUnits, configDict)
         modelRNN = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
