@@ -233,15 +233,15 @@ def updateRNNIncrementalTrain(modelRNN, x_train, y_train):
         modelRNN.fit(sample_input.reshape(1, sample_input.shape[0], sample_input.shape[1]), sample_output.reshape(1, sample_output.shape[0], sample_output.shape[1]), epochs = 1)
         return modelRNN
 
-def initializeRNN(n_features, configDict):
+def initializeRNN(n_features, n_memUnits, configDict):
     modelRNN = Sequential()
     assert configDict['RNN_BACKPROP_LSTM_GRU'] == 'LSTM' or configDict['RNN_BACKPROP_LSTM_GRU'] == 'BACKPROP' or configDict['RNN_BACKPROP_LSTM_GRU'] == 'GRU'
     if configDict['RNN_BACKPROP_LSTM_GRU'] == 'LSTM':
-        modelRNN.add(LSTM(n_features, input_shape=(None, n_features), return_sequences=True))
+        modelRNN.add(LSTM(n_memUnits, input_shape=(None, n_features), return_sequences=True))
     elif configDict['RNN_BACKPROP_LSTM_GRU'] == 'BACKPROP':
-        modelRNN.add(SimpleRNN(n_features, input_shape=(None, n_features), return_sequences=True))
+        modelRNN.add(SimpleRNN(n_memUnits, input_shape=(None, n_features), return_sequences=True))
     elif configDict['RNN_BACKPROP_LSTM_GRU'] == 'GRU':
-        modelRNN.add(GRU(n_features, input_shape=(None, n_features), return_sequences=True))
+        modelRNN.add(GRU(n_memUnits, input_shape=(None, n_features), return_sequences=True))
     # model.add(Dropout(0.1))
     modelRNN.add(Dense(n_features, activation="sigmoid"))
     modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
@@ -263,8 +263,13 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN
             continue
         (dataX, dataY) = appendTrainingXY(sessionDict[sessID], configDict, dataX, dataY)
         n_features = len(dataX[0][0])
+        #assert configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY' or configDict['INTENT_REP'] == 'TUPLE'
+        #if configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
+         #   n_memUnits = len(dataX[0][0])
+        #elif configDict['INTENT_REP'] == 'TUPLE':
+        n_memUnits = int(configDict['NUM_MEM_UNITS'])
         if modelRNN is None:
-            modelRNN = initializeRNN(n_features, configDict)
+            modelRNN = initializeRNN(n_features, n_memUnits, configDict)
         modelRNN = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
     return (modelRNN, sessionDict)
 
