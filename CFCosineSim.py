@@ -234,8 +234,21 @@ def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, s
         (predSessSummary, sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
     return (predSessSummary, sessionDict, sessionSummaries)
 
+def runCFCosineSimKFoldExp(configDict):
+    return
 
-def runCFCosineSim(intentSessionFile, configDict):
+def runCFCosineSimSingularityExp(configDict):
+    if configDict['INTENT_REP'] == 'TUPLE':
+        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
+    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP'] == 'QUERY':
+        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
+    else:
+        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
+        sys.exit(0)
     sessionSummaries = {} # key is sessionID and value is summary
     sessionDict = {} # key is session ID and value is a list of query intent vectors; no need to store the query itself
     numEpisodes = 0
@@ -311,20 +324,15 @@ def runCFCosineSim(intentSessionFile, configDict):
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
+def runCFCosineSim(configDict):
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        runCFCosineSimSingularityExp(configDict)
+    elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+        runCFCosineSimKFoldExp(configDict)
+
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    if configDict['INTENT_REP']=='TUPLE':
-        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
-    elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='BIT':
-        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
-    elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
-        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
-    elif configDict['INTENT_REP']=='QUERY':
-        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
-    else:
-        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
-        sys.exit(0)
-    (outputIntentFileName, episodeResponseTimeDictName) = runCFCosineSim(intentSessionFile, configDict)
+    (outputIntentFileName, episodeResponseTimeDictName) = runCFCosineSim(configDict)
 
 
 

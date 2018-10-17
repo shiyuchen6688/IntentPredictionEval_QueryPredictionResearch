@@ -6,7 +6,7 @@ import os
 import time
 import ParseConfigFile as parseConfig
 import CF
-import RNN
+import LSTM_RNN
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
@@ -15,4 +15,4 @@ if __name__ == "__main__":
     if configDict["ALGORITHM"]=="CF":
         CF.runIntentPrediction(configDict)
     elif configDict["ALGORITHM"]=="RNN":
-        RNN.runIntentPrediction(configDict)
+        (outputIntentFileName, episodeResponseTimeDictName) = LSTM_RNN.executeRNN(configDict)

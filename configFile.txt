@@ -27,3 +27,4 @@ KFOLD_OUTPUT_DIR=/Users/postgres/Documents/DataExploration-Research/CreditCardDa
 KFOLD_INPUT_DIR=/Users/postgres/Documents/DataExploration-Research/CreditCardDataset/kFold/
 ACCURACY_THRESHOLD=0.95
 KFOLD=10
+SINGULARITY_OR_KFOLD=KFOLD

@@ -290,7 +290,21 @@ def predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict
     predictedY = predictedY[0][predictedY.shape[1] - 1]
     return predictedY
 
-def executeRNN(intentSessionFile, configDict):
+def runRNNKFoldExp(configDict):
+    return
+
+def runRNNSingularityExp(configDict):
+    if configDict['INTENT_REP'] == 'TUPLE':
+        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
+    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP'] == 'QUERY':
+        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
+    else:
+        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
+        sys.exit(0)
     sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
     numEpisodes = 0
     queryKeysSetAside = []
@@ -358,20 +372,15 @@ def executeRNN(intentSessionFile, configDict):
     print "--Completed Quality and Time Evaluation--"
     return (outputIntentFileName, episodeResponseTimeDictName)
 
+def executeRNN(configDict):
+    if configDict['SINGULARITY_OR_KFOLD']=='SINGULARITY':
+        runRNNSingularityExp(configDict)
+    elif configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
+        runRNNKFoldExp(configDict)
+
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    if configDict['INTENT_REP']=='TUPLE':
-        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
-    elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='BIT':
-        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
-    elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
-        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
-    elif configDict['INTENT_REP']=='QUERY':
-        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
-    else:
-        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
-        sys.exit(0)
-    (outputIntentFileName, episodeResponseTimeDictName) = executeRNN(intentSessionFile, configDict)
+    (outputIntentFileName, episodeResponseTimeDictName) = executeRNN(configDict)
 
 
 
