@@ -22,7 +22,23 @@ def prepareVariableTrainFixedTest(configDict):
             sessNames.append(sessName)
     f.close()
     random.shuffle(sessNames)
-    print sessNames
+    kFold = int(configDict['KFOLD'])
+    testFrac = 1.0/float(kFold)
+    numTest = int(testFrac * len(sessNames))
+    print "numTest: "+str(numTest)
+    # for K fold CV
+    testSessNames = [[] for i in range(kFold)]
+    testEndIndex = -1
+    for i in range(kFold):
+        testStartIndex = testEndIndex+1
+        testEndIndex = testStartIndex + numTest
+        if i == kFold - 1:
+            testEndIndex = len(sessNames)-1
+        for index in range(testStartIndex, testEndIndex+1):
+            testSessNames[i].append(sessNames[index])
+        print "Fold "+str(i)+", StartIndex="+str(testStartIndex)+", EndIndex="+str(testEndIndex)
+    
+
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
