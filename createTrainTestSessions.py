@@ -13,8 +13,9 @@ import ParseResultsToExcel
 import random
 
 def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intentSessionFile, sessionLengthDict):
-    outputIntentTrainSessions = intentSessionFile+"_TRAIN_FOLD_"+str(foldID)
-    outputIntentTestSessions =intentSessionFile + "_TEST_FOLD_" + str(foldID)
+    fileNameWithoutDir = intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]
+    outputIntentTrainSessions = configDict['KFOLD_INPUT_DIR']+fileNameWithoutDir+"_TRAIN_FOLD_"+str(foldID)
+    outputIntentTestSessions = configDict['KFOLD_INPUT_DIR']+fileNameWithoutDir + "_TEST_FOLD_" + str(foldID)
     try:
         os.remove(outputIntentTrainSessions)
         os.remove(outputIntentTestSessions)

@@ -42,7 +42,7 @@ def normalizeWeightedVector(curQueryIntent):
         total = total+float(token)
     normalizedVector = []
     for token in tokens:
-        normalizedVector.append(float(token)/total)
+        normalizedVector.append(str(float(token)/total))
     res = ';'.join(normalizedVector)
     return res
 
