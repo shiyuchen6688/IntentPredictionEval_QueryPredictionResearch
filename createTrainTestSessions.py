@@ -23,7 +23,7 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
     sessionLineDict = {}
     with open(intentSessionFile) as f:
         for line in f:
-            sessionLineDict = QR.updateSessionDict(line, configDict, sessionLineDict)
+            sessionLineDict = QR.updateSessionLineDict(line, configDict, sessionLineDict)
     f.close()
     for sessName in sessNames:
         sessID = int(sessName.split(" ")[1])
