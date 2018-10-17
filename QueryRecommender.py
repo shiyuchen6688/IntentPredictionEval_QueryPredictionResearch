@@ -17,6 +17,14 @@ def updateSessionDict(line, configDict, sessionStreamDict):
     sessionStreamDict[str(sessID)+","+str(queryID)] = curQueryIntent
     return (sessID, queryID, curQueryIntent, sessionStreamDict)
 
+def updateSessionLineDict(line, configDict, sessionLineDict):
+    (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
+    if str(sessID)+","+str(queryID) in sessionLineDict:
+        print str(sessID)+","+str(queryID)+ " already exists !!"
+        sys.exit(0)
+    sessionLineDict[str(sessID)+","+str(queryID)] = line
+    return sessionLineDict
+
 def findNextQueryIntent(intentSessionFile, sessID, queryID, configDict, lines):
     #with open(intentSessionFile) as f:
     for line in lines:
