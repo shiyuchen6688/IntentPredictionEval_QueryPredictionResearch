@@ -291,20 +291,11 @@ def predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict
     return predictedY
 
 def runRNNKFoldExp(configDict):
+    intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     return
 
 def runRNNSingularityExp(configDict):
-    if configDict['INTENT_REP'] == 'TUPLE':
-        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
-    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
-    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
-    elif configDict['INTENT_REP'] == 'QUERY':
-        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
-    else:
-        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
-        sys.exit(0)
+    intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
     numEpisodes = 0
     queryKeysSetAside = []
@@ -360,7 +351,8 @@ def runRNNSingularityExp(configDict):
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"])
-    accThresList = [0.95]
+    accThresList = []
+    accThresList.append(float(configDict['ACCURACY_THRESHOLD']))
     for accThres in accThresList:
         outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
         ParseResultsToExcel.parseQualityFileRNN(outputIntentFileName, outputExcelQuality, configDict)

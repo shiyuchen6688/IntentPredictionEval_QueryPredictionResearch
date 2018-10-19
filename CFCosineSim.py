@@ -86,8 +86,7 @@ def refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries,
             sessionSummaries[sessID] = ADD(sessionSummaries[sessID],curQueryIntent, configDict)
     else:
         sessionSummaries[sessID] = createEntrySimilarTo(curQueryIntent, configDict)
-    predSessSummary = computePredSessSummary(sessionSummaries, sessID, configDict)
-    return (predSessSummary, sessionDict, sessionSummaries)
+    return (sessionDict, sessionSummaries)
 
 def computeBitCosineSimilarity(curSessionSummary, oldSessionSummary):
     nonzeroDimsCurSess = curSessionSummary.nonzero() # set of all 1-bit dimensions in curQueryIntent
@@ -193,8 +192,9 @@ def insertIntoMinHeap(minheap, elemList, elemIndex, configDict, cosineSimDict, p
     cosineSimDict[cosineSim].append(insertKey)
     return (minheap, cosineSimDict)
 
-def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict):
+def predictTopKIntents(sessionSummaries, sessionDict, sessID, curQueryIntent, configDict):
     # python supports for min-heap not max-heap so negate items and insert into min-heap
+    predSessSummary = computePredSessSummary(sessionSummaries, sessID, configDict)
     minheap = []
     cosineSimDict = {}
     for sessIndex in sessionSummaries: # exclude the current session
@@ -226,37 +226,115 @@ def predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, c
 
 
 def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionDict, sessionSummaries, sessionStreamDict):
-    predSessSummary = None
     for key in queryKeysSetAside:
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
         curQueryIntent = sessionStreamDict[key]
-        (predSessSummary, sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
-    return (predSessSummary, sessionDict, sessionSummaries)
+        (sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
+    return (sessionDict, sessionSummaries)
+
+
+def plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict):
+    QR.computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict)
+    QR.computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict)
+    accThresList = []
+    accThresList.append(float(configDict['ACCURACY_THRESHOLD']))
+    for accThres in accThresList:
+        QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
+                                      configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
+        print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
+                               configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
 
 def runCFCosineSimKFoldExp(configDict):
+    intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
+    kFoldOutputIntentFiles = []
+    kFoldEpisodeResponseTimeDicts = []
+    for foldID in range(int(configDict['KFOLD'])):
+        outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + configDict[
+            'ALGORITHM'] + "_" + \
+                                  configDict['CF_COSINESIM_MF'] + "_" + \
+                                  configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                  configDict['TOP_K'] + "_FOLD_" + str(foldID)
+        episodeResponseTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict[
+            'ALGORITHM'] + "_" + \
+                                      configDict['CF_COSINESIM_MF'] + "_" + \
+                                      configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                      configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
+        trainIntentSessionFile = configDict['KFOLD_INPUT_DIR']+intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]+"_TRAIN_FOLD_"+str(foldID)
+        testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
+        (sessionSummaries, sessionDict, sessionStreamDict, keyOrder, episodeResponseTime) = initCFCosineSimOneFold(trainIntentSessionFile, configDict)
+        startTrain = time.time()
+        (sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(keyOrder, configDict, sessionDict, sessionSummaries, sessionStreamDict)
+        trainTime = float(time.time() - startTrain)
+        startTest = time.time()
+        testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict)
+        testTime = float(time.time() - startTest)
+        kFoldOutputIntentFiles.append(outputIntentFileName)
+        kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
+    plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
     return
 
-def runCFCosineSimSingularityExp(configDict):
-    if configDict['INTENT_REP'] == 'TUPLE':
-        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
-    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
-    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
-    elif configDict['INTENT_REP'] == 'QUERY':
-        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
-    else:
-        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
-        sys.exit(0)
-    sessionSummaries = {} # key is sessionID and value is summary
-    sessionDict = {} # key is session ID and value is a list of query intent vectors; no need to store the query itself
+def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):
+    try:
+        os.remove(outputIntentFileName)
+    except OSError:
+        pass
+    numEpisodes = 0
+    startEpisode = time.time()
+    prevSessID = -1
+    with open(testIntentSessionFile) as f:
+        for line in f:
+            numEpisodes += 1
+            (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
+            # we need to delete previous test session entries from the summary
+            if prevSessID!=sessID:
+                if prevSessID in sessionDict:
+                    assert prevSessID in sessionSummaries
+                    del sessionDict[prevSessID]
+                    del sessionSummaries[prevSessID]
+                prevSessID = sessID
+
+            queryKeysSetAside = []
+            queryKeysSetAside.append(str(sessID)+","+str(queryID))
+            (sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict,
+                                                                                          sessionDict, sessionSummaries,
+                                                                                          sessionStreamDict)
+            (topKSessQueryIndices, topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID,
+                                                                      curQueryIntent, configDict)
+            nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
+            elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
+                                                        sessID, queryID, nextQueryIntent, numEpisodes,
+                                                        configDict, outputIntentFileName)
+            (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
+                                                                                           numEpisodes, startEpisode,
+                                                                                           elapsedAppendTime)
+        QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
+
+    f.close()
+    return episodeResponseTimeDictName
+
+def initCFCosineSimOneFold(intentSessionFile, configDict):
+    sessionSummaries = {}  # key is sessionID and value is summary
+    sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
+    sessionStreamDict = {}
+    keyOrder = []
+    episodeResponseTime = {}
+    with open(intentSessionFile) as f:
+        for line in f:
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
+                                                                                        sessionStreamDict)
+            keyOrder.append(str(sessID) + "," + str(queryID))
+    f.close()
+    return (sessionSummaries, sessionDict, sessionStreamDict, keyOrder, episodeResponseTime)
+
+def initCFCosineSimSingularity(intentSessionFile, outputIntentFileName, configDict):
+    sessionSummaries = {}  # key is sessionID and value is summary
+    sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
     numEpisodes = 0
     queryKeysSetAside = []
     episodeResponseTime = {}
-    startEpisode = time.time()
-    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
-                           configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']
+
     sessionLengthDict = ConcurrentSessions.countQueries(configDict['QUERYSESSIONS'])
     try:
         os.remove(outputIntentFileName)
@@ -267,9 +345,20 @@ def runCFCosineSimSingularityExp(configDict):
     keyOrder = []
     with open(intentSessionFile) as f:
         for line in f:
-            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict, sessionStreamDict)
-            keyOrder.append(str(sessID)+","+str(queryID))
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
+                                                                                        sessionStreamDict)
+            keyOrder.append(str(sessID) + "," + str(queryID))
     f.close()
+    startEpisode = time.time()
+    return (sessionSummaries, sessionDict, sessionLengthDict, sessionStreamDict, numEpisodes, queryKeysSetAside, episodeResponseTime, numQueries, keyOrder, startEpisode)
+
+def runCFCosineSimSingularityExp(configDict):
+    intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
+    outputIntentFileName = configDict['OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + configDict['ALGORITHM'] + "_" + \
+                           configDict['CF_COSINESIM_MF'] + "_" + \
+                           configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                               'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    (sessionSummaries, sessionDict, sessionLengthDict, sessionStreamDict, numEpisodes, queryKeysSetAside, episodeResponseTime, numQueries, keyOrder, startEpisode) = initCFCosineSimSingularity(intentSessionFile, outputIntentFileName, configDict)
     for key in keyOrder:
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
@@ -283,11 +372,11 @@ def runCFCosineSimSingularityExp(configDict):
         # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             numEpisodes += 1
-            (predSessSummary,sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionDict, sessionSummaries, sessionStreamDict)
+            (sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionDict, sessionSummaries, sessionStreamDict)
             del queryKeysSetAside
             queryKeysSetAside = []
             if len(sessionSummaries)>1 and sessID in sessionSummaries and queryID < sessionLengthDict[sessID]-1: # because we do not predict intent for last query in a session
-                (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, predSessSummary, curQueryIntent, configDict)
+                (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, curQueryIntent, configDict)
                 nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]
                 elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
                                                                     sessID, queryID, nextQueryIntent, numEpisodes,
@@ -296,7 +385,8 @@ def runCFCosineSimSingularityExp(configDict):
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
                                   configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
-    accThresList = [0.95]
+    accThresList = []
+    accThresList.append(float(configDict['ACCURACY_THRESHOLD']))
     for accThres in accThresList:
         QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
                                       configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])

@@ -9,6 +9,20 @@ import TupleIntent as ti
 import ParseConfigFile as parseConfig
 import pickle
 
+def fetchIntentFileFromConfigDict(configDict):
+    if configDict['INTENT_REP'] == 'TUPLE':
+        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
+    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
+    elif configDict['INTENT_REP'] == 'QUERY':
+        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
+    else:
+        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
+        sys.exit(0)
+    return intentSessionFile
+
 def updateSessionDict(line, configDict, sessionStreamDict):
     (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
     if str(sessID)+","+str(queryID) in sessionStreamDict:
@@ -130,8 +144,114 @@ def writeToPickleFile(fileName, writeObj):
     with open(fileName, 'wb') as handle:
         pickle.dump(writeObj, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+def computeQueRIEFMeasureForEachEpisode(line, configDict):
+    tokens = line.strip().split(";")
+    sessID = tokens[0].split(":")[1]
+    queryID = tokens[1].split(":")[1]
+    numEpisodes = tokens[2].split(":")[1]
+    maxPrecision = 0.0
+    maxRecall = 0.0
+    maxFMeasure = 0.0
+    maxAccuracy = 0.0
+    if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        curQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
+    elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+        curQueryIntent = tokens[3].split(":")[1]
+    for i in range(4, len(tokens)):
+        if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+            topKQueryIntent = BitMap.fromstring(tokens[i].split(":")[1])
+            (precision, recall, FMeasure, accuracy) = computeBitFMeasure(curQueryIntent, topKQueryIntent)
+        elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+            topKQueryIntent = tokens[i].split(":")[1]
+            (precision, recall, FMeasure, accuracy) = computeWeightedFMeasure(curQueryIntent, topKQueryIntent, ",",
+                                                                    configDict)
+    # print "float(len(tokens)-4 ="+str(len(tokens)-4)+", precision = "+str(precision/float(len(tokens)-4))
+    precision /= float(len(tokens) - 4)
+    if precision == 0 or recall == 0:
+        FMeasure = 0
+    else:
+        FMeasure = 2 * precision * recall / (precision + recall)
+    return (sessID, queryID, numEpisodes, maxCosineSim, precision, recall, FMeasure)
+
+def computeAccuracyForEachEpisode(line, configDict):
+    tokens = line.strip().split(";")
+    sessID = tokens[0].split(":")[1]
+    queryID = tokens[1].split(":")[1]
+    numEpisodes = tokens[2].split(":")[1]
+    precision = 0.0
+    recall = 0.0
+    maxCosineSim = 0.0
+    if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        curQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
+    elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+        curQueryIntent = tokens[3].split(":")[1]
+    for i in range(4, len(tokens)):
+        if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+            topKQueryIntent = BitMap.fromstring(tokens[i].split(":")[1])
+            cosineSim = CFCosineSim.computeBitCosineSimilarity(curQueryIntent, topKQueryIntent)
+        elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+            topKQueryIntent = tokens[i].split(":")[1]
+            cosineSim = CFCosineSim.computeWeightedCosineSimilarity(curQueryIntent, topKQueryIntent, ",",
+                                                                    configDict)
+        if cosineSim >= float(accThres):
+            recall = 1.0
+            precision += 1.0
+        if cosineSim > maxCosineSim:
+            maxCosineSim = cosineSim
+    # print "float(len(tokens)-4 ="+str(len(tokens)-4)+", precision = "+str(precision/float(len(tokens)-4))
+    precision /= float(len(tokens) - 4)
+    if precision == 0 or recall == 0:
+        FMeasure = 0
+    else:
+        FMeasure = 2 * precision * recall / (precision + recall)
+    return (sessID, queryID, numEpisodes, maxCosineSim, precision, recall, FMeasure)
+
+def appendToDict(avgDict, key, value):
+    if key not in avgDict:
+        avgDict[key] = []
+    avgDict[key].append(value)
+    return avgDict
+
+def computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict):
+    avgMaxAccuracy = {}
+    avgPrecision = {}
+    avgRecall = {}
+    avgFMeasure = {}
+    for foldOutputIntentFile in kFoldOutputIntentFiles:
+        with open(foldOutputIntentFile) as f:
+            for line in f:
+                (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure) = computeAccuracyForEachEpisode(line, configDict)
+                avgMaxAccuracy = appendToDict(avgMaxAccuracy, numEpisodes, accuracy)
+                avgPrecision = appendToDict(avgPrecision, numEpisodes, precision)
+                avgRecall = appendToDict(avgRecall, numEpisodes, recall)
+                avgFMeasure = appendToDict(avgFMeasure, numEpisodes, FMeasure)
+    outputEvalQualityFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + algoName + "_" + configDict[
+        'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+    try:
+        os.remove(outputEvalQualityFileName)
+    except OSError:
+        pass
+    assert len(avgMaxAccuracy) == len(avgPrecision) and len(avgPrecision) == len(avgRecall) and len(avgRecall) == len(avgFMeasure)
+    episodeIndex = 0
+    for key in avgMaxAccuracy:
+        episodeIndex+=1
+        outputAccuracy = float(sum(avgMaxAccuracy[key])) / float(len(avgMaxAccuracy[key]))
+        outputPrecision = float(sum(avgPrecision[key])) / float(len(avgPrecision[key]))
+        outputRecall = float(sum(avgRecall[key])) / float(len(avgRecall[key]))
+        outputFMeasure = float(sum(avgFMeasure[key])) / float(len(avgFMeasure[key]))
+        outputEvalQualityStr = ";#Episodes:" + str(
+            episodeIndex) + ";Accuracy:" + str(
+            outputAccuracy)+ ";Precision:" + str(outputPrecision) + ";Recall:" + str(outputRecall) + ";FMeasure:" + str(outputFMeasure)
+        ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
+
 def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoName):
-    outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + algoName+"_"+configDict[
+    assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
+    outputDir = None
+    if configDict['SINGULARITY_OR_KFOLD'] =='SINGULARITY':
+        outputDir = configDict['OUTPUT_DIR']
+    elif configDict['SINGULARITY_OR_KFOLD'] =='KFOLD':
+        outputDir = configDict['KFOLD_OUTPUT_DIR']
+    outputEvalQualityFileName = outputDir + "/OutputEvalQualityShortTermIntent_" + algoName+"_"+configDict[
         'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                                 configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
     try:
@@ -140,39 +260,21 @@ def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoN
         pass
     with open(outputIntentFileName) as f:
         for line in f:
-            tokens = line.strip().split(";")
-            sessID = tokens[0].split(":")[1]
-            queryID = tokens[1].split(":")[1]
-            numEpisodes = tokens[2].split(":")[1]
-            precision = 0.0
-            recall = 0.0
-            maxCosineSim = 0.0
-            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                curQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
-            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-                curQueryIntent = tokens[3].split(":")[1]
-            for i in range(4, len(tokens)):
-                if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                    topKQueryIntent = BitMap.fromstring(tokens[i].split(":")[1])
-                    cosineSim = CFCosineSim.computeBitCosineSimilarity(curQueryIntent, topKQueryIntent)
-                elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-                    topKQueryIntent = tokens[i].split(":")[1]
-                    cosineSim = CFCosineSim.computeWeightedCosineSimilarity(curQueryIntent, topKQueryIntent, ",",
-                                                                            configDict)
-                if cosineSim >= float(accThres):
-                    recall = 1.0
-                    precision += 1.0
-                if cosineSim > maxCosineSim:
-                    maxCosineSim = cosineSim
-            # print "float(len(tokens)-4 ="+str(len(tokens)-4)+", precision = "+str(precision/float(len(tokens)-4))
-            precision /= float(len(tokens) - 4)
+            (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure) = computeAccuracyForEachEpisode(line,
+                                                                                                        configDict)
             outputEvalQualityStr = "Session:" + str(sessID) + ";Query:" + str(queryID) + ";#Episodes:" + str(
                 numEpisodes) + ";Precision:" + str(precision) + ";Recall:" + str(recall) + ";Accuracy:" + str(
-                maxCosineSim)
+                accuracy)
             ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
 
 def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
-    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + algoName+"_"+\
+    assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
+    outputDir = None
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        outputDir = configDict['OUTPUT_DIR']
+    elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+        outputDir = configDict['KFOLD_OUTPUT_DIR']
+    outputEvalTimeFileName = outputDir + "/OutputEvalTimeShortTermIntent_" + algoName+"_"+\
                              configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                              configDict['EPISODE_IN_QUERIES']
     try:
@@ -180,6 +282,7 @@ def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
     except OSError:
         pass
     # Simulate or borrow query execution and intent creation to record their times #
+    # the following should be configDict['OUTPUT_DIR] and not outputDir because it gets intent creation and queryExec times from the existing pickle files in the outer directory for kfold exp"
     intentCreationTimeDictName = configDict['OUTPUT_DIR'] + "/IntentCreationTimeDict_" + configDict[
         'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_EPISODE_IN_QUERIES_" + configDict[
                                      'EPISODE_IN_QUERIES'] + ".pickle"
