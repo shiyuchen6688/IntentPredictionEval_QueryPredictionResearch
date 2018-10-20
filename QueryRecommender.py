@@ -80,15 +80,15 @@ def appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes, outp
     elapsedAppendTime = float(time.time() - startAppendTime)
     return elapsedAppendTime
 
-def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, curQueryIntent, numEpisodes, configDict, outputIntentFileName):
+def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, actualQueryIntent, numEpisodes, configDict, outputIntentFileName):
     startAppendTime = time.time()
-    output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";CurQueryIntent:"
+    output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";ActualQueryIntent:"
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        output_str += curQueryIntent.tostring()
+        output_str += actualQueryIntent.tostring()
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        if ";" in curQueryIntent:
-            curQueryIntent.replace(";",",")
-        output_str += curQueryIntent
+        if ";" in actualQueryIntent:
+            actualQueryIntent.replace(";",",")
+        output_str += actualQueryIntent
     assert len(topKSessQueryIndices) == len(topKPredictedIntents)
     for k in range(len(topKPredictedIntents)):
         output_str += ";TOP_" +str(k)+"_PREDICTED_INTENT_"+str(topKSessQueryIndices[k])+":"
@@ -144,6 +144,39 @@ def writeToPickleFile(fileName, writeObj):
     with open(fileName, 'wb') as handle:
         pickle.dump(writeObj, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+def computeBitFMeasure(actualQueryIntent, topKQueryIntent):
+    assert actualQueryIntent.size() == topKQueryIntent.size()
+    TP=0
+    FP=0
+    TN=0
+    FN=0
+    for pos in range(actualQueryIntent.size()):
+        if actualQueryIntent.test(pos) and topKQueryIntent.test(pos):
+            TP+=1
+        elif not actualQueryIntent.test(pos) and not topKQueryIntent.test(pos):
+            TN+=1
+        elif actualQueryIntent.test(pos) and not topKQueryIntent.test(pos):
+            FN+=1
+        elif not actualQueryIntent.test(pos) and topKQueryIntent.test(pos):
+            FP+=1
+    if TP == 0 and FP == 0:
+        precision = 0.0
+    else:
+        precision = float(TP)/float(TP+FP)
+    if TP == 0 and FN == 0:
+        recall = 0.0
+    else:
+        recall = float(TP)/float(TP+FP)
+    if precision == 0.0 and recall == 0.0:
+        FMeasure = 0.0
+    else:
+        FMeasure = 2 * precision * recall / (precision + recall)
+    accuracy = float(TP+TN)/float(TP+FP+TN+FN)
+    return (precision, recall, FMeasure, accuracy)
+
+def computeWeightedFMeasure(actualQueryIntent, topKQueryIntent, delimiter, configDict):
+    
+
 def computeQueRIEFMeasureForEachEpisode(line, configDict):
     tokens = line.strip().split(";")
     sessID = tokens[0].split(":")[1]
@@ -154,24 +187,27 @@ def computeQueRIEFMeasureForEachEpisode(line, configDict):
     maxFMeasure = 0.0
     maxAccuracy = 0.0
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        curQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
+        actualQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        curQueryIntent = tokens[3].split(":")[1]
+        actualQueryIntent = tokens[3].split(":")[1]
     for i in range(4, len(tokens)):
         if configDict['BIT_OR_WEIGHTED'] == 'BIT':
             topKQueryIntent = BitMap.fromstring(tokens[i].split(":")[1])
-            (precision, recall, FMeasure, accuracy) = computeBitFMeasure(curQueryIntent, topKQueryIntent)
+            (precision, recall, FMeasure, accuracy) = computeBitFMeasure(actualQueryIntent, topKQueryIntent)
         elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
             topKQueryIntent = tokens[i].split(":")[1]
-            (precision, recall, FMeasure, accuracy) = computeWeightedFMeasure(curQueryIntent, topKQueryIntent, ",",
+            (precision, recall, FMeasure, accuracy) = computeWeightedFMeasure(actualQueryIntent, topKQueryIntent, ",",
                                                                     configDict)
+        if FMeasure > maxFMeasure:
+            maxFMeasure = FMeasure
+        if precision > maxPrecision:
+            maxPrecision = precision
+        if recall > maxRecall:
+            maxRecall = recall
+        if accuracy > maxAccuracy:
+            maxAccuracy = accuracy
     # print "float(len(tokens)-4 ="+str(len(tokens)-4)+", precision = "+str(precision/float(len(tokens)-4))
-    precision /= float(len(tokens) - 4)
-    if precision == 0 or recall == 0:
-        FMeasure = 0
-    else:
-        FMeasure = 2 * precision * recall / (precision + recall)
-    return (sessID, queryID, numEpisodes, maxCosineSim, precision, recall, FMeasure)
+    return (sessID, queryID, numEpisodes, maxAccuracy, maxPrecision, maxRecall, maxFMeasure)
 
 def computeAccuracyForEachEpisode(line, configDict):
     tokens = line.strip().split(";")
@@ -182,16 +218,16 @@ def computeAccuracyForEachEpisode(line, configDict):
     recall = 0.0
     maxCosineSim = 0.0
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        curQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
+        actualQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        curQueryIntent = tokens[3].split(":")[1]
+        actualQueryIntent = tokens[3].split(":")[1]
     for i in range(4, len(tokens)):
         if configDict['BIT_OR_WEIGHTED'] == 'BIT':
             topKQueryIntent = BitMap.fromstring(tokens[i].split(":")[1])
-            cosineSim = CFCosineSim.computeBitCosineSimilarity(curQueryIntent, topKQueryIntent)
+            cosineSim = CFCosineSim.computeBitCosineSimilarity(actualQueryIntent, topKQueryIntent)
         elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
             topKQueryIntent = tokens[i].split(":")[1]
-            cosineSim = CFCosineSim.computeWeightedCosineSimilarity(curQueryIntent, topKQueryIntent, ",",
+            cosineSim = CFCosineSim.computeWeightedCosineSimilarity(actualQueryIntent, topKQueryIntent, ",",
                                                                     configDict)
         if cosineSim >= float(accThres):
             recall = 1.0
