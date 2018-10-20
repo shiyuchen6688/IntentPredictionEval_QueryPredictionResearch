@@ -175,17 +175,46 @@ def computeBitFMeasure(actualQueryIntent, topKQueryIntent):
     return (precision, recall, FMeasure, accuracy)
 
 def computeWeightedFMeasure(actualQueryIntent, topKQueryIntent, delimiter, configDict):
-    
+    groundTruthDims = actualQueryIntent.split(delimiter)
+    predictedDims = topKQueryIntent.split(delimiter)
+    assert groundTruthDims.size() == predictedDims.size()
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+    for pos in range(groundTruthDims.size()):
+        if groundTruthDims[pos] == '1' and predictedDims[pos]  == '1':
+            TP += 1
+        elif groundTruthDims[pos] == '0' and predictedDims[pos]  == '0':
+            TN += 1
+        elif groundTruthDims[pos] == '1' and predictedDims[pos]  == '0':
+            FN += 1
+        elif groundTruthDims[pos] == '0' and predictedDims[pos]  == '1':
+            FP += 1
+    if TP == 0 and FP == 0:
+        precision = 0.0
+    else:
+        precision = float(TP) / float(TP + FP)
+    if TP == 0 and FN == 0:
+        recall = 0.0
+    else:
+        recall = float(TP) / float(TP + FP)
+    if precision == 0.0 and recall == 0.0:
+        FMeasure = 0.0
+    else:
+        FMeasure = 2 * precision * recall / (precision + recall)
+    accuracy = float(TP + TN) / float(TP + FP + TN + FN)
+    return (precision, recall, FMeasure, accuracy)
 
 def computeQueRIEFMeasureForEachEpisode(line, configDict):
     tokens = line.strip().split(";")
     sessID = tokens[0].split(":")[1]
     queryID = tokens[1].split(":")[1]
     numEpisodes = tokens[2].split(":")[1]
-    maxPrecision = 0.0
-    maxRecall = 0.0
+    precisionAtMaxFMeasure = 0.0
+    recallAtMaxFMeasure = 0.0
     maxFMeasure = 0.0
-    maxAccuracy = 0.0
+    accuracyAtMaxFMeasure = 0.0
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
         actualQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
@@ -200,14 +229,14 @@ def computeQueRIEFMeasureForEachEpisode(line, configDict):
                                                                     configDict)
         if FMeasure > maxFMeasure:
             maxFMeasure = FMeasure
-        if precision > maxPrecision:
-            maxPrecision = precision
-        if recall > maxRecall:
-            maxRecall = recall
-        if accuracy > maxAccuracy:
-            maxAccuracy = accuracy
+        #if precision > maxPrecision:
+            precisionAtMaxFMeasure = precision
+        #if recall > maxRecall:
+            recallAtMaxFMeasure = recall
+        #if accuracy > maxAccuracy:
+            accuracyAtMaxFMeasure = accuracy
     # print "float(len(tokens)-4 ="+str(len(tokens)-4)+", precision = "+str(precision/float(len(tokens)-4))
-    return (sessID, queryID, numEpisodes, maxAccuracy, maxPrecision, maxRecall, maxFMeasure)
+    return (sessID, queryID, numEpisodes, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure, maxFMeasure)
 
 def computeAccuracyForEachEpisode(line, configDict):
     tokens = line.strip().split(";")
