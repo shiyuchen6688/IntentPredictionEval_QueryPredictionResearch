@@ -415,7 +415,7 @@ def runCFCosineSim(configDict):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    (outputIntentFileName, episodeResponseTimeDictName) = runCFCosineSim(configDict)
+    runCFCosineSim(configDict)
 
 
 
