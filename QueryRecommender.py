@@ -246,6 +246,7 @@ def computeCosineSimFMeasureForEachEpisode(line, configDict):
     precision = 0.0
     recall = 0.0
     maxCosineSim = 0.0
+    accThres = float(configDict['ACCURACY_THRESHOLD'])
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
         actualQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
@@ -272,10 +273,12 @@ def computeCosineSimFMeasureForEachEpisode(line, configDict):
     return (sessID, queryID, numEpisodes, maxCosineSim, precision, recall, FMeasure)
 
 def computeAccuracyForEachEpisode(line, configDict):
+    assert configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'COSINESIM' or configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'QUERIE'
     if configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'COSINESIM':
-        computeCosineSimFMeasureForEachEpisode(line, configDict)
+        (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure) = computeCosineSimFMeasureForEachEpisode(line, configDict)
     elif configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'QUERIE':
-        computeQueRIEFMeasureForEachEpisode(line, configDict)
+        (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure) = computeQueRIEFMeasureForEachEpisode(line, configDict)
+    return (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure)
 
 def appendToDict(avgDict, key, value):
     if key not in avgDict:
@@ -288,6 +291,7 @@ def computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict):
     avgPrecision = {}
     avgRecall = {}
     avgFMeasure = {}
+    accThres = configDict['ACCURACY_THRESHOLD']
     for foldOutputIntentFile in kFoldOutputIntentFiles:
         with open(foldOutputIntentFile) as f:
             for line in f:
@@ -311,9 +315,9 @@ def computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict):
         outputRecall = float(sum(avgRecall[key])) / float(len(avgRecall[key]))
         outputFMeasure = float(sum(avgFMeasure[key])) / float(len(avgFMeasure[key]))
         outputEvalQualityStr = ";#Episodes:" + str(
-            episodeIndex) + ";Accuracy:" + str(
-            outputAccuracy)+ ";Precision:" + str(outputPrecision) + ";Recall:" + str(outputRecall) + ";FMeasure:" + str(outputFMeasure)
+            episodeIndex) + ";Precision:" + str(outputPrecision) + ";Recall:" + str(outputRecall) + ";FMeasure:" + str(outputFMeasure)+ ";Accuracy:" + str(outputAccuracy)
         ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
+    return outputEvalQualityFileName
 
 def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoName):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
@@ -334,7 +338,7 @@ def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoN
             (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure) = computeAccuracyForEachEpisode(line,
                                                                                                         configDict)
             outputEvalQualityStr = "Session:" + str(sessID) + ";Query:" + str(queryID) + ";#Episodes:" + str(
-                numEpisodes) + ";Precision:" + str(precision) + ";Recall:" + str(recall) + ";Accuracy:" + str(
+                numEpisodes) + ";Precision:" + str(precision) + ";Recall:" + str(recall) + ";FMeasure:" + str(FMeasure) +";Accuracy:" + str(
                 accuracy)
             ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
 
@@ -402,6 +406,7 @@ def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
             episodeIntentCreationTime[episodes]) + ";IntentPredictionTime(secs):" + str(
             episodeResponseTime[episodes]) + ";TotalResponseTime(secs):" + str(totalResponseTime)
         ti.appendToFile(outputEvalTimeFileName, outputEvalTimeStr)
+    return outputEvalTimeFileName
 
 def evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict):
     evaluateQualityPredictions(outputIntentFileName, configDict, configDict['ACCURACY_THRESHOLD'], configDict['ALGORITHM'])

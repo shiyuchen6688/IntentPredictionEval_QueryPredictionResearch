@@ -234,16 +234,9 @@ def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, s
     return (sessionDict, sessionSummaries)
 
 def plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict):
-    QR.computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict)
-    QR.computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict)
-    accThresList = []
-    accThresList.append(float(configDict['ACCURACY_THRESHOLD']))
-    for accThres in accThresList:
-        QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
-                                      configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
-        print "--Completed Quality Evaluation for accThres:" + str(accThres)
-    QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
-                               configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
+    outputEvalQualityFileName = QR.computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict)
+    outputEvalTimeFileName = QR.computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict)
+    return (outputEvalQualityFileName, outputEvalTimeFileName)
 
 def runCFCosineSimKFoldExp(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
@@ -271,7 +264,23 @@ def runCFCosineSimKFoldExp(configDict):
         testTime = float(time.time() - startTest)
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
-    plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
+
+    (outputEvalQualityFileName, outputEvalTimeFileName) = plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
+
+    outputExcelQuality = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + \
+                         configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                             'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                             'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                             'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(configDict['ACCURACY_THRESHOLD']) + ".xlsx"
+    ParseResultsToExcel.parseQualityFileCFCosineSim(outputEvalQualityFileName, outputExcelQuality, configDict)
+
+
+    outputExcelTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM'] + "_" + configDict[
+    'CF_COSINESIM_MF'] + "_" + configDict[
+                          'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                          'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                      configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+    ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
     return
 
 def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):
@@ -384,25 +393,22 @@ def runCFCosineSimSingularityExp(configDict):
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
                                   configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
-    accThresList = []
-    accThresList.append(float(configDict['ACCURACY_THRESHOLD']))
-    for accThres in accThresList:
-        QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
+    accThres=float(configDict['ACCURACY_THRESHOLD'])
+    QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
                                       configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
-        print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    print "--Completed Quality Evaluation for accThres:" + str(accThres)
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
                                configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
 
-    for accThres in accThresList:
-        outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict[
-            'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
-                                    configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
-                                        'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
-        outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + \
-                             configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                                 'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
-                                 'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + ".xlsx"
-        ParseResultsToExcel.parseQualityFileCFCosineSim(outputEvalQualityFileName, outputExcelQuality, configDict)
+    outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict[
+        'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                    'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+    outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + \
+                            configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + ".xlsx"
+    ParseResultsToExcel.parseQualityFileCFCosineSim(outputEvalQualityFileName, outputExcelQuality, configDict)
 
     outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict[
         'ALGORITHM'] + "_" +configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
