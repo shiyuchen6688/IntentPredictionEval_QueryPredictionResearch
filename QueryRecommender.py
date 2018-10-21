@@ -238,7 +238,7 @@ def computeQueRIEFMeasureForEachEpisode(line, configDict):
     # print "float(len(tokens)-4 ="+str(len(tokens)-4)+", precision = "+str(precision/float(len(tokens)-4))
     return (sessID, queryID, numEpisodes, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure, maxFMeasure)
 
-def computeAccuracyForEachEpisode(line, configDict):
+def computeCosineSimFMeasureForEachEpisode(line, configDict):
     tokens = line.strip().split(";")
     sessID = tokens[0].split(":")[1]
     queryID = tokens[1].split(":")[1]
@@ -270,6 +270,12 @@ def computeAccuracyForEachEpisode(line, configDict):
     else:
         FMeasure = 2 * precision * recall / (precision + recall)
     return (sessID, queryID, numEpisodes, maxCosineSim, precision, recall, FMeasure)
+
+def computeAccuracyForEachEpisode(line, configDict):
+    if configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'COSINESIM':
+        computeCosineSimFMeasureForEachEpisode(line, configDict)
+    elif configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'QUERIE':
+        computeQueRIEFMeasureForEachEpisode(line, configDict)
 
 def appendToDict(avgDict, key, value):
     if key not in avgDict:
@@ -331,6 +337,24 @@ def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoN
                 numEpisodes) + ";Precision:" + str(precision) + ";Recall:" + str(recall) + ";Accuracy:" + str(
                 accuracy)
             ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
+
+
+def computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict):
+    algoName = None
+    if configDict['ALGORITHM'] == 'CF':
+        algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
+    elif configDict['ALGORITHM'] == 'RNN':
+        algoName = configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]
+    avgKFoldTimeDict = {}
+    for kFoldEpisodeTimeDict in kFoldEpisodeResponseTimeDicts:
+        episodeResponseTime = readFromPickleFile(kFoldEpisodeTimeDict)
+        for episodes in range(1, len(episodeResponseTime)):
+            if episodes not in avgKFoldTimeDict:
+                avgKFoldTimeDict[episodes] = []
+            avgKFoldTimeDict[episodes].append(episodeResponseTime[episodes])
+    for episodes in range(1, len(avgKFoldTimeDict)):
+        avgKFoldTimeDict[episodes] = float(sum(avgKFoldTimeDict[episodes]))/float(len(avgKFoldTimeDict[episodes]))
+    evaluateTimePredictions(avgKFoldTimeDict, configDict, algoName)
 
 def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'

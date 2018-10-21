@@ -233,7 +233,6 @@ def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, s
         (sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
     return (sessionDict, sessionSummaries)
 
-
 def plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict):
     QR.computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict)
     QR.computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict)
