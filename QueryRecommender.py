@@ -287,6 +287,11 @@ def appendToDict(avgDict, key, value):
     return avgDict
 
 def computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict):
+    algoName = None
+    if configDict['ALGORITHM'] == 'CF':
+        algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
+    elif configDict['ALGORITHM'] == 'RNN':
+        algoName = configDict['ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU']
     avgMaxAccuracy = {}
     avgPrecision = {}
     avgRecall = {}
