@@ -37,7 +37,7 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
                 ti.appendToFile(outputIntentTrainSessions, lineToOutput)
     return
 
-def prepareVariableTrainFixedTest(configDict, intentSessionFile):
+def prepareKFoldTrainTest(configDict, intentSessionFile):
     inputSessionFile = configDict['QUERYSESSIONS']
     #sessID and queryID should start from 0
     sessNames = []
@@ -79,4 +79,4 @@ if __name__ == "__main__":
     else:
         print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
         sys.exit(0)
-    prepareVariableTrainFixedTest(configDict, intentSessionFile)
+    prepareKFoldTrainTest(configDict, intentSessionFile)

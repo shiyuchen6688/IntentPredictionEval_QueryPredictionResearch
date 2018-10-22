@@ -36,7 +36,7 @@ def updateSessionLineDict(line, configDict, sessionLineDict):
     if str(sessID)+","+str(queryID) in sessionLineDict:
         print str(sessID)+","+str(queryID)+ " already exists !!"
         sys.exit(0)
-    sessionLineDict[str(sessID)+","+str(queryID)] = line
+    sessionLineDict[str(sessID)+","+str(queryID)] = line.strip()
     return sessionLineDict
 
 def findNextQueryIntent(intentSessionFile, sessID, queryID, configDict, lines):
