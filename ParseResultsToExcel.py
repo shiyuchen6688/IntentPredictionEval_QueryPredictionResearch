@@ -125,6 +125,16 @@ def parseTimeFile(fileName, outputExcel):
          'intentCreate': intentCreate, 'intentPredict': intentPredict, 'responseTime': responseTime})
     df.to_excel(outputExcel, sheet_name='sheet1', index=False)
 
+def parseTimeDict(avgKFoldTimeDict, outputExcelTimeEval):
+    episodes = []
+    avgIntentPredict = []
+    for episodeIndex in avgKFoldTimeDict:
+        episodes.append(episodeIndex)
+        avgIntentPredict.append(avgKFoldTimeDict[episodeIndex])
+    print "Lengths of episodes: " + str(len(episodes)) + ", avgIntentPredict: "+str(len(avgIntentPredict))
+    df = DataFrame({'episodes': episodes, 'avgIntentPredict': avgIntentPredict})
+    df.to_excel(outputExcelTimeEval, sheet_name='sheet1', index=False)
+
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
     accThres = float(configDict['ACCURACY_THRESHOLD'])

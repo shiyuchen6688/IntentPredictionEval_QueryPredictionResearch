@@ -363,7 +363,7 @@ def computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict):
             avgKFoldTimeDict[episodes].append(episodeResponseTime[episodes])
     for episodes in range(1, len(avgKFoldTimeDict)):
         avgKFoldTimeDict[episodes] = float(sum(avgKFoldTimeDict[episodes]))/float(len(avgKFoldTimeDict[episodes]))
-    evaluateTimePredictions(avgKFoldTimeDict, configDict, algoName)
+    return avgKFoldTimeDict
 
 def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'

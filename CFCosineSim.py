@@ -235,8 +235,8 @@ def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, s
 
 def plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict):
     outputEvalQualityFileName = QR.computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict)
-    outputEvalTimeFileName = QR.computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict)
-    return (outputEvalQualityFileName, outputEvalTimeFileName)
+    avgKFoldTimeDict = QR.computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict)
+    return (outputEvalQualityFileName, avgKFoldTimeDict)
 
 def runCFCosineSimKFoldExp(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
@@ -266,7 +266,7 @@ def runCFCosineSimKFoldExp(configDict):
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
 
-    (outputEvalQualityFileName, outputEvalTimeFileName) = plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
+    (outputEvalQualityFileName, avgKFoldTimeDict) = plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
 
     outputExcelQuality = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + \
                          configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
@@ -281,7 +281,7 @@ def runCFCosineSimKFoldExp(configDict):
                           'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                           'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                       configDict['EPISODE_IN_QUERIES'] + ".xlsx"
-    ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
+    ParseResultsToExcel.parseTimeDict(avgKFoldTimeDict, outputExcelTimeEval)
     return
 
 def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):
@@ -294,7 +294,6 @@ def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, se
     prevSessID = -1
     with open(testIntentSessionFile) as f:
         for line in f:
-            numEpisodes += 1
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
             # we need to delete previous test session entries from the summary
             if prevSessID!=sessID:
@@ -313,6 +312,7 @@ def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, se
                                                                       curQueryIntent, configDict)
             if queryID+1 >= int(sessionLengthDict[sessID]):
                 continue
+            numEpisodes += 1
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
                                                         sessID, queryID, nextQueryIntent, numEpisodes,
