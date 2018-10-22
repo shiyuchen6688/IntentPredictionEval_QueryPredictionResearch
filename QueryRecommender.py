@@ -349,11 +349,6 @@ def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoN
 
 
 def computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict):
-    algoName = None
-    if configDict['ALGORITHM'] == 'CF':
-        algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
-    elif configDict['ALGORITHM'] == 'RNN':
-        algoName = configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]
     avgKFoldTimeDict = {}
     for kFoldEpisodeTimeDict in kFoldEpisodeResponseTimeDicts:
         episodeResponseTime = readFromPickleFile(kFoldEpisodeTimeDict)

@@ -140,24 +140,29 @@ if __name__ == "__main__":
     accThres = float(configDict['ACCURACY_THRESHOLD'])
     algoName = None
     outputEvalQualityFileName = None
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        outputDir = configDict['OUTPUT_DIR']
+    elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+        outputDir = configDict['KFOLD_OUTPUT_DIR']
     if configDict['ALGORITHM'] == 'CF':
         algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
-        outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)
+        outputEvalQualityFileName = outputDir + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)
     elif configDict['ALGORITHM'] == 'RNN':
         algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
-        outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + \
+        outputEvalQualityFileName = outputDir + "/OutputFileShortTermIntent_" + \
                                 configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + \
                                 configDict['INTENT_REP'] + "_" + \
                                 configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                                 configDict['EPISODE_IN_QUERIES']
-    outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
+    outputExcelQuality = outputDir + "/OutputExcelQuality_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
     if configDict['ALGORITHM'] == 'CF':
         parseQualityFileCFCosineSim(outputEvalQualityFileName, outputExcelQuality, configDict)
     elif configDict['ALGORITHM'] == 'RNN':
         parseQualityFileRNN(outputEvalQualityFileName, outputExcelQuality, configDict)
-    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
-    outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
-    parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
+    outputEvalTimeFileName = outputDir + "/OutputEvalTimeShortTermIntent_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    outputExcelTimeEval = outputDir + "/OutputExcelTime_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
 
     '''
     trainSize, testSize, posTrain, posTest, precision, recall, accuracy, FMeasure = read(readFile)
