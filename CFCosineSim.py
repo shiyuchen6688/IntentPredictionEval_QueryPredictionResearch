@@ -255,12 +255,13 @@ def runCFCosineSimKFoldExp(configDict):
                                       configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
         trainIntentSessionFile = configDict['KFOLD_INPUT_DIR']+intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]+"_TRAIN_FOLD_"+str(foldID)
         testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
-        (sessionSummaries, sessionDict, sessionStreamDict, keyOrder, episodeResponseTime) = initCFCosineSimOneFold(trainIntentSessionFile, configDict)
+        (sessionSummaries, sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, episodeResponseTime) = initCFCosineSimOneFold(trainIntentSessionFile, configDict)
         startTrain = time.time()
         (sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(keyOrder, configDict, sessionDict, sessionSummaries, sessionStreamDict)
         trainTime = float(time.time() - startTrain)
+        (testSessionSummaries, testSessionDict, sessionLengthDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initCFCosineSimOneFold(testIntentSessionFile, configDict)
         startTest = time.time()
-        testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict)
+        testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, testSessionStreamDict, testEpisodeResponseTime, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
@@ -328,13 +329,14 @@ def initCFCosineSimOneFold(intentSessionFile, configDict):
     sessionStreamDict = {}
     keyOrder = []
     episodeResponseTime = {}
+    sessionLengthDict = ConcurrentSessions.countQueries(configDict['QUERYSESSIONS'])
     with open(intentSessionFile) as f:
         for line in f:
             (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
                                                                                         sessionStreamDict)
             keyOrder.append(str(sessID) + "," + str(queryID))
     f.close()
-    return (sessionSummaries, sessionDict, sessionStreamDict, keyOrder, episodeResponseTime)
+    return (sessionSummaries, sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, episodeResponseTime)
 
 def initCFCosineSimSingularity(intentSessionFile, outputIntentFileName, configDict):
     sessionSummaries = {}  # key is sessionID and value is summary
