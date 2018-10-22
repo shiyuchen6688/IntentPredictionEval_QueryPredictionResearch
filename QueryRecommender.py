@@ -319,7 +319,7 @@ def computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict):
         outputPrecision = float(sum(avgPrecision[key])) / float(len(avgPrecision[key]))
         outputRecall = float(sum(avgRecall[key])) / float(len(avgRecall[key]))
         outputFMeasure = float(sum(avgFMeasure[key])) / float(len(avgFMeasure[key]))
-        outputEvalQualityStr = ";#Episodes:" + str(
+        outputEvalQualityStr = "#Episodes:" + str(
             episodeIndex) + ";Precision:" + str(outputPrecision) + ";Recall:" + str(outputRecall) + ";FMeasure:" + str(outputFMeasure)+ ";Accuracy:" + str(outputAccuracy)
         ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
     return outputEvalQualityFileName
