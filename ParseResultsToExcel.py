@@ -125,7 +125,7 @@ def parseTimeFile(fileName, outputExcel):
          'intentCreate': intentCreate, 'intentPredict': intentPredict, 'responseTime': responseTime})
     df.to_excel(outputExcel, sheet_name='sheet1', index=False)
 
-def parseTimeDict(avgKFoldTimeDict, outputExcelTimeEval):
+def parseKFoldTimeDict(avgKFoldTimeDict, avgTrainTime, avgTestTime, outputExcelTimeEval, outputExcelKFoldTimeEval):
     episodes = []
     avgIntentPredict = []
     for episodeIndex in avgKFoldTimeDict:
@@ -134,6 +134,12 @@ def parseTimeDict(avgKFoldTimeDict, outputExcelTimeEval):
     print "Lengths of episodes: " + str(len(episodes)) + ", avgIntentPredict: "+str(len(avgIntentPredict))
     df = DataFrame({'episodes': episodes, 'avgIntentPredict': avgIntentPredict})
     df.to_excel(outputExcelTimeEval, sheet_name='sheet1', index=False)
+    foldID = [ i for i in range(len(avgTrainTime))]
+    assert len(avgTrainTime) == len(avgTestTime)
+    # there are 11 folds for 10 coz last entry is the average time across all the 10 folds
+    print "Lengths of folds: " + str(len(foldID)) + ", avgTrainTime: " + str(len(avgTrainTime)) + ", avgTestTime: " + str(len(avgTestTime))
+    df = DataFrame({'foldID': foldID, 'avgTrainTime': avgTrainTime, 'avgTestTime': avgTestTime})
+    df.to_excel(outputExcelKFoldTimeEval, sheet_name='sheet1', index=False)
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")

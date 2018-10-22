@@ -242,6 +242,8 @@ def runCFCosineSimKFoldExp(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     kFoldOutputIntentFiles = []
     kFoldEpisodeResponseTimeDicts = []
+    avgTrainTime = []
+    avgTestTime = []
     for foldID in range(int(configDict['KFOLD'])):
         outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + configDict[
             'ALGORITHM'] + "_" + \
@@ -259,10 +261,12 @@ def runCFCosineSimKFoldExp(configDict):
         startTrain = time.time()
         (sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(keyOrder, configDict, sessionDict, sessionSummaries, sessionStreamDict)
         trainTime = float(time.time() - startTrain)
+        avgTrainTime.append(trainTime)
         (testSessionSummaries, testSessionDict, sessionLengthDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initCFCosineSimOneFold(testIntentSessionFile, configDict)
         startTest = time.time()
         testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, testSessionStreamDict, testEpisodeResponseTime, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
+        avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
 
@@ -281,7 +285,17 @@ def runCFCosineSimKFoldExp(configDict):
                           'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                           'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                       configDict['EPISODE_IN_QUERIES'] + ".xlsx"
-    ParseResultsToExcel.parseTimeDict(avgKFoldTimeDict, outputExcelTimeEval)
+    outputExcelKFoldTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelKFoldTime_" + configDict['ALGORITHM'] + "_" + \
+                          configDict[
+                              'CF_COSINESIM_MF'] + "_" + configDict[
+                              'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                              'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                          configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+    #compute avg train time across kfolds and append it to the list
+    avgTrainTime.append(float(sum(avgTrainTime))/float(len(avgTrainTime)))
+    # compute avg test time across kfolds and append it to the list
+    avgTestTime.append(float(sum(avgTestTime))/float(len(avgTestTime)))
+    ParseResultsToExcel.parseKFoldTimeDict(avgKFoldTimeDict, avgTrainTime, avgTestTime, outputExcelTimeEval, outputExcelKFoldTimeEval)
     return
 
 def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):
