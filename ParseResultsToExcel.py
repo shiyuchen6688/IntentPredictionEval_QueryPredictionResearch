@@ -44,11 +44,10 @@ def parseQualityFileCFCosineSim(fileName, outputExcel, configDict):
         for line in f:
             tokens = line.split(";")
             numEpisodes = float(tokens[episodeIndex].split(":")[1])
-            accuracyPerEpisode = float(tokens[episodeIndex + 1].split(":")[1])
-            precisionPerEpisode = float(tokens[episodeIndex+2].split(":")[1])
-            recallPerEpisode = float(tokens[episodeIndex+3].split(":")[1])
-            FMeasurePerEpisode = float(tokens[episodeIndex+4].split(":")[1])
-
+            precisionPerEpisode = float(tokens[episodeIndex+1].split(":")[1])
+            recallPerEpisode = float(tokens[episodeIndex+2].split(":")[1])
+            FMeasurePerEpisode = float(tokens[episodeIndex+3].split(":")[1])
+            accuracyPerEpisode = float(tokens[episodeIndex + 4].split(":")[1])
             episodes.append(numEpisodes)
             precision.append(precisionPerEpisode)
             recall.append(recallPerEpisode)
