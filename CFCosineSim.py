@@ -261,7 +261,7 @@ def runCFCosineSimKFoldExp(configDict):
         trainTime = float(time.time() - startTrain)
         (testSessionSummaries, testSessionDict, sessionLengthDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initCFCosineSimOneFold(testIntentSessionFile, configDict)
         startTest = time.time()
-        testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, testSessionStreamDict, testEpisodeResponseTime, episodeResponseTimeDictName, configDict)
+        testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, testSessionStreamDict, testEpisodeResponseTime, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
@@ -284,7 +284,7 @@ def runCFCosineSimKFoldExp(configDict):
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
     return
 
-def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):
+def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):
     try:
         os.remove(outputIntentFileName)
     except OSError:
@@ -311,6 +311,8 @@ def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, se
                                                                                           sessionStreamDict)
             (topKSessQueryIndices, topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID,
                                                                       curQueryIntent, configDict)
+            if queryID+1 >= int(sessionLengthDict[sessID]):
+                continue
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
                                                         sessID, queryID, nextQueryIntent, numEpisodes,
