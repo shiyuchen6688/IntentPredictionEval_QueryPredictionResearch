@@ -35,19 +35,20 @@ def parseQualityFileCFCosineSim(fileName, outputExcel, configDict):
     recall = []
     FMeasure = []
     accuracy = []
-    assert configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'COSINESIM' or configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'QUERIE'
-    if configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'COSINESIM':
+    assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
         episodeIndex = 2
-    elif configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'QUERIE':
+    elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
         episodeIndex = 0
     with open(fileName) as f:
         for line in f:
             tokens = line.split(";")
             numEpisodes = float(tokens[episodeIndex].split(":")[1])
-            precisionPerEpisode = float(tokens[episodeIndex+1].split(":")[1])
-            recallPerEpisode = float(tokens[episodeIndex+2].split(":")[1])
-            FMeasurePerEpisode = float(tokens[episodeIndex+3].split(":")[1])
-            accuracyPerEpisode = float(tokens[episodeIndex+4].split(":")[1])
+            accuracyPerEpisode = float(tokens[episodeIndex + 1].split(":")[1])
+            precisionPerEpisode = float(tokens[episodeIndex+2].split(":")[1])
+            recallPerEpisode = float(tokens[episodeIndex+3].split(":")[1])
+            FMeasurePerEpisode = float(tokens[episodeIndex+4].split(":")[1])
+
             episodes.append(numEpisodes)
             precision.append(precisionPerEpisode)
             recall.append(recallPerEpisode)

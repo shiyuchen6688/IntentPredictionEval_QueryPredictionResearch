@@ -166,7 +166,7 @@ def computeBitFMeasure(actualQueryIntent, topKQueryIntent):
     if TP == 0 and FN == 0:
         recall = 0.0
     else:
-        recall = float(TP)/float(TP+FP)
+        recall = float(TP)/float(TP+FN)
     if precision == 0.0 and recall == 0.0:
         FMeasure = 0.0
     else:
@@ -198,7 +198,7 @@ def computeWeightedFMeasure(actualQueryIntent, topKQueryIntent, delimiter, confi
     if TP == 0 and FN == 0:
         recall = 0.0
     else:
-        recall = float(TP) / float(TP + FP)
+        recall = float(TP) / float(TP + FN)
     if precision == 0.0 and recall == 0.0:
         FMeasure = 0.0
     else:
@@ -229,12 +229,12 @@ def computeQueRIEFMeasureForEachEpisode(line, configDict):
                                                                     configDict)
         if FMeasure > maxFMeasure:
             maxFMeasure = FMeasure
-        #if precision > maxPrecision:
             precisionAtMaxFMeasure = precision
-        #if recall > maxRecall:
             recallAtMaxFMeasure = recall
-        #if accuracy > maxAccuracy:
             accuracyAtMaxFMeasure = accuracy
+        #if precision > maxPrecision:
+        #if recall > maxRecall:
+        #if accuracy > maxAccuracy:
     # print "float(len(tokens)-4 ="+str(len(tokens)-4)+", precision = "+str(precision/float(len(tokens)-4))
     return (sessID, queryID, numEpisodes, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure, maxFMeasure)
 
@@ -416,20 +416,42 @@ def evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, confi
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
+    accThres = float(configDict['ACCURACY_THRESHOLD'])
     algoName = None
+    outputDir=None
+    outputEvalQualityFileName = None
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        outputDir = configDict['OUTPUT_DIR']
+    elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+        outputDir = configDict['KFOLD_OUTPUT_DIR']
     if configDict['ALGORITHM'] == 'CF':
         algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
+        if configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+            outputIntentFileName = configDict[
+                                            'KFOLD_OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + algoName + "_" + \
+                                        configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                        configDict['TOP_K'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+        elif configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+            outputIntentFileName = outputDir + "/OutputEvalQualityShortTermIntent_" + configDict[
+                'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                            'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                            'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                            'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
     elif configDict['ALGORITHM'] == 'RNN':
         algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
-    outputIntentFileName = configDict['OUTPUT_DIR']+"/OutputFileShortTermIntent_"+ algoName+"_"+\
-                           configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']
-    episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['ALGORITHM']+"_"+configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
-    #evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
-    accThresList = [0.95]
-    for accThres in accThresList:
-        evaluateQualityPredictions(outputIntentFileName, configDict, accThres, configDict['ALGORITHM'])
-        print "--Completed Quality Evaluation for accThres:"+str(accThres)
-    evaluateTimePredictions(episodeResponseTimeDictName, configDict, configDict['ALGORITHM'])
+        outputIntentFileName = outputDir + "/OutputFileShortTermIntent_" +configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + \
+                                configDict['INTENT_REP'] + "_" + \
+                                configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                                configDict['EPISODE_IN_QUERIES']
+        #evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
+    evaluateQualityPredictions(outputIntentFileName, configDict, accThres, configDict['ALGORITHM'])
+    print "--Completed Quality Evaluation for accThres:"+str(accThres)
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        episodeResponseTimeDictName = outputDir + "/ResponseTimeDict_" + algoName + "_" + \
+                                      configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                      configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                          'EPISODE_IN_QUERIES'] + ".pickle"
+        evaluateTimePredictions(episodeResponseTimeDictName, configDict, configDict['ALGORITHM'])
 
 '''
 class TimeStep(object):
