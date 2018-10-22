@@ -245,13 +245,11 @@ def runCFCosineSimKFoldExp(configDict):
     avgTrainTime = []
     avgTestTime = []
     for foldID in range(int(configDict['KFOLD'])):
-        outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + configDict[
-            'ALGORITHM'] + "_" + \
+        outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + configDict['ALGORITHM'] + "_" + \
                                   configDict['CF_COSINESIM_MF'] + "_" + \
                                   configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                   configDict['TOP_K'] + "_FOLD_" + str(foldID)
-        episodeResponseTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict[
-            'ALGORITHM'] + "_" + \
+        episodeResponseTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['ALGORITHM'] + "_" + \
                                       configDict['CF_COSINESIM_MF'] + "_" + \
                                       configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                       configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
