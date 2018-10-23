@@ -510,9 +510,10 @@ def runRNNSingularityExp(configDict):
 
 def executeRNN(configDict):
     if configDict['SINGULARITY_OR_KFOLD']=='SINGULARITY':
-        runRNNSingularityExp(configDict)
+        (outputIntentFileName, episodeResponseTimeDictName) = runRNNSingularityExp(configDict)
     elif configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
-        runRNNKFoldExp(configDict)
+        (outputIntentFileName, episodeResponseTimeDictName) = runRNNKFoldExp(configDict)
+    return (outputIntentFileName, episodeResponseTimeDictName)
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
