@@ -439,7 +439,7 @@ def computePredictedIntentsRNN(predictedY, configDict):
     predictedBitMaps = []
     cosineSimDict = {}
     dictIndex = 0
-    topDimLimit=int(float(configDict['RNN_TOP_DIM_PERCENT']*len(sorted_d))/float(100.0))
+    topDimLimit=int(float(configDict['RNN_TOP_DIM_PERCENT'])*len(sorted_d)/float(100.0))
     for dimEntry in sorted_d:
         if len(dimsSoFar)>=topDimLimit:
             break
