@@ -233,11 +233,6 @@ def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, s
         (sessionDict, sessionSummaries) = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries, sessionDict)
     return (sessionDict, sessionSummaries)
 
-def plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict):
-    outputEvalQualityFileName = QR.computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict)
-    avgKFoldTimeDict = QR.computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict)
-    return (outputEvalQualityFileName, avgKFoldTimeDict)
-
 def runCFCosineSimKFoldExp(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     kFoldOutputIntentFiles = []
@@ -268,7 +263,7 @@ def runCFCosineSimKFoldExp(configDict):
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
 
-    (outputEvalQualityFileName, avgKFoldTimeDict) = plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
+    (outputEvalQualityFileName, avgKFoldTimeDict) = QR.plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
 
     outputExcelQuality = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + \
                          configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
@@ -337,14 +332,14 @@ def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, se
     f.close()
     return episodeResponseTimeDictName
 
-def initCFCosineSimOneFold(intentSessionFile, configDict):
+def initCFCosineSimOneFold(trainIntentSessionFile, configDict):
     sessionSummaries = {}  # key is sessionID and value is summary
     sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
     sessionStreamDict = {}
     keyOrder = []
     episodeResponseTime = {}
     sessionLengthDict = ConcurrentSessions.countQueries(configDict['QUERYSESSIONS'])
-    with open(intentSessionFile) as f:
+    with open(trainIntentSessionFile) as f:
         for line in f:
             (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
                                                                                         sessionStreamDict)

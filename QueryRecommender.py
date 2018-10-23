@@ -72,11 +72,31 @@ def retrieveSessIDQueryIDIntent(line, configDict):
         curQueryIntent = normalizeWeightedVector(curQueryIntent)
     return (sessID, queryID, curQueryIntent)
 
-def appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes, outputEvalQualityFileName):
+def computeWeightedVectorFromList(predictedY):
+    topKPredictedIntents = []
+    topKPredictedIntent = ';'.join(str(x) for x in predictedY)
+    topKPredictedIntents.append(topKPredictedIntent)
+    return topKPredictedIntents
+
+def appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, actualQueryIntent, numEpisodes, outputIntentFileName, configDict):
     startAppendTime = time.time()
-    outputEvalQualityStr = "Session:" + str(sessID) + ";Query:" + str(queryID) + ";#Episodes:" + str(numEpisodes) + ";Accuracy:" + str(cosineSim)
-    ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
-    print "cosine similarity at sessID: " + str(sessID) + ", queryID: " + str(queryID) + " is " + str(cosineSim)
+    output_str = "Session:" + str(sessID) + ";Query:" + str(queryID) + ";#Episodes:" + str(
+        numEpisodes) + ";ActualQueryIntent:"
+    if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        output_str += actualQueryIntent.tostring()
+    elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+        if ";" in actualQueryIntent:
+            actualQueryIntent.replace(";", ",")
+        output_str += actualQueryIntent
+    for k in range(len(topKPredictedIntents)):
+        output_str += ";TOP_" + str(k) + "_PREDICTED_INTENT:"
+        if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+            output_str += topKPredictedIntents[k].tostring()
+        elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+            output_str += topKPredictedIntents[k].replace(";", ",")
+    ti.appendToFile(outputIntentFileName, output_str)
+    print "Predicted " + str(len(topKPredictedIntents)) + " query intent vectors for Session " + str(
+        sessID) + ", Query " + str(queryID)
     elapsedAppendTime = float(time.time() - startAppendTime)
     return elapsedAppendTime
 
@@ -359,6 +379,11 @@ def computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict):
     for episodes in range(1, len(avgKFoldTimeDict)):
         avgKFoldTimeDict[episodes] = float(sum(avgKFoldTimeDict[episodes]))/float(len(avgKFoldTimeDict[episodes]))
     return avgKFoldTimeDict
+
+def plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict):
+    outputEvalQualityFileName = computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict)
+    avgKFoldTimeDict = computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict)
+    return (outputEvalQualityFileName, avgKFoldTimeDict)
 
 def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'

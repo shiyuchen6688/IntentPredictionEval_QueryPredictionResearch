@@ -1,5 +1,5 @@
 from __future__ import division
-import sys
+import sys, operator
 import os
 import time
 import QueryRecommender as QR
@@ -22,6 +22,7 @@ from keras import regularizers
 from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
 from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU
+import CFCosineSim
 
 '''
 # convert an array of values into a dataset matrix
@@ -292,17 +293,93 @@ def predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict
 
 def runRNNKFoldExp(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
+    kFoldOutputIntentFiles = []
+    kFoldEpisodeResponseTimeDicts = []
+    avgTrainTime = []
+    avgTestTime = []
+    algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
+    for foldID in range(int(configDict['KFOLD'])):
+        outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + algoName + "_" + \
+                               configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                               configDict['TOP_K'] + "_FOLD_" + str(foldID)
+        episodeResponseTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/ResponseTimeDict_" + algoName + "_" + \
+                                      configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                      configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
+        trainIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
+        testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
+        (sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN) = initRNNOneFoldTrain(trainIntentSessionFile, configDict)
+        startTrain = time.time()
+        (modelRNN, sessionDict) = refineTemporalPredictor(keyOrder, configDict, sessionDict, modelRNN, sessionStreamDict)
+        trainTime = float(time.time() - startTrain)
+        avgTrainTime.append(trainTime)
+        (testSessionDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
+        startTest = time.time()
+        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, testSessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
+        testTime = float(time.time() - startTest)
+        avgTestTime.append(testTime)
+        kFoldOutputIntentFiles.append(outputIntentFileName)
+        kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
+
+    (outputEvalQualityFileName, avgKFoldTimeDict) = QR.plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
+
+    outputExcelQuality = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelQuality_" + algoName + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                             'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                             'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                             'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(
+        configDict['ACCURACY_THRESHOLD']) + ".xlsx"
+    ParseResultsToExcel.parseQualityFileCFCosineSim(outputEvalQualityFileName, outputExcelQuality, configDict)
+
+    outputExcelTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelTime_" + algoName + "_" + configDict[
+                              'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                              'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                          configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+    outputExcelKFoldTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelKFoldTime_" + algoName + "_" + configDict[
+                                   'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                   'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                               configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+    # compute avg train time across kfolds and append it to the list
+    avgTrainTime.append(float(sum(avgTrainTime)) / float(len(avgTrainTime)))
+    # compute avg test time across kfolds and append it to the list
+    avgTestTime.append(float(sum(avgTestTime)) / float(len(avgTestTime)))
+    ParseResultsToExcel.parseKFoldTimeDict(avgKFoldTimeDict, avgTrainTime, avgTestTime, outputExcelTimeEval,
+                                           outputExcelKFoldTimeEval)
     return
 
-def runRNNSingularityExp(configDict):
+def initRNNOneFoldTest(testIntentSessionFile, configDict):
+    sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
+    episodeResponseTime = {}
+    sessionStreamDict = {}
+    keyOrder = []
+    with open(testIntentSessionFile) as f:
+        for line in f:
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
+                                                                                        sessionStreamDict)
+            keyOrder.append(str(sessID) + "," + str(queryID))
+    f.close()
+    return (sessionDict, sessionStreamDict, keyOrder, episodeResponseTime)
+
+def initRNNOneFoldTrain(trainIntentSessionFile, configDict):
+    sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
+    sessionLengthDict = ConcurrentSessions.countQueries(configDict['QUERYSESSIONS'])
+    sessionStreamDict = {}
+    keyOrder = []
+    with open(trainIntentSessionFile) as f:
+        for line in f:
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
+                                                                                        sessionStreamDict)
+            keyOrder.append(str(sessID) + "," + str(queryID))
+    f.close()
+    modelRNN = None
+    return (sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN)
+
+def initRNNSingularity(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
     numEpisodes = 0
     queryKeysSetAside = []
     episodeResponseTime = {}
-    startEpisode = time.time()
     outputIntentFileName = configDict['OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + \
-                           configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ \
+                           configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + \
                            configDict['INTENT_REP'] + "_" + \
                            configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                            configDict['EPISODE_IN_QUERIES']
@@ -316,11 +393,72 @@ def runRNNSingularityExp(configDict):
     keyOrder = []
     with open(intentSessionFile) as f:
         for line in f:
-            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict, sessionStreamDict)
-            keyOrder.append(str(sessID)+","+str(queryID))
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
+                                                                                        sessionStreamDict)
+            keyOrder.append(str(sessID) + "," + str(queryID))
     f.close()
+    startEpisode = time.time()
     predictedY = None
     modelRNN = None
+    return (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionDict, numQueries, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
+
+def testOneFold(keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
+    episodeQualityDict = {}
+    numEpisodes = 0
+    startEpisode = time.time()
+    for key in keyOrder:
+        numEpisodes+=1
+        sessID = int(key.split(",")[0])
+        queryID = int(key.split(",")[1])
+        curQueryIntent = sessionStreamDict[key]
+        if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
+            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
+            nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
+            nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
+            actual_vector = np.array(nextIntentList).astype(np.int)
+            # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
+            #cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
+            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict)
+            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
+            elapsedAppendTime = QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
+                                                                   outputIntentFileName, configDict)
+            (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes,startEpisode, elapsedAppendTime)
+    QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
+    return (outputIntentFileName, episodeResponseTimeDictName)
+
+def computePredictedIntentsRNN(predictedY, configDict):
+    #sort dimension weights in descending order
+    weightDict = {}
+    for i in range(len(predictedY)):
+        weightDict[i] = predictedY[i]
+    sorted_d = sorted(weightDict.items(), key = operator.itemgetter(0), reverse=True)
+    dimsSoFar = []
+    predictedBitMaps = []
+    cosineSimDict = {}
+    dictIndex = 0
+    for dimIndex in sorted_d:
+        dimsSoFar.append(dimIndex)
+        predictedBitMap = BitMap(len(predictedY))
+        for i in range(len(dimsSoFar)):
+            predictedBitMap.set(dimsSoFar[i])
+        predictedBitMaps.append(predictedBitMap)
+        cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, predictedBitMap, configDict)
+        cosineSimDict[dictIndex] = cosineSim
+        dictIndex+=1
+    del sorted_d
+    sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(0), reverse=True)
+    topKPredictedIntents = []
+    for i in sorted_csd:
+        topKPredictedIntents.append(predictedBitMaps[i])
+    del cosineSimDict
+    del sorted_csd
+    return topKPredictedIntents
+
+def runRNNSingularityExp(configDict):
+    (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionDict, numQueries, sessionLengthDict,
+     sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY) = initRNNSingularity(configDict)
     for key in keyOrder:
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
@@ -341,9 +479,13 @@ def runRNNSingularityExp(configDict):
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
             actual_vector = np.array(nextIntentList).astype(np.int)
             # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
-            cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
-            elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, cosineSim, numEpisodes,
-                                                                  outputIntentFileName)
+            #cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
+            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict)
+            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
+            elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
+                                                                   outputIntentFileName, configDict)
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes,startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+configDict['INTENT_REP'] + "_" + \
@@ -351,11 +493,9 @@ def runRNNSingularityExp(configDict):
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"])
-    accThresList = []
-    accThresList.append(float(configDict['ACCURACY_THRESHOLD']))
-    for accThres in accThresList:
-        outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
-        ParseResultsToExcel.parseQualityFileRNN(outputIntentFileName, outputExcelQuality, configDict)
+    accThres=float(configDict['ACCURACY_THRESHOLD'])
+    outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
+    ParseResultsToExcel.parseQualityFileRNN(outputIntentFileName, outputExcelQuality, configDict)
 
     outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
     outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
