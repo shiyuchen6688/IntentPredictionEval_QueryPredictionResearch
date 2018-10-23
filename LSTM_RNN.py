@@ -433,25 +433,26 @@ def computePredictedIntentsRNN(predictedY, configDict):
     weightDict = {}
     for i in range(len(predictedY)):
         weightDict[i] = predictedY[i]
-    sorted_d = sorted(weightDict.items(), key = operator.itemgetter(0), reverse=True)
+    #sorted_d is a list of lists, not a dictionary. Each list entry has key as 0th entry and value as 1st entry, we need the key
+    sorted_d = sorted(weightDict.items(), key = operator.itemgetter(1), reverse=True)
     dimsSoFar = []
     predictedBitMaps = []
     cosineSimDict = {}
     dictIndex = 0
-    for dimIndex in sorted_d:
-        dimsSoFar.append(dimIndex)
+    for dimEntry in sorted_d:
+        dimsSoFar.append(dimEntry[0])
         predictedBitMap = BitMap(len(predictedY))
-        for i in range(len(dimsSoFar)):
-            predictedBitMap.set(dimsSoFar[i])
+        for dimSoFar in dimsSoFar:
+            predictedBitMap.set(dimSoFar)
         predictedBitMaps.append(predictedBitMap)
         cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, predictedBitMap, configDict)
         cosineSimDict[dictIndex] = cosineSim
         dictIndex+=1
     del sorted_d
-    sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(0), reverse=True)
+    sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKPredictedIntents = []
-    for i in sorted_csd:
-        topKPredictedIntents.append(predictedBitMaps[i])
+    for cosSimEntry in sorted_csd:
+        topKPredictedIntents.append(cosSimEntry[0])
     del cosineSimDict
     del sorted_csd
     return topKPredictedIntents
