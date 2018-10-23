@@ -439,7 +439,12 @@ def computePredictedIntentsRNN(predictedY, configDict):
     predictedBitMaps = []
     cosineSimDict = {}
     dictIndex = 0
-    topDimLimit=int(float(configDict['RNN_TOP_DIM_PERCENT'])*len(sorted_d)/float(100.0))
+    if configDict['INTENT_REP'] == 'QUERY':
+        topDimLimit = 1
+    elif configDict['INTENT_REP'] == 'FRAGMENT':
+        topDimLimit=int(float(configDict['RNN_TOP_DIM_PERCENT'])*len(sorted_d)/float(100.0))
+    elif configDict['INTENT_REP'] == 'TUPLE':
+        topDimLimit = 25
     for dimEntry in sorted_d:
         if len(dimsSoFar)>=topDimLimit:
             break
@@ -454,8 +459,13 @@ def computePredictedIntentsRNN(predictedY, configDict):
     del sorted_d
     sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKPredictedIntents = []
+    maxTopK=int(configDict['TOP_K'])
+    resCount =0
     for cosSimEntry in sorted_csd:
         topKPredictedIntents.append(predictedBitMaps[cosSimEntry[0]])
+        resCount+=1
+        if resCount>=maxTopK:
+            break
     del cosineSimDict
     del sorted_csd
     return topKPredictedIntents
@@ -496,10 +506,14 @@ def runRNNSingularityExp(configDict):
                                   configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
+    accThres = float(configDict['ACCURACY_THRESHOLD'])
+    QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
+                                  configDict['ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU'])
+    print "--Completed Quality Evaluation for accThres:" + str(accThres)
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"])
-    accThres=float(configDict['ACCURACY_THRESHOLD'])
+    outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
     outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
-    ParseResultsToExcel.parseQualityFile(outputIntentFileName, outputExcelQuality, configDict)
+    ParseResultsToExcel.parseQualityFile(outputEvalQualityFileName, outputExcelQuality, configDict)
 
     outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
     outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
