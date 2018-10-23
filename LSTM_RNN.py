@@ -439,7 +439,10 @@ def computePredictedIntentsRNN(predictedY, configDict):
     predictedBitMaps = []
     cosineSimDict = {}
     dictIndex = 0
+    topDimLimit=int(float(configDict['RNN_TOP_DIM_PERCENT']*len(sorted_d))/float(100.0))
     for dimEntry in sorted_d:
+        if len(dimsSoFar)>=topDimLimit:
+            break
         dimsSoFar.append(dimEntry[0])
         predictedBitMap = BitMap(len(predictedY))
         for dimSoFar in dimsSoFar:
@@ -452,7 +455,7 @@ def computePredictedIntentsRNN(predictedY, configDict):
     sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKPredictedIntents = []
     for cosSimEntry in sorted_csd:
-        topKPredictedIntents.append(cosSimEntry[0])
+        topKPredictedIntents.append(predictedBitMaps[cosSimEntry[0]])
     del cosineSimDict
     del sorted_csd
     return topKPredictedIntents
