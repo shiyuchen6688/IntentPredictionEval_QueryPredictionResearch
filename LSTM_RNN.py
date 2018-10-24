@@ -312,9 +312,9 @@ def runRNNKFoldExp(configDict):
         (modelRNN, sessionDict) = refineTemporalPredictor(keyOrder, configDict, sessionDict, modelRNN, sessionStreamDict)
         trainTime = float(time.time() - startTrain)
         avgTrainTime.append(trainTime)
-        (testSessionDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
+        (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
         startTest = time.time()
-        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, testSessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
+        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, sessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
@@ -346,7 +346,6 @@ def runRNNKFoldExp(configDict):
     return
 
 def initRNNOneFoldTest(testIntentSessionFile, configDict):
-    sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
     episodeResponseTime = {}
     sessionStreamDict = {}
     keyOrder = []
@@ -356,7 +355,7 @@ def initRNNOneFoldTest(testIntentSessionFile, configDict):
                                                                                         sessionStreamDict)
             keyOrder.append(str(sessID) + "," + str(queryID))
     f.close()
-    return (sessionDict, sessionStreamDict, keyOrder, episodeResponseTime)
+    return (sessionStreamDict, keyOrder, episodeResponseTime)
 
 def initRNNOneFoldTrain(trainIntentSessionFile, configDict):
     sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
@@ -405,11 +404,16 @@ def initRNNSingularity(configDict):
 def testOneFold(keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
     numEpisodes = 0
     startEpisode = time.time()
+    prevSessID = -1
     for key in keyOrder:
         numEpisodes+=1
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
         curQueryIntent = sessionStreamDict[key]
+        if prevSessID != sessID:
+            if prevSessID in sessionDict:
+                del sessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
+            prevSessID = sessID
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
