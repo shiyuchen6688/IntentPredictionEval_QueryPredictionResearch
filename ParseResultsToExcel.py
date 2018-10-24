@@ -141,8 +141,10 @@ if __name__ == "__main__":
                                 configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                                 configDict['EPISODE_IN_QUERIES']
     outputExcelQuality = outputDir + "/OutputExcelQuality_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
-    parseQualityFile(outputEvalQualityFileName, outputExcelQuality, configDict)
-
+    if configDict['ALGORITHM'] == 'CF' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+        parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
+    else:
+        parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
     outputEvalTimeFileName = outputDir + "/OutputEvalTimeShortTermIntent_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
     outputExcelTimeEval = outputDir + "/OutputExcelTime_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+".xlsx"
     if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':

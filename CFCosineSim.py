@@ -388,18 +388,18 @@ def runCFCosineSimSingularityExp(configDict):
         elapsedAppendTime = 0.0
         queryKeysSetAside.append(key)
         numQueries += 1
-        # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
+        # -- Refinement and prediction is done at every query, episode update alone is done at end of the episode --
+        (sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionDict, sessionSummaries, sessionStreamDict)
+        del queryKeysSetAside
+        queryKeysSetAside = []
+        if len(sessionSummaries)>1 and sessID in sessionSummaries and queryID < sessionLengthDict[sessID]-1: # because we do not predict intent for last query in a session
+            (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, curQueryIntent, configDict)
+            nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]
+            elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
+                                                                sessID, queryID, nextQueryIntent, numEpisodes,
+                                                                configDict, outputIntentFileName)
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             numEpisodes += 1
-            (sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionDict, sessionSummaries, sessionStreamDict)
-            del queryKeysSetAside
-            queryKeysSetAside = []
-            if len(sessionSummaries)>1 and sessID in sessionSummaries and queryID < sessionLengthDict[sessID]-1: # because we do not predict intent for last query in a session
-                (topKSessQueryIndices,topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID, curQueryIntent, configDict)
-                nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]
-                elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
-                                                                    sessID, queryID, nextQueryIntent, numEpisodes,
-                                                                    configDict, outputIntentFileName)
             (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
                                   configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
@@ -411,7 +411,7 @@ def runCFCosineSimSingularityExp(configDict):
 
     outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
     outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + ".xlsx"
-    ParseResultsToExcel.parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
+    ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
 
     outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['ALGORITHM'] + "_" +configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
     outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" +configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".xlsx"
