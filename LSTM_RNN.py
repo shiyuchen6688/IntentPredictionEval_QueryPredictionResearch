@@ -319,30 +319,7 @@ def runRNNKFoldExp(configDict):
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
-
-    (outputEvalQualityFileName, avgKFoldTimeDict) = QR.plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
-
-    outputExcelQuality = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelQuality_" + algoName + "_" + configDict['INTENT_REP'] + "_" + configDict[
-                             'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                             'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
-                             'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(
-        configDict['ACCURACY_THRESHOLD']) + ".xlsx"
-    ParseResultsToExcel.parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
-
-    outputExcelTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelTime_" + algoName + "_" + configDict[
-                              'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                              'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
-                          configDict['EPISODE_IN_QUERIES'] + ".xlsx"
-    outputExcelKFoldTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelKFoldTime_" + algoName + "_" + configDict[
-                                   'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                                   'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
-                               configDict['EPISODE_IN_QUERIES'] + ".xlsx"
-    # compute avg train time across kfolds and append it to the list
-    avgTrainTime.append(float(sum(avgTrainTime)) / float(len(avgTrainTime)))
-    # compute avg test time across kfolds and append it to the list
-    avgTestTime.append(float(sum(avgTestTime)) / float(len(avgTestTime)))
-    ParseResultsToExcel.parseKFoldTimeDict(avgKFoldTimeDict, avgTrainTime, avgTestTime, outputExcelTimeEval,
-                                           outputExcelKFoldTimeEval)
+    QR.avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTime, avgTestTime, algoName, configDict)
     return
 
 def initRNNOneFoldTest(testIntentSessionFile, configDict):
@@ -406,7 +383,6 @@ def testOneFold(keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessio
     startEpisode = time.time()
     prevSessID = -1
     for key in keyOrder:
-        numEpisodes+=1
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
         curQueryIntent = sessionStreamDict[key]
@@ -415,6 +391,7 @@ def testOneFold(keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessio
                 del sessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
             prevSessID = sessID
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
+            numEpisodes += 1
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)

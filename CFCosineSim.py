@@ -239,6 +239,7 @@ def runCFCosineSimKFoldExp(configDict):
     kFoldEpisodeResponseTimeDicts = []
     avgTrainTime = []
     avgTestTime = []
+    algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
     for foldID in range(int(configDict['KFOLD'])):
         outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + configDict['ALGORITHM'] + "_" + \
                                   configDict['CF_COSINESIM_MF'] + "_" + \
@@ -262,33 +263,7 @@ def runCFCosineSimKFoldExp(configDict):
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
-
-    (outputEvalQualityFileName, avgKFoldTimeDict) = QR.plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict)
-
-    outputExcelQuality = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + \
-                         configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
-                             'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                             'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
-                             'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(configDict['ACCURACY_THRESHOLD']) + ".xlsx"
-    ParseResultsToExcel.parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
-
-
-    outputExcelTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM'] + "_" + configDict[
-    'CF_COSINESIM_MF'] + "_" + configDict[
-                          'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                          'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
-                      configDict['EPISODE_IN_QUERIES'] + ".xlsx"
-    outputExcelKFoldTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelKFoldTime_" + configDict['ALGORITHM'] + "_" + \
-                          configDict[
-                              'CF_COSINESIM_MF'] + "_" + configDict[
-                              'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                              'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
-                          configDict['EPISODE_IN_QUERIES'] + ".xlsx"
-    #compute avg train time across kfolds and append it to the list
-    avgTrainTime.append(float(sum(avgTrainTime))/float(len(avgTrainTime)))
-    # compute avg test time across kfolds and append it to the list
-    avgTestTime.append(float(sum(avgTestTime))/float(len(avgTestTime)))
-    ParseResultsToExcel.parseKFoldTimeDict(avgKFoldTimeDict, avgTrainTime, avgTestTime, outputExcelTimeEval, outputExcelKFoldTimeEval)
+    QR.avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTime, avgTestTime, algoName, configDict)
     return
 
 def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):

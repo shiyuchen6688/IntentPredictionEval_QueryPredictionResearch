@@ -7,6 +7,7 @@ from bitmap import BitMap
 import CFCosineSim
 import TupleIntent as ti
 import ParseConfigFile as parseConfig
+import ParseResultsToExcel
 import pickle
 
 def fetchIntentFileFromConfigDict(configDict):
@@ -367,22 +368,54 @@ def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoN
                 accuracy)
             ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
 
+def avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTime, avgTestTime, algoName, configDict):
+    (outputEvalQualityFileName, avgKFoldTimeDictName) = plotAllFoldQualityTime(kFoldOutputIntentFiles,
+                                                                                  kFoldEpisodeResponseTimeDicts,
+                                                                                  algoName, configDict)
+    outputExcelQuality = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelQuality_" + algoName + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                             'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                             'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                             'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(
+        configDict['ACCURACY_THRESHOLD']) + ".xlsx"
+    ParseResultsToExcel.parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
 
-def computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict):
+    outputExcelTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelTime_" + algoName + "_" + configDict[
+                              'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                              'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                          configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+    outputExcelKFoldTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelKFoldTime_" + algoName + "_" + configDict[
+                                   'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                   'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                               configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+    # compute avg train time across kfolds and append it to the list
+    avgTrainTime.append(float(sum(avgTrainTime)) / float(len(avgTrainTime)))
+    # compute avg test time across kfolds and append it to the list
+    avgTestTime.append(float(sum(avgTestTime)) / float(len(avgTestTime)))
+    avgKFoldTimeDict = readFromPickleFile(avgKFoldTimeDictName)
+    ParseResultsToExcel.parseKFoldTimeDict(avgKFoldTimeDict, avgTrainTime, avgTestTime, outputExcelTimeEval,
+                                           outputExcelKFoldTimeEval)
+    return
+
+
+def computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, algoName, configDict):
+    avgKFoldTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/AvgFoldTimeDict_" + algoName + "_" + \
+                                      configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                      configDict['TOP_K'] + ".pickle"
     avgKFoldTimeDict = {}
     for kFoldEpisodeTimeDict in kFoldEpisodeResponseTimeDicts:
         episodeResponseTime = readFromPickleFile(kFoldEpisodeTimeDict)
-        for episodes in range(1, len(episodeResponseTime)):
+        for episodes in range(1,len(episodeResponseTime)+1):
             if episodes not in avgKFoldTimeDict:
                 avgKFoldTimeDict[episodes] = []
             avgKFoldTimeDict[episodes].append(episodeResponseTime[episodes])
-    for episodes in range(1, len(avgKFoldTimeDict)):
+    for episodes in range(1,len(avgKFoldTimeDict)+1):
         avgKFoldTimeDict[episodes] = float(sum(avgKFoldTimeDict[episodes]))/float(len(avgKFoldTimeDict[episodes]))
-    return avgKFoldTimeDict
+    writeToPickleFile(avgKFoldTimeDictName, avgKFoldTimeDict)
+    return avgKFoldTimeDictName
 
-def plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, configDict):
+def plotAllFoldQualityTime(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, algoName, configDict):
     outputEvalQualityFileName = computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict)
-    avgKFoldTimeDict = computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, configDict)
+    avgKFoldTimeDict = computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, algoName, configDict)
     return (outputEvalQualityFileName, avgKFoldTimeDict)
 
 def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
@@ -469,7 +502,8 @@ if __name__ == "__main__":
                                 configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                                 configDict['EPISODE_IN_QUERIES']
         #evaluatePredictions(outputIntentFileName, episodeResponseTimeDictName, configDict)
-    evaluateQualityPredictions(outputIntentFileName, configDict, accThres, configDict['ALGORITHM'])
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        evaluateQualityPredictions(outputIntentFileName, configDict, accThres, configDict['ALGORITHM'])
     print "--Completed Quality Evaluation for accThres:"+str(accThres)
     if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
         episodeResponseTimeDictName = outputDir + "/ResponseTimeDict_" + algoName + "_" + \
