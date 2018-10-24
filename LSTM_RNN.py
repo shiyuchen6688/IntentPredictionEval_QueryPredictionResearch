@@ -403,7 +403,6 @@ def initRNNSingularity(configDict):
     return (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionDict, numQueries, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
 
 def testOneFold(keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
-    episodeQualityDict = {}
     numEpisodes = 0
     startEpisode = time.time()
     for key in keyOrder:
