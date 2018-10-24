@@ -55,12 +55,12 @@ def parseQualityFileWithEpisodeRep(fileName, outputExcel, configDict):
         for line in f:
             numQueries += 1
             tokens = line.split(";")
+            numEpisodes = float(tokens[episodeIndex].split(":")[1])
             precisionPerEpisode += float(tokens[episodeIndex + 1].split(":")[1])
             recallPerEpisode += float(tokens[episodeIndex + 2].split(":")[1])
             FMeasurePerEpisode += float(tokens[episodeIndex + 3].split(":")[1])
             accuracyPerEpisode += float(tokens[episodeIndex + 4].split(":")[1])
             if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
-                numEpisodes += 1
                 precisionPerEpisode /= int(configDict['EPISODE_IN_QUERIES'])
                 recallPerEpisode /= int(configDict['EPISODE_IN_QUERIES'])
                 FMeasurePerEpisode /= int(configDict['EPISODE_IN_QUERIES'])
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                                 configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                                 configDict['EPISODE_IN_QUERIES']
     outputExcelQuality = outputDir + "/OutputExcelQuality_" + algoName+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+".xlsx"
-    if configDict['ALGORITHM'] == 'CF' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+    if configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
         parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
     else:
         parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
