@@ -482,18 +482,18 @@ def runRNNSingularityExp(configDict):
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
 
     print "--Completed Quality and Time Evaluation--"
-    return (outputIntentFileName, episodeResponseTimeDictName)
+    return
 
 def executeRNN(configDict):
     if configDict['SINGULARITY_OR_KFOLD']=='SINGULARITY':
-        (outputIntentFileName, episodeResponseTimeDictName) = runRNNSingularityExp(configDict)
+        runRNNSingularityExp(configDict)
     elif configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
-        (outputIntentFileName, episodeResponseTimeDictName) = runRNNKFoldExp(configDict)
-    return (outputIntentFileName, episodeResponseTimeDictName)
+        runRNNKFoldExp(configDict)
+    return
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    (outputIntentFileName, episodeResponseTimeDictName) = executeRNN(configDict)
+    executeRNN(configDict)
 
 
 '''

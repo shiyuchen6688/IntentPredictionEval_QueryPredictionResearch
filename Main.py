@@ -15,4 +15,4 @@ if __name__ == "__main__":
     if configDict["ALGORITHM"]=="CF":
         CF.runIntentPrediction(configDict)
     elif configDict["ALGORITHM"]=="RNN":
-        (outputIntentFileName, episodeResponseTimeDictName) = LSTM_RNN.executeRNN(configDict)
+        LSTM_RNN.executeRNN(configDict)
