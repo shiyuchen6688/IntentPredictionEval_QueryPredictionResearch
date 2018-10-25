@@ -459,7 +459,7 @@ def runRNNSingularityExp(configDict):
             # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
             #cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
             if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                topKPredictedIntents = computePredictedIntentsRNN(predictedY, sessionDict, configDict)
+                topKPredictedIntents = computePredictedIntentsRNN(predictedY, sessionDict, configDict, sessID)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
