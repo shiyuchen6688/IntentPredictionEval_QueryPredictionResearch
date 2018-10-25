@@ -314,7 +314,7 @@ def runRNNKFoldExp(configDict):
         avgTrainTime.append(trainTime)
         (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
         startTest = time.time()
-        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, sessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
+        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, sessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
@@ -378,7 +378,7 @@ def initRNNSingularity(configDict):
     modelRNN = None
     return (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionDict, numQueries, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
 
-def testOneFold(keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
+def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
     numEpisodes = 0
     startEpisode = time.time()
     prevSessID = -1
@@ -399,18 +399,20 @@ def testOneFold(keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessio
             # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
             #cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
             if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                topKPredictedIntents = computePredictedIntentsRNN(predictedY, sessionDict, configDict)
+                topKPredictedIntents = computePredictedIntentsRNN(predictedY, sessionDict, configDict, sessID)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             elapsedAppendTime = QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
-                                                                   outputIntentFileName, configDict)
+                                                                   outputIntentFileName, configDict, foldID)
             (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes,startEpisode, elapsedAppendTime)
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
-def computePredictedIntentsRNN(predictedY, sessionDict, configDict):
+def computePredictedIntentsRNN(predictedY, sessionDict, configDict, curSessID):
     cosineSimDict = {}
     for sessID in sessionDict:
+        if len(sessionDict)>1 and sessID == curSessID: # we are not going to suggest query intents from the same session
+            break
         numQueries = len(sessionDict[sessID])
         for queryID in range(numQueries):
             queryIntent = sessionDict[sessID][queryID]
@@ -461,7 +463,7 @@ def runRNNSingularityExp(configDict):
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
-                                                                   outputIntentFileName, configDict)
+                                                                   outputIntentFileName, configDict, -1)
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes,startEpisode, elapsedAppendTime)
     episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+configDict['INTENT_REP'] + "_" + \
