@@ -258,7 +258,7 @@ def runCFCosineSimKFoldExp(configDict):
         avgTrainTime.append(trainTime)
         (testSessionSummaries, testSessionDict, sessionLengthDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initCFCosineSimOneFold(testIntentSessionFile, configDict)
         startTest = time.time()
-        testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, testSessionStreamDict, testEpisodeResponseTime, episodeResponseTimeDictName, configDict)
+        testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, testSessionStreamDict, testEpisodeResponseTime, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
@@ -266,7 +266,7 @@ def runCFCosineSimKFoldExp(configDict):
     QR.avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTime, avgTestTime, algoName, configDict)
     return
 
-def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):
+def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):
     try:
         os.remove(outputIntentFileName)
     except OSError:
@@ -298,7 +298,7 @@ def testCFCosineSim(testIntentSessionFile, outputIntentFileName, sessionDict, se
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
                                                         sessID, queryID, nextQueryIntent, numEpisodes,
-                                                        configDict, outputIntentFileName)
+                                                        configDict, outputIntentFileName, foldID)
             (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
                                                                                            numEpisodes, startEpisode,
                                                                                            elapsedAppendTime)
@@ -372,7 +372,7 @@ def runCFCosineSimSingularityExp(configDict):
             nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]
             elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
                                                                 sessID, queryID, nextQueryIntent, numEpisodes,
-                                                                configDict, outputIntentFileName)
+                                                                configDict, outputIntentFileName, -1) # foldID does not exist for singularity exps so -1
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             numEpisodes += 1
             (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)

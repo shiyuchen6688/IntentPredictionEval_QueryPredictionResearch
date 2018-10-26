@@ -103,7 +103,7 @@ def appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, actual
     elapsedAppendTime = float(time.time() - startAppendTime)
     return elapsedAppendTime
 
-def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, actualQueryIntent, numEpisodes, configDict, outputIntentFileName):
+def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, sessID, queryID, actualQueryIntent, numEpisodes, configDict, outputIntentFileName, foldID):
     startAppendTime = time.time()
     output_str = "Session:"+str(sessID)+";Query:"+str(queryID)+";#Episodes:"+str(numEpisodes)+";ActualQueryIntent:"
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
@@ -120,7 +120,11 @@ def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, ses
         elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
             output_str += topKPredictedIntents[k].replace(";",",")
     ti.appendToFile(outputIntentFileName, output_str)
-    print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
+    if configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+        print "FoldID: "+str(foldID)+"Predicted " + str(len(topKPredictedIntents)) + " query intent vectors for Session " + str(
+            sessID) + ", Query " + str(queryID)
+    elif configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
     elapsedAppendTime = float(time.time()-startAppendTime)
     return elapsedAppendTime
 
