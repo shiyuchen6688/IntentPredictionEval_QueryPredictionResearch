@@ -383,7 +383,6 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
     startEpisode = time.time()
     prevSessID = -1
     elapsedAppendTime = 0.0
-    sessionChangeFlag = 0
     for key in keyOrder:
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
@@ -391,8 +390,11 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
         if prevSessID != sessID:
             if prevSessID in sessionDict:
                 del sessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
-                sessionChangeFlag = 1 # flag cannot change for the very first query
-            prevSessID = sessID
+                (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
+                                                                                               numEpisodes,
+                                                                                               startEpisode,
+                                                                                               elapsedAppendTime)
+                numEpisodes += 1  # episodes start from 1            prevSessID = sessID
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
@@ -406,13 +408,10 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
                                                                    outputIntentFileName, configDict, foldID)
-        if sessionChangeFlag == 1:
-            (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
-                                                                                           numEpisodes,
-                                                                                           startEpisode,
-                                                                                           elapsedAppendTime)
-            numEpisodes += 1  # episodes start from 1
-            sessionChangeFlag = 0 #reset the flag
+    (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
+                                                                                   numEpisodes,
+                                                                                   startEpisode,
+                                                                                   elapsedAppendTime) # last session
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
