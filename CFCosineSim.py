@@ -284,11 +284,11 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
                     assert prevSessID in sessionSummaries
                     del sessionDict[prevSessID]
                     del sessionSummaries[prevSessID]
-                    numEpisodes += 1  # here numEpisodes is analogous to numSessions
                     (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
                                                                                                    numEpisodes,
                                                                                                    startEpisode,
                                                                                                    elapsedAppendTime)
+                    numEpisodes += 1  # here numEpisodes is analogous to numSessions
                 prevSessID = sessID
 
             queryKeysSetAside = []

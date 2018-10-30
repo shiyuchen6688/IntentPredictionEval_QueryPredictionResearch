@@ -389,12 +389,12 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
         curQueryIntent = sessionStreamDict[key]
         if prevSessID != sessID:
             if prevSessID in sessionDict:
-                numEpisodes += 1  # episodes start from 1
                 del sessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
                 (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
                                                                                                numEpisodes,
                                                                                                startEpisode,
                                                                                                elapsedAppendTime)
+                numEpisodes += 1  # episodes start from 1
             prevSessID = sessID
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
