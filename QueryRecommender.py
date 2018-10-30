@@ -121,7 +121,7 @@ def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, ses
             output_str += topKPredictedIntents[k].replace(";",",")
     ti.appendToFile(outputIntentFileName, output_str)
     if configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
-        print "FoldID: "+str(foldID)+"Predicted " + str(len(topKPredictedIntents)) + " query intent vectors for Session " + str(
+        print "FoldID: "+str(foldID)+" Predicted " + str(len(topKPredictedIntents)) + " query intent vectors for Session " + str(
             sessID) + ", Query " + str(queryID)
     elif configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
         print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
@@ -383,7 +383,7 @@ def avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeD
                              'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
                              'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(
         configDict['ACCURACY_THRESHOLD']) + ".xlsx"
-    ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
+    ParseResultsToExcel.parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
 
     outputExcelTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelTime_" + algoName + "_" + configDict[
                               'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
