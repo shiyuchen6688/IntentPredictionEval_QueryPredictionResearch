@@ -308,6 +308,7 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
                                                                                                startEpisode,
                                                                                                elapsedAppendTime)
                 numEpisodes += 1  # here numEpisodes is analogous to numSessions
+                sessionChangeFlag = 0 #reset the flag
         QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     f.close()
     return episodeResponseTimeDictName

@@ -412,7 +412,7 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
                                                                                            startEpisode,
                                                                                            elapsedAppendTime)
             numEpisodes += 1  # episodes start from 1
-            sessionChangeFlag = 0
+            sessionChangeFlag = 0 #reset the flag
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
