@@ -263,7 +263,8 @@ def runCFCosineSimKFoldExp(configDict):
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
-    QR.avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTime, avgTestTime, algoName, configDict)
+        (avgTrainTimeFN, avgTestTimeFN) = QR.writeKFoldTrainTestTimesToPickleFiles(avgTrainTime, avgTestTime, algoName, configDict)
+    QR.avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTimeFN, avgTestTimeFN, algoName, configDict)
     return
 
 def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, sessionDict, sessionSummaries, sessionLengthDict, sessionStreamDict, episodeResponseTime, episodeResponseTimeDictName, configDict):

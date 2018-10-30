@@ -273,6 +273,7 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN
     return (modelRNN, sessionDict)
 
 def predictTopKIntents(modelRNN, sessionDict, sessID, configDict):
+    #predicts the next query to the last query in the sessID session
     sessIntentList = sessionDict[sessID]
     # top-K is 1
     numQueries = len(sessIntentList)
@@ -314,7 +315,8 @@ def runRNNKFoldExp(configDict):
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
         kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
-    QR.avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTime, avgTestTime, algoName, configDict)
+    (avgTrainTimeFN, avgTestTimeFN) = QR.writeKFoldTrainTestTimesToPickleFiles(avgTrainTime, avgTestTime, algoName, configDict)
+    QR.avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTimeFN, avgTestTimeFN, algoName, configDict)
     return
 
 def initRNNOneFoldTest(testIntentSessionFile, configDict):

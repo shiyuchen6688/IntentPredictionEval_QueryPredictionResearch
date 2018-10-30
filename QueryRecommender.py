@@ -90,7 +90,7 @@ def appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, actual
             actualQueryIntent.replace(";", ",")
         output_str += actualQueryIntent
     for k in range(len(topKPredictedIntents)):
-        output_str += ";TOP_" + str(k) + "_PREDICTED_INTENT:"
+        output_str += ";TOP_" + str(k) + "_PREDICTED_INTENT:" # no assertion on topKSessQueryIndices and no appending of them to the output string
         if configDict['BIT_OR_WEIGHTED'] == 'BIT':
             output_str += topKPredictedIntents[k].tostring()
         elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
@@ -161,6 +161,17 @@ def createQueryExecIntentCreationTimes(configDict):
                 tempExecTimeEpisode = 0.0
                 tempIntentTimeEpisode = 0.0
     return (episodeQueryExecutionTime, episodeIntentCreationTime)
+
+def writeKFoldTrainTestTimesToPickleFiles(avgTrainTime, avgTestTime, algoName, configDict):
+    trainFN = configDict['KFOLD_OUTPUT_DIR'] + "/avgKFoldTrainTime_" + algoName + "_" + \
+                               configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                               configDict['TOP_K']
+    testFN = configDict['KFOLD_OUTPUT_DIR'] + "/avgKFoldTestTime_" + algoName + "_" + \
+                               configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                               configDict['TOP_K']
+    writeToPickleFile(trainFN, avgTrainTime)
+    writeToPickleFile(testFN, avgTestTime)
+    return (trainFN, testFN)
 
 def readFromPickleFile(fileName):
     with open(fileName, 'rb') as handle:
@@ -374,7 +385,9 @@ def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoN
                 accuracy)
             ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
 
-def avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTime, avgTestTime, algoName, configDict):
+def avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTimeFN, avgTestTimeFN, algoName, configDict):
+    avgTrainTime = readFromPickleFile(avgTrainTimeFN)
+    avgTestTime = readFromPickleFile(avgTestTimeFN)
     (outputEvalQualityFileName, avgKFoldTimeDictName) = plotAllFoldQualityTime(kFoldOutputIntentFiles,
                                                                                   kFoldEpisodeResponseTimeDicts,
                                                                                   algoName, configDict)
@@ -484,6 +497,50 @@ if __name__ == "__main__":
     algoName = None
     outputDir=None
     outputEvalQualityFileName = None
+    if configDict['ALGORITHM'] == 'CF':
+        algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
+    elif configDict['ALGORITHM'] == 'RNN':
+        algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        outputDir = configDict['OUTPUT_DIR']
+        outputIntentFileName = outputDir + "/OutputFileShortTermIntent_" + configDict[
+            'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                   'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                   'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                   'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+        evaluateQualityPredictions(outputIntentFileName, configDict, accThres, configDict['ALGORITHM'])
+        episodeResponseTimeDictName = outputDir + "/ResponseTimeDict_" + algoName + "_" + \
+                                      configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                      configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                          'EPISODE_IN_QUERIES'] + ".pickle"
+        evaluateTimePredictions(episodeResponseTimeDictName, configDict, configDict['ALGORITHM'])
+    elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+        outputDir = configDict['KFOLD_OUTPUT_DIR']
+        outputIntentFileName = configDict[
+                                   'KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + algoName + "_" + \
+                               configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                               configDict['TOP_K'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+        kFoldOutputIntentFiles = []
+        kFoldEpisodeResponseTimeDicts = []
+        for foldID in range(int(configDict['KFOLD'])):
+            outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + algoName + "_" + \
+                                   configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                   configDict['TOP_K'] + "_FOLD_" + str(foldID)
+            episodeResponseTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/ResponseTimeDict_" + algoName + "_" + \
+                                          configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                                          configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
+            kFoldOutputIntentFiles.append(outputIntentFileName)
+            kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
+        avgTrainTimeFN = configDict['KFOLD_OUTPUT_DIR'] + "/avgKFoldTrainTime_" + algoName + "_" + \
+                  configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                  configDict['TOP_K']
+        avgTestTimeFN = configDict['KFOLD_OUTPUT_DIR'] + "/avgKFoldTestTime_" + algoName + "_" + \
+                 configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+                 configDict['TOP_K']
+        avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, avgTrainTimeFN,
+                                       avgTestTimeFN, algoName, configDict)
+
+'''
     if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
         outputDir = configDict['OUTPUT_DIR']
     elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
@@ -518,7 +575,7 @@ if __name__ == "__main__":
                                           'EPISODE_IN_QUERIES'] + ".pickle"
         evaluateTimePredictions(episodeResponseTimeDictName, configDict, configDict['ALGORITHM'])
 
-'''
+
 class TimeStep(object):
     def __init__(self, timeStep, sessQuery, sessQueryIntent, sessLogs):
         self.timeStep = timeStep
