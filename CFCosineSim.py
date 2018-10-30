@@ -274,6 +274,7 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
     numEpisodes = 0
     startEpisode = time.time()
     prevSessID = -1
+    elapsedAppendTime = 0.0
     with open(testIntentSessionFile) as f:
         for line in f:
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)

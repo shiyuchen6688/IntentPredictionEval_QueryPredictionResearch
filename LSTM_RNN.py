@@ -382,6 +382,7 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
     numEpisodes = 0
     startEpisode = time.time()
     prevSessID = -1
+    elapsedAppendTime = 0.0
     for key in keyOrder:
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
