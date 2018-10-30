@@ -255,11 +255,9 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
         curQueryIntent = sessionStreamDict[key]
-        if sessID in sessionDict:
-            sessionDict[sessID].append(curQueryIntent)
-        else:
-            sessionDict[sessID] = []
-            sessionDict[sessID].append(curQueryIntent)
+        #because for Kfold this is training phase but for singularity it would already have been added
+        if configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
+            updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent)
         if int(queryID) == 0:
             continue
         (dataX, dataY) = appendTrainingXY(sessionDict[sessID], configDict, dataX, dataY)
@@ -274,11 +272,8 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN
         modelRNN = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
     return (modelRNN, sessionDict)
 
-def predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict):
-    if sessID in sessionDict:
-        sessIntentList = sessionDict[sessID]
-    else:
-        sessIntentList = [curQueryIntent]
+def predictTopKIntents(modelRNN, sessionDict, sessID, configDict):
+    sessIntentList = sessionDict[sessID]
     # top-K is 1
     numQueries = len(sessIntentList)
     testX = []
@@ -378,6 +373,13 @@ def initRNNSingularity(configDict):
     modelRNN = None
     return (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionDict, numQueries, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
 
+def updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent):
+    # update sessionDict with this new query
+    if sessID not in sessionDict:
+        sessionDict[sessID] = []
+    sessionDict[sessID].append(curQueryIntent)
+    return sessionDict
+
 def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
     numEpisodes = 1
     startEpisode = time.time()
@@ -396,8 +398,12 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
                                                                                                elapsedAppendTime)
                 numEpisodes += 1  # episodes start from 1
             prevSessID = sessID
+
+        #update sessionDict with this new query
+        updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent)
+
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
-            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
+            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
             actual_vector = np.array(nextIntentList).astype(np.int)
@@ -453,6 +459,8 @@ def runRNNSingularityExp(configDict):
         elapsedAppendTime = 0.0
         numQueries += 1
         queryKeysSetAside.append(key)
+        # update sessionDict with this new query
+        updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent)
         # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             numEpisodes += 1
@@ -460,7 +468,7 @@ def runRNNSingularityExp(configDict):
             del queryKeysSetAside
             queryKeysSetAside = []
         if modelRNN is not None and queryID < sessionLengthDict[sessID]-1:
-            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
+            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
             actual_vector = np.array(nextIntentList).astype(np.int)
