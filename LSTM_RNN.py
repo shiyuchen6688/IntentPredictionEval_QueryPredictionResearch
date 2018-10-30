@@ -387,11 +387,15 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
         queryID = int(key.split(",")[1])
         curQueryIntent = sessionStreamDict[key]
         if prevSessID != sessID:
+            numEpisodes += 1 #episodes start from 1
             if prevSessID in sessionDict:
                 del sessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
+                (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
+                                                                                               numEpisodes,
+                                                                                               startEpisode,
+                                                                                               elapsedAppendTime)
             prevSessID = sessID
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
-            numEpisodes += 1
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
@@ -402,9 +406,8 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
                 topKPredictedIntents = computePredictedIntentsRNN(predictedY, sessionDict, configDict, sessID)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
-            elapsedAppendTime = QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
+            elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
                                                                    outputIntentFileName, configDict, foldID)
-            (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes,startEpisode, elapsedAppendTime)
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     return (outputIntentFileName, episodeResponseTimeDictName)
 

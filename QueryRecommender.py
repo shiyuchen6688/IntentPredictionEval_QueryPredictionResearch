@@ -383,7 +383,7 @@ def avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeD
                              'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
                              'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(
         configDict['ACCURACY_THRESHOLD']) + ".xlsx"
-    ParseResultsToExcel.parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
+    ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
 
     outputExcelTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelTime_" + algoName + "_" + configDict[
                               'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[

@@ -279,10 +279,15 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
             # we need to delete previous test session entries from the summary
             if prevSessID!=sessID:
+                numEpisodes += 1  # here numEpisodes is analogous to numSessions
                 if prevSessID in sessionDict:
                     assert prevSessID in sessionSummaries
                     del sessionDict[prevSessID]
                     del sessionSummaries[prevSessID]
+                    (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
+                                                                                                   numEpisodes,
+                                                                                                   startEpisode,
+                                                                                                   elapsedAppendTime)
                 prevSessID = sessID
 
             queryKeysSetAside = []
@@ -294,14 +299,12 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
                                                                       curQueryIntent, configDict)
             if queryID+1 >= int(sessionLengthDict[sessID]):
                 continue
-            numEpisodes += 1
+
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
-            elapsedAppendTime = QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
+            elapsedAppendTime += QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
                                                         sessID, queryID, nextQueryIntent, numEpisodes,
                                                         configDict, outputIntentFileName, foldID)
-            (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
-                                                                                           numEpisodes, startEpisode,
-                                                                                           elapsedAppendTime)
+
         QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
 
     f.close()
