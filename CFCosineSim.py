@@ -275,6 +275,7 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
     startEpisode = time.time()
     prevSessID = -1
     elapsedAppendTime = 0.0
+    sessionChangeFlag = 0
     with open(testIntentSessionFile) as f:
         for line in f:
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
@@ -284,11 +285,7 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
                     assert prevSessID in sessionSummaries
                     del sessionDict[prevSessID]
                     del sessionSummaries[prevSessID]
-                    (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
-                                                                                                   numEpisodes,
-                                                                                                   startEpisode,
-                                                                                                   elapsedAppendTime)
-                    numEpisodes += 1  # here numEpisodes is analogous to numSessions
+                    sessionChangeFlag = 1 # flag cannot change for the very first query
                 prevSessID = sessID
 
             queryKeysSetAside = []
@@ -305,9 +302,13 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
             elapsedAppendTime += QR.appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents,
                                                         sessID, queryID, nextQueryIntent, numEpisodes,
                                                         configDict, outputIntentFileName, foldID)
-
+            if sessionChangeFlag == 1:
+                (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
+                                                                                               numEpisodes,
+                                                                                               startEpisode,
+                                                                                               elapsedAppendTime)
+                numEpisodes += 1  # here numEpisodes is analogous to numSessions
         QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
-
     f.close()
     return episodeResponseTimeDictName
 
