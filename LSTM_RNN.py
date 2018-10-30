@@ -379,7 +379,7 @@ def initRNNSingularity(configDict):
     return (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionDict, numQueries, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
 
 def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
-    numEpisodes = 0
+    numEpisodes = 1
     startEpisode = time.time()
     prevSessID = -1
     elapsedAppendTime = 0.0
@@ -388,8 +388,8 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
         queryID = int(key.split(",")[1])
         curQueryIntent = sessionStreamDict[key]
         if prevSessID != sessID:
-            numEpisodes += 1 #episodes start from 1
             if prevSessID in sessionDict:
+                numEpisodes += 1  # episodes start from 1
                 del sessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
                 (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
                                                                                                numEpisodes,

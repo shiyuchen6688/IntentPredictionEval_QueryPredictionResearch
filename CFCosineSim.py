@@ -271,7 +271,7 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
         os.remove(outputIntentFileName)
     except OSError:
         pass
-    numEpisodes = 0
+    numEpisodes = 1
     startEpisode = time.time()
     prevSessID = -1
     elapsedAppendTime = 0.0
@@ -280,11 +280,11 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
             # we need to delete previous test session entries from the summary
             if prevSessID!=sessID:
-                numEpisodes += 1  # here numEpisodes is analogous to numSessions
                 if prevSessID in sessionDict:
                     assert prevSessID in sessionSummaries
                     del sessionDict[prevSessID]
                     del sessionSummaries[prevSessID]
+                    numEpisodes += 1  # here numEpisodes is analogous to numSessions
                     (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
                                                                                                    numEpisodes,
                                                                                                    startEpisode,
