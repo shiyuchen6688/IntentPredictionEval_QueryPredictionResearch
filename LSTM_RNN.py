@@ -394,7 +394,8 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
                                                                                                numEpisodes,
                                                                                                startEpisode,
                                                                                                elapsedAppendTime)
-                numEpisodes += 1  # episodes start from 1            prevSessID = sessID
+                numEpisodes += 1  # episodes start from 1
+            prevSessID = sessID
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, curQueryIntent, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
