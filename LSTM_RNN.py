@@ -383,6 +383,10 @@ def updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent):
     return sessionDict
 
 def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
+    try:
+        os.remove(outputIntentFileName)
+    except OSError:
+        pass
     numEpisodes = 1
     startEpisode = time.time()
     prevSessID = -1
