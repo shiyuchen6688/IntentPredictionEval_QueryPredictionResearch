@@ -248,6 +248,33 @@ def initializeRNN(n_features, n_memUnits, configDict):
     modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
     return modelRNN
 
+def createTemporalPairs(queryKeysSetAside, configDict, sessionDict, sessionStreamDict):
+    dataX = []
+    dataY = []
+    for key in queryKeysSetAside:
+        sessID = int(key.split(",")[0])
+        queryID = int(key.split(",")[1])
+        curQueryIntent = sessionStreamDict[key]
+        #because for Kfold this is training phase but for singularity it would already have been added
+        if configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
+            updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent)
+        if int(queryID) == 0:
+            continue
+        (dataX, dataY) = appendTrainingXY(sessionDict[sessID], configDict, dataX, dataY)
+    return (dataX, dataY)
+
+def trainRNN(dataX, dataY, modelRNN):
+    n_features = len(dataX[0][0])
+    # assert configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY' or configDict['INTENT_REP'] == 'TUPLE'
+    # if configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
+    #   n_memUnits = len(dataX[0][0])
+    # elif configDict['INTENT_REP'] == 'TUPLE':
+    n_memUnits = int(configDict['RNN_NUM_MEM_UNITS'])
+    if modelRNN is None:
+        modelRNN = initializeRNN(n_features, n_memUnits, configDict)
+    modelRNN = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
+    return modelRNN
+
 def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict):
     dataX = []
     dataY = []
