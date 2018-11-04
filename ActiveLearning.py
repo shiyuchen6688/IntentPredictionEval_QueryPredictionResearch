@@ -24,7 +24,7 @@ from keras.models import Sequential
 from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU
 import CFCosineSim
 import LSTM_RNN
-
+'''
 def computePredictedIntentDictRNN(predictedY, sessionDict, configDict, curSessID):
     cosineSimDict = {}
     for sessID in sessionDict:
@@ -50,11 +50,11 @@ def computePredictedIntentDictRNN(predictedY, sessionDict, configDict, curSessID
     del cosineSimDict
     del sorted_csd
     return topKPredictedIntents
+'''
 
-def exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict, trainKeyOrder):
+def exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
-    # python supports for min-heap not max-heap so negate items and insert into min-heap
-    minCosineSimHeap = []
+    minimaxCosineSimDict = {}
     i=0
 
     for sessIDQueryID in holdOutTrainDictX:
@@ -63,10 +63,21 @@ def exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDic
         predictedY = modelRNN.predict(leftX.reshape(1, leftX.shape[0], leftX.shape[1]))
         predictedY = predictedY[0][predictedY.shape[1] - 1]
         # predict topK intent vectors based on the weight vector
-        assert configDict['BIT_OR_WEIGHTED'] == 'BIT'
-        topKPredictedIntents = computePredictedIntentDictRNN(predictedY, trainSessionDict, configDict, sessID)
-
-    return
+        topKPredictedIntents = LSTM_RNN.computePredictedIntentsRNN(predictedY, trainSessionDict, configDict, sessID)
+        maxCosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, topKPredictedIntents[0], configDict)
+        minimaxCosineSimDict[sessIDQueryID] = maxCosineSim
+    sorted_minimaxCSD = sorted(minimaxCosineSimDict.items(), key=operator.itemgetter(1)) # we sort in ASC order
+    resCount = 0
+    for cosSimEntry in sorted_minimaxCSD:
+        sessIDQueryID = cosSimEntry[0]
+        availTrainDictX[sessIDQueryID] = holdOutTrainDictX[sessIDQueryID]
+        availTrainDictY[sessIDQueryID] = holdOutTrainDictY[sessIDQueryID]
+        del holdOutTrainDictX[sessIDQueryID]
+        del holdOutTrainDictY[sessIDQueryID]
+        resCount+=1
+        if resCount >= exampleBatchSize:
+            break
+    return (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
 
 def createAvailHoldOutDicts(trainX, trainY, trainKeyOrder):
     availTrainDictX = {}
@@ -134,7 +145,7 @@ def runActiveRNNKFoldExp(configDict):
             trainTime = float(time.time() - startTrain)
             avgTrainTime.append(trainTime)
             # example selection phase
-            (availTrainDictX, availTrainDictY) = exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict, trainKeyOrder)
+            (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
             activeIter+=1
 
         (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
