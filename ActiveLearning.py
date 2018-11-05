@@ -24,33 +24,6 @@ from keras.models import Sequential
 from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU
 import CFCosineSim
 import LSTM_RNN
-'''
-def computePredictedIntentDictRNN(predictedY, sessionDict, configDict, curSessID):
-    cosineSimDict = {}
-    for sessID in sessionDict:
-        if len(sessionDict)>1 and sessID == curSessID: # we are not going to suggest query intents from the same session
-            break
-        numQueries = len(sessionDict[sessID])
-        for queryID in range(numQueries):
-            queryIntent = sessionDict[sessID][queryID]
-            cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
-            cosineSimDict[str(sessID)+","+str(queryID)] = cosineSim
-    # sorted_d is a list of lists, not a dictionary. Each list entry has key as 0th entry and value as 1st entry, we need the key
-    sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
-    topKPredictedIntents = {}
-    maxTopK = int(configDict['TOP_K'])
-    resCount = 0
-    for cosSimEntry in sorted_csd:
-        sessID = int(cosSimEntry[0].split(",")[0])
-        queryID = int(cosSimEntry[0].split(",")[1])
-        topKPredictedIntents[sessionDict[sessID][queryID]]=float(cosSimEntry[1])  #picks query intents only from already seen vocabulary
-        resCount += 1
-        if resCount >= maxTopK:
-            break
-    del cosineSimDict
-    del sorted_csd
-    return topKPredictedIntents
-'''
 
 def exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
     #delete all the elements in availTrainX and availTrainY thus far because RNNs can be trained incrementally, old train data is redundant
@@ -120,49 +93,8 @@ def initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile,
                                                                                         configDict)
     return (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainKeyX, availTrainKeyY, holdOutTrainX, holdOutTrainY)
 
-def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
-    numEpisodes = 1
-    startEpisode = time.time()
-    prevSessID = -1
-    elapsedAppendTime = 0.0
-    for key in keyOrder:
-        sessID = int(key.split(",")[0])
-        queryID = int(key.split(",")[1])
-        curQueryIntent = sessionStreamDict[key]
-        if prevSessID != sessID:
-            if prevSessID in sessionDict:
-                del sessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
-                (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
-                                                                                               numEpisodes,
-                                                                                               startEpisode,
-                                                                                               elapsedAppendTime)
-                numEpisodes += 1  # episodes start from 1
-            prevSessID = sessID
 
-        #update sessionDict with this new query
-        updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent)
-
-        if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
-            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, configDict)
-            nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
-            nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
-            actual_vector = np.array(nextIntentList).astype(np.int)
-            # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
-            #cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
-            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                topKPredictedIntents = computePredictedIntentsRNN(predictedY, sessionDict, configDict, sessID)
-            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-                topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
-            elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
-                                                                   outputIntentFileName, configDict, foldID)
-    (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
-                                                                                   numEpisodes,
-                                                                                   startEpisode,
-                                                                                   elapsedAppendTime) # last session
-    QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
-    return (outputIntentFileName, episodeResponseTimeDictName)
-
-def testActiveRNN(foldID, sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN):
+def testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN):
     prevSessID = -1
     numEpisodes = 0
     avgAccuracyPerSession = []
@@ -217,18 +149,17 @@ def testActiveRNN(foldID, sessionLengthDict, testSessionDict, testKeyOrder, test
 
 def runActiveRNNKFoldExp(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
-    kFoldOutputIntentFiles = []
-    kFoldEpisodeResponseTimeDicts = []
-    avgTrainTime = []
-    avgTestTime = []
+    avgTrainTime = {} #key should be # AL iteration and value should be a list of results across all the folds
+    avgExSelTime = {}
+    avgTestTime = {}
+    avgKFoldFMeasure = {}
+    avgKFoldAccuracy = {}
+    avgKFoldPrecision = {}
+    avgKFoldRecall = {}
     algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
+    assert configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
+    outputDir = configDict['KFOLD_OUTPUT_DIR']
     for foldID in range(int(configDict['KFOLD'])):
-        outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + algoName + "_" + \
-                               configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
-                               configDict['TOP_K'] + "_FOLD_" + str(foldID)
-        episodeResponseTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/ResponseTimeDict_" + algoName + "_" + \
-                                      configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
-                                      configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
         trainIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
         (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionDict,
@@ -236,16 +167,57 @@ def runActiveRNNKFoldExp(configDict):
          holdOutTrainDictY) = initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict)
         activeIter = 0
         while len(holdOutTrainDictX) > 0:
-            startTrain = time.time()
+            startTime = time.time()
             modelRNN = LSTM_RNN.trainRNN(availTrainDictX.values(), availTrainDictY.values(), modelRNN)
-            trainTime = float(time.time() - startTrain)
-            avgTrainTime.append(trainTime)
+            trainTime = float(time.time() - startTime)
+            startTime = time.time()
             # example selection phase
             (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
-            (avgFMeasure, avgAccuracy, avgPrecision, avgRecall) = testActiveRNN(foldID, sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN)
+            exSelTime = float(time.time() - startTime)
+            startTime = time.time()
+            (avgFMeasure, avgAccuracy, avgPrecision, avgRecall) = testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN)
+            testTime = float(time.time() - startTime)
+            # update quality measures
+            assert len(avgTrainTime) == len(avgTestTime) and len(avgExSelTime) == len(avgTrainTime) and len(avgTrainTime) == len(avgKFoldAccuracy) and len(avgTrainTime) == len(avgKFoldFMeasure) and len(avgTrainTime) == len(avgKFoldPrecision) and len(avgTrainTime) == len(avgKFoldRecall)
+            if activeIter not in avgTrainTime:
+                avgTrainTime[activeIter] = []
+                avgExSelTime[activeIter] = []
+                avgTestTime[activeIter] = []
+                avgKFoldFMeasure[activeIter] = []
+                avgKFoldAccuracy[activeIter] = []
+                avgKFoldPrecision[activeIter] = []
+                avgKFoldRecall[activeIter] = []
+            avgTrainTime[activeIter].append(trainTime)
+            avgExSelTime[activeIter].append(exSelTime)
+            avgTestTime[activeIter].append(testTime)
+            avgKFoldAccuracy[activeIter].append(avgAccuracy)
+            avgKFoldFMeasure[activeIter].append(avgFMeasure)
+            avgKFoldPrecision[activeIter].append(avgPrecision)
+            avgKFoldRecall[activeIter].append(avgRecall)
             activeIter+=1
+    # Now take the average
+    avgTrainTime = computeAvgPerDict(avgTrainTime)
+    avgExSelTime = computeAvgPerDict(avgExSelTime)
+    avgTestTime = computeAvgPerDict(avgTestTime)
+    avgIterTime = computeAvgIterTime(avgTrainTime, avgExSelTime, avgTestTime)
+    avgKFoldFMeasure = computeAvgPerDict(avgKFoldFMeasure)
+    avgKFoldAccuracy = computeAvgPerDict(avgKFoldAccuracy)
+    avgKFoldPrecision = computeAvgPerDict(avgKFoldPrecision)
+    avgKFoldRecall = computeAvgPerDict(avgKFoldRecall)
+    #Now plot the avg Dicts using new methods in ParseResultsToExcel
+    ParseResultsToExcel.parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime, avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall, algoName, outputDir, configDict)
+    return
 
-        return
+def computeAvgIterTime(avgTrainTime, avgExSelTime, avgTestTime):
+    avgIterTime = {}
+    for key in avgTrainTime:
+        avgIterTime[key] = avgTrainTime[key] + avgExSelTime[key] + avgTestTime[key]
+    return avgIterTime
+
+def computeAvgPerDict(avgDict):
+    for key in avgDict:
+        avgDict[key] = float(sum(avgDict[key]))/float(len(avgDict[key]))
+    return avgDict
 
 def executeAL(configDict):
     # ActiveLearning runs only on kFold

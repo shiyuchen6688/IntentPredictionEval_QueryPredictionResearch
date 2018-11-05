@@ -4,6 +4,21 @@ import sys, os
 from pandas import DataFrame
 import ParseConfigFile as parseConfig
 
+def parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime, avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall, algoName, outputDir, configDict):
+    assert configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
+    outputExcelQualityTime = outputDir + "/OutputExcelQualityTimeActiveLearn_" + algoName + "_" + configDict['INTENT_REP'] + "_" + \
+                         configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + ".xlsx"
+    assert len(avgTrainTime) == len(avgTestTime) and len(avgExSelTime) == len(avgTrainTime) and len(
+        avgTrainTime) == len(avgKFoldAccuracy) and len(avgTrainTime) == len(avgKFoldFMeasure) and len(
+        avgTrainTime) == len(avgKFoldPrecision) and len(avgTrainTime) == len(avgKFoldRecall) and len(avgTrainTime) == len(avgIterTime)
+    print "Lengths of iterations: " + str(len(avgIterTime))
+    df = DataFrame(
+        {'iterations': avgIterTime.keys(), 'precision': avgKFoldPrecision.values(),
+         'recall': avgKFoldRecall.values(), 'FMeasure': avgKFoldFMeasure.values(), 'accuracy': avgKFoldAccuracy.values(),
+         'trainTime': avgTrainTime.values(), 'exSelTime': avgExSelTime.values(), 'testTime': avgTestTime.values(),
+         'iterTime': avgIterTime.values()})
+    df.to_excel(outputExcelQualityTime, sheet_name='sheet1', index=False)
+
 def parseQualityFileWithoutEpisodeRep(fileName, outputExcel, configDict):
     episodes = []
     precision = []
