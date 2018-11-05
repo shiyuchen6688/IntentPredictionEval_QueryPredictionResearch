@@ -157,7 +157,6 @@ def runActiveRNNKFoldExp(configDict):
     avgKFoldPrecision = {}
     avgKFoldRecall = {}
     algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
-    assert configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
     outputDir = configDict['KFOLD_OUTPUT_DIR']
     for foldID in range(int(configDict['KFOLD'])):
         trainIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
@@ -222,6 +221,7 @@ def computeAvgPerDict(avgDict):
 def executeAL(configDict):
     # ActiveLearning runs only on kFold
     assert configDict['SINGULARITY_OR_KFOLD']=='KFOLD'
+    assert configDict['ALGORITHM'] == 'RNN'
     runActiveRNNKFoldExp(configDict)
     return
 
