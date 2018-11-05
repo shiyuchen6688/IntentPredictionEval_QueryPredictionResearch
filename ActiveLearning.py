@@ -53,6 +53,9 @@ def computePredictedIntentDictRNN(predictedY, sessionDict, configDict, curSessID
 '''
 
 def exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
+    #delete all the elements in availTrainX and availTrainY thus far because RNNs can be trained incrementally, old train data is redundant
+    availTrainDictX.clear()
+    availTrainDictY.clear()
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
     minimaxCosineSimDict = {}
     i=0
@@ -115,8 +118,101 @@ def initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile,
     testSessionDict = []
     (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = LSTM_RNN.initRNNOneFoldTest(testIntentSessionFile,
                                                                                         configDict)
-    (testX, testY) = LSTM_RNN.createTemporalPairs(testKeyOrder, configDict, testSessionDict, testSessionStreamDict)
-    return (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainKeyX, availTrainKeyY, holdOutTrainX, holdOutTrainY, testX, testY)
+    return (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainKeyX, availTrainKeyY, holdOutTrainX, holdOutTrainY)
+
+def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
+    numEpisodes = 1
+    startEpisode = time.time()
+    prevSessID = -1
+    elapsedAppendTime = 0.0
+    for key in keyOrder:
+        sessID = int(key.split(",")[0])
+        queryID = int(key.split(",")[1])
+        curQueryIntent = sessionStreamDict[key]
+        if prevSessID != sessID:
+            if prevSessID in sessionDict:
+                del sessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
+                (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
+                                                                                               numEpisodes,
+                                                                                               startEpisode,
+                                                                                               elapsedAppendTime)
+                numEpisodes += 1  # episodes start from 1
+            prevSessID = sessID
+
+        #update sessionDict with this new query
+        updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent)
+
+        if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
+            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, configDict)
+            nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
+            nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
+            actual_vector = np.array(nextIntentList).astype(np.int)
+            # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
+            #cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
+            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                topKPredictedIntents = computePredictedIntentsRNN(predictedY, sessionDict, configDict, sessID)
+            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
+            elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
+                                                                   outputIntentFileName, configDict, foldID)
+    (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
+                                                                                   numEpisodes,
+                                                                                   startEpisode,
+                                                                                   elapsedAppendTime) # last session
+    QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
+    return (outputIntentFileName, episodeResponseTimeDictName)
+
+def testActiveRNN(foldID, sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN):
+    prevSessID = -1
+    numEpisodes = 0
+    avgAccuracyPerSession = []
+    avgFMeasurePerSession = []
+    avgPrecisionPerSession = []
+    avgRecallPerSession = []
+    avgFMeasure =0.0
+    avgAccuracy = 0.0
+    avgPrecision = 0.0
+    avgRecall =0.0
+    for sessIDQueryID in testKeyOrder:
+        sessID = int(sessIDQueryID.split(",")[0])
+        queryID = int(sessIDQueryID.split(",")[1])
+        curQueryIntent = testSessionStreamDict[sessIDQueryID]
+        if prevSessID != sessID:
+            if prevSessID in testSessionDict:
+                assert len(testSessionDict[prevSessID])>1
+                avgAccuracyPerSession.append(float(avgAccuracy)/float(len(testSessionDict[prevSessID])-1))
+                avgFMeasurePerSession.append(float(avgFMeasure)/float(len(testSessionDict[prevSessID])-1))
+                avgPrecisionPerSession.append(float(avgPrecision)/float(len(testSessionDict[prevSessID])-1))
+                avgRecallPerSession.append(float(avgRecall)/float(len(testSessionDict[prevSessID])-1))
+                avgFMeasure = 0.0
+                avgAccuracy = 0.0
+                avgPrecision = 0.0
+                avgRecall = 0.0
+                del testSessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
+                numEpisodes += 1  # episodes start from 1
+            prevSessID = sessID
+        # update sessionDict with this new query
+        LSTM_RNN.updateSessionDictWithCurrentIntent(testSessionDict, sessID, curQueryIntent)
+        if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
+            predictedY = LSTM_RNN.predictTopKIntents(modelRNN, testSessionDict, sessID, configDict)
+            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                topKPredictedIntents = LSTM_RNN.computePredictedIntentsRNN(predictedY, testSessionDict, configDict, sessID)
+            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
+            #compare topK with testY
+            nextQueryIntent = testSessionStreamDict[str(sessID) + "," + str(queryID + 1)]
+            output_str = QR.computePredictedOutputStrRNN(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes, configDict)
+            (sessID, queryID, numEpisodes, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure,
+             maxFMeasure) = QR.computeQueRIEFMeasureForEachEpisode(output_str, configDict)
+            avgFMeasure+=maxFMeasure
+            avgAccuracy+=accuracyAtMaxFMeasure
+            avgPrecision+=precisionAtMaxFMeasure
+            avgRecall+=recallAtMaxFMeasure
+    avgFMeasure=float(sum(avgFMeasurePerSession))/float(numEpisodes)
+    avgAccuracy = float(sum(avgAccuracyPerSession))/float(numEpisodes)
+    avgPrecision = float(sum(avgPrecisionPerSession))/float(numEpisodes)
+    avgRecall =  float(sum(avgRecallPerSession))/float(numEpisodes)
+    return (avgFMeasure, avgAccuracy, avgPrecision, avgRecall)
 
 
 def runActiveRNNKFoldExp(configDict):
@@ -137,7 +233,7 @@ def runActiveRNNKFoldExp(configDict):
         testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
         (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionDict,
          testSessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainDictX, availTrainDictY, holdOutTrainDictX,
-         holdOutTrainDictY, testX, testY) = initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict)
+         holdOutTrainDictY) = initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict)
         activeIter = 0
         while len(holdOutTrainDictX) > 0:
             startTrain = time.time()
@@ -146,18 +242,10 @@ def runActiveRNNKFoldExp(configDict):
             avgTrainTime.append(trainTime)
             # example selection phase
             (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
+            (avgFMeasure, avgAccuracy, avgPrecision, avgRecall) = testActiveRNN(foldID, sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN)
             activeIter+=1
 
-        (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
-        startTest = time.time()
-        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, sessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
-        testTime = float(time.time() - startTest)
-        avgTestTime.append(testTime)
-        kFoldOutputIntentFiles.append(outputIntentFileName)
-        kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
-    (avgTrainTimeFN, avgTestTimeFN) = QR.writeKFoldTrainTestTimesToPickleFiles(avgTrainTime, avgTestTime, algoName, configDict)
-    QR.avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTimeFN, avgTestTimeFN, algoName, configDict)
-    return
+        return
 
 def executeAL(configDict):
     # ActiveLearning runs only on kFold

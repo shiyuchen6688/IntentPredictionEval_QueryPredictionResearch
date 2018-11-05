@@ -79,8 +79,7 @@ def computeWeightedVectorFromList(predictedY):
     topKPredictedIntents.append(topKPredictedIntent)
     return topKPredictedIntents
 
-def appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, actualQueryIntent, numEpisodes, outputIntentFileName, configDict, foldID):
-    startAppendTime = time.time()
+def computePredictedOutputStrRNN(sessID, queryID, topKPredictedIntents, actualQueryIntent, numEpisodes, configDict):
     output_str = "Session:" + str(sessID) + ";Query:" + str(queryID) + ";#Episodes:" + str(
         numEpisodes) + ";ActualQueryIntent:"
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
@@ -90,11 +89,17 @@ def appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, actual
             actualQueryIntent.replace(";", ",")
         output_str += actualQueryIntent
     for k in range(len(topKPredictedIntents)):
-        output_str += ";TOP_" + str(k) + "_PREDICTED_INTENT:" # no assertion on topKSessQueryIndices and no appending of them to the output string
+        output_str += ";TOP_" + str(
+            k) + "_PREDICTED_INTENT:"  # no assertion on topKSessQueryIndices and no appending of them to the output string
         if configDict['BIT_OR_WEIGHTED'] == 'BIT':
             output_str += topKPredictedIntents[k].tostring()
         elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
             output_str += topKPredictedIntents[k].replace(";", ",")
+    return output_str
+
+def appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, actualQueryIntent, numEpisodes, outputIntentFileName, configDict, foldID):
+    startAppendTime = time.time()
+    output_str=computePredictedOutputStrRNN(sessID, queryID, topKPredictedIntents, actualQueryIntent, numEpisodes, configDict)
     ti.appendToFile(outputIntentFileName, output_str)
     if configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
         print "FoldID: "+str(foldID)+", Predicted " + str(len(topKPredictedIntents)) + " query intent vectors for Session " + str(sessID) + ", Query " + str(queryID)
