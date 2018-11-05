@@ -174,6 +174,7 @@ def runActiveRNNKFoldExp(configDict):
             # example selection phase
             (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
             exSelTime = float(time.time() - startTime)
+            print "Added " + str(len(availTrainDictX)) + " examples to the training data"
             startTime = time.time()
             (avgFMeasure, avgAccuracy, avgPrecision, avgRecall) = testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN)
             testTime = float(time.time() - startTime)
