@@ -263,7 +263,7 @@ def createTemporalPairs(queryKeysSetAside, configDict, sessionDict, sessionStrea
         (dataX, dataY) = appendTrainingXY(sessionDict[sessID], configDict, dataX, dataY)
     return (dataX, dataY)
 
-def trainRNN(dataX, dataY, modelRNN):
+def trainRNN(dataX, dataY, modelRNN, configDict):
     n_features = len(dataX[0][0])
     # assert configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY' or configDict['INTENT_REP'] == 'TUPLE'
     # if configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':

@@ -53,6 +53,7 @@ def exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDic
         resCount+=1
         if resCount >= exampleBatchSize:
             break
+        print "Added "+str(resCount)+"th example, sessIDQueryID: "+str(sessIDQueryID)+" to the data"
     return (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
 
 def createAvailHoldOutDicts(trainX, trainY, trainKeyOrder):
@@ -167,7 +168,7 @@ def runActiveRNNKFoldExp(configDict):
         activeIter = 0
         while len(holdOutTrainDictX) > 0:
             startTime = time.time()
-            modelRNN = LSTM_RNN.trainRNN(availTrainDictX.values(), availTrainDictY.values(), modelRNN)
+            modelRNN = LSTM_RNN.trainRNN(availTrainDictX.values(), availTrainDictY.values(), modelRNN, configDict)
             trainTime = float(time.time() - startTime)
             startTime = time.time()
             # example selection phase
