@@ -42,7 +42,7 @@ def exampleSelection(foldID, activeIter, modelRNN, availTrainDictX, availTrainDi
         topKPredictedIntents = LSTM_RNN.computePredictedIntentsRNN(predictedY, trainSessionDict, configDict, sessID)
         maxCosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, topKPredictedIntents[0], configDict)
         minimaxCosineSimDict[sessIDQueryID] = maxCosineSim
-        if i%50 == 0:
+        if i% 50 ==0:
             print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", #Hold-out-Pairs: " + str(len(holdOutTrainDictX))+" #elemSoFar: "+ str(i+1)
         i+=1
     sorted_minimaxCSD = sorted(minimaxCosineSimDict.items(), key=operator.itemgetter(1)) # we sort in ASC order

@@ -458,7 +458,7 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
 def computePredictedIntentsRNN(predictedY, sessionDict, configDict, curSessID):
     cosineSimDict = {}
     for sessID in sessionDict:
-        if len(sessionDict)>1 and sessID == curSessID: # we are not going to suggest query intents from the same session
+        if sessID!=0 and len(sessionDict)>1 and sessID == curSessID: # we are not going to suggest query intents from the same session unless it is sessID=0
             break
         numQueries = len(sessionDict[sessID])
         for queryID in range(numQueries):
