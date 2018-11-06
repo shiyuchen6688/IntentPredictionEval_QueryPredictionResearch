@@ -25,14 +25,14 @@ from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten,
 import CFCosineSim
 import LSTM_RNN
 
-def exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
+def exampleSelection(foldID, activeIter, modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
     #delete all the elements in availTrainX and availTrainY thus far because RNNs can be trained incrementally, old train data is redundant
     availTrainDictX.clear()
     availTrainDictY.clear()
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
     minimaxCosineSimDict = {}
     i=0
-
+    print "foldID: "+str(foldID)+", activeIter: "+str(activeIter)+", #Hold-out-Pairs: "+str(len(holdOutTrainDictX))
     for sessIDQueryID in holdOutTrainDictX:
         leftX = np.array(holdOutTrainDictX[sessIDQueryID])
         sessID = int(sessIDQueryID.split(",")[0])
@@ -42,6 +42,9 @@ def exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDic
         topKPredictedIntents = LSTM_RNN.computePredictedIntentsRNN(predictedY, trainSessionDict, configDict, sessID)
         maxCosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, topKPredictedIntents[0], configDict)
         minimaxCosineSimDict[sessIDQueryID] = maxCosineSim
+        print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", #Hold-out-Pairs: " + str(
+            len(holdOutTrainDictX))+" #elemSoFar: "+ str(i+1)
+        i+=1
     sorted_minimaxCSD = sorted(minimaxCosineSimDict.items(), key=operator.itemgetter(1)) # we sort in ASC order
     resCount = 0
     for cosSimEntry in sorted_minimaxCSD:
@@ -53,7 +56,7 @@ def exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDic
         resCount+=1
         if resCount >= exampleBatchSize:
             break
-        print "Added "+str(resCount)+"th example, sessIDQueryID: "+str(sessIDQueryID)+" to the data"
+        print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) +", Added "+str(resCount)+"th example, sessIDQueryID: "+str(sessIDQueryID)+" to the data"
     return (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
 
 def createAvailHoldOutDicts(trainX, trainY, trainKeyOrder):
@@ -172,9 +175,9 @@ def runActiveRNNKFoldExp(configDict):
             trainTime = float(time.time() - startTime)
             startTime = time.time()
             # example selection phase
-            (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelection(modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
+            (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelection(foldID, activeIter, modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
             exSelTime = float(time.time() - startTime)
-            print "Added " + str(len(availTrainDictX)) + " examples to the training data"
+            print "FoldID: "+str(foldID)+", activeIter: "+str(activeIter)+", Added " + str(len(availTrainDictX)) + " examples to the training data"
             startTime = time.time()
             (avgFMeasure, avgAccuracy, avgPrecision, avgRecall) = testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN)
             testTime = float(time.time() - startTime)
