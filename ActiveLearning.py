@@ -100,7 +100,7 @@ def initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile,
 
 def testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN):
     prevSessID = -1
-    numEpisodes = 0
+    numSessions = 0
     avgAccuracyPerSession = []
     avgFMeasurePerSession = []
     avgPrecisionPerSession = []
@@ -125,7 +125,7 @@ def testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionS
                 avgPrecision = 0.0
                 avgRecall = 0.0
                 del testSessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
-                numEpisodes += 1  # episodes start from 1
+                numSessions = int(numSessions) + 1  # episodes start from 1
             prevSessID = sessID
         # update sessionDict with this new query
         LSTM_RNN.updateSessionDictWithCurrentIntent(testSessionDict, sessID, curQueryIntent)
@@ -137,17 +137,17 @@ def testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionS
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             #compare topK with testY
             nextQueryIntent = testSessionStreamDict[str(sessID) + "," + str(queryID + 1)]
-            output_str = QR.computePredictedOutputStrRNN(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes, configDict)
-            (sessID, queryID, numEpisodes, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure,
+            output_str = QR.computePredictedOutputStrRNN(sessID, queryID, topKPredictedIntents, nextQueryIntent, numSessions, configDict)
+            (sessID, queryID, numSessions, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure,
              maxFMeasure) = QR.computeQueRIEFMeasureForEachEpisode(output_str, configDict)
             avgFMeasure+=maxFMeasure
             avgAccuracy+=accuracyAtMaxFMeasure
             avgPrecision+=precisionAtMaxFMeasure
             avgRecall+=recallAtMaxFMeasure
-    avgFMeasure=float(sum(avgFMeasurePerSession))/float(numEpisodes)
-    avgAccuracy = float(sum(avgAccuracyPerSession))/float(numEpisodes)
-    avgPrecision = float(sum(avgPrecisionPerSession))/float(numEpisodes)
-    avgRecall =  float(sum(avgRecallPerSession))/float(numEpisodes)
+    avgFMeasure=float(sum(avgFMeasurePerSession))/float(numSessions)
+    avgAccuracy = float(sum(avgAccuracyPerSession))/float(numSessions)
+    avgPrecision = float(sum(avgPrecisionPerSession))/float(numSessions)
+    avgRecall =  float(sum(avgRecallPerSession))/float(numSessions)
     return (avgFMeasure, avgAccuracy, avgPrecision, avgRecall)
 
 
