@@ -243,7 +243,9 @@ def appendTrainingXY(sessIntentList, configDict, dataX, dataY):
 
 def updateRNNIncrementalTrain(modelRNN, x_train, y_train):
     x_train = perform_input_padding(x_train)
-    modelRNN.fit(x_train, y_train, epochs=100, batch_size=len(x_train))
+    copy_ytrain = np.array(y_train)
+    modelRNN.fit(x_train, copy_ytrain, epochs=100, batch_size=len(x_train))
+    del copy_ytrain
     return modelRNN
     '''
        for i in range(len(x_train)):
