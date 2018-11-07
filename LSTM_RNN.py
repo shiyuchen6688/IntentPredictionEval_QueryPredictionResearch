@@ -457,14 +457,16 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
 
 def computePredictedIntentsRNN(predictedY, sessionDict, configDict, curSessID):
     cosineSimDict = {}
+    sessCount = 0
     for sessID in sessionDict:
-        if sessID!=0 and len(sessionDict)>1 and sessID == curSessID: # we are not going to suggest query intents from the same session unless it is sessID=0
+        if sessCount>0 and len(sessionDict)>1 and sessID == curSessID: # we are not going to suggest query intents from the same session unless it is the first session in the dictionary
             break
         numQueries = len(sessionDict[sessID])
         for queryID in range(numQueries):
             queryIntent = sessionDict[sessID][queryID]
             cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
             cosineSimDict[str(sessID)+","+str(queryID)] = cosineSim
+        sessCount+=1
     # sorted_d is a list of lists, not a dictionary. Each list entry has key as 0th entry and value as 1st entry, we need the key
     sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKPredictedIntents = []
