@@ -165,7 +165,7 @@ def runActiveRNNKFoldExp(configDict):
     avgKFoldRecall = {}
     algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
     outputDir = configDict['KFOLD_OUTPUT_DIR']
-    for foldID in range(int(configDict['KFOLD'])):
+    for foldID in range(5,int(configDict['KFOLD'])):
         trainIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
         (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainDictX, availTrainDictY, holdOutTrainDictX,
