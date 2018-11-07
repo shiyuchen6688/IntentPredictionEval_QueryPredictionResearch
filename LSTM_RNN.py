@@ -239,10 +239,10 @@ def appendTrainingXY(sessIntentList, configDict, dataX, dataY):
     yList = createCharListFromIntent(sessIntentList[numQueries-1], configDict)
     dataX.append(xList)
     dataY.append([yList])
-    dataX = perform_input_padding(dataX)
     return (dataX, dataY)
 
 def updateRNNIncrementalTrain(modelRNN, x_train, y_train):
+    x_train = perform_input_padding(x_train)
     modelRNN.fit(x_train, y_train, epochs=100, batch_size=len(x_train))
     return modelRNN
     '''
