@@ -217,7 +217,7 @@ def perform_input_padding(x_train):
             max_lookback = len(x_train[i])
 
     x_train = pad_sequences(x_train, maxlen = max_lookback, padding='pre')
-    return x_train
+    return (x_train, max_lookback)
 
 def createCharListFromIntent(intent, configDict):
     intentStrList = []
@@ -242,10 +242,10 @@ def appendTrainingXY(sessIntentList, configDict, dataX, dataY):
     return (dataX, dataY)
 
 def updateRNNIncrementalTrain(modelRNN, x_train, y_train):
-    x_train = perform_input_padding(x_train)
+    (x_train, max_lookback) = perform_input_padding(x_train)
     y_train = np.array(y_train)
     modelRNN.fit(x_train, y_train, epochs=100, batch_size=len(x_train))
-    return modelRNN
+    return (modelRNN, max_lookback)
     '''
        for i in range(len(x_train)):
         sample_input = np.array(x_train[i])
@@ -293,8 +293,8 @@ def trainRNN(dataX, dataY, modelRNN, configDict):
     n_memUnits = int(configDict['RNN_NUM_MEM_UNITS'])
     if modelRNN is None:
         modelRNN = initializeRNN(n_features, n_memUnits, configDict)
-    modelRNN = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
-    return modelRNN
+    (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
+    return (modelRNN, max_lookback)
 
 def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict):
     dataX = []
@@ -317,10 +317,10 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN
         n_memUnits = int(configDict['RNN_NUM_MEM_UNITS'])
         if modelRNN is None:
             modelRNN = initializeRNN(n_features, n_memUnits, configDict)
-        modelRNN = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
-    return (modelRNN, sessionDict)
+        (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
+    return (modelRNN, sessionDict, max_lookback)
 
-def predictTopKIntents(modelRNN, sessionDict, sessID, configDict):
+def predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict):
     #predicts the next query to the last query in the sessID session
     sessIntentList = sessionDict[sessID]
     # top-K is 1
@@ -330,8 +330,13 @@ def predictTopKIntents(modelRNN, sessionDict, sessID, configDict):
         curSessIntent = sessIntentList[i]
         intentStrList = createCharListFromIntent(curSessIntent, configDict)
         testX.append(intentStrList)
+
+    # modify testX to be compatible with the RNN prediction
     testX = np.array(testX)
-    predictedY = modelRNN.predict(testX.reshape(1, testX.shape[0], testX.shape[1]))
+    testX = testX.reshape(1, testX.shape[0], testX.shape[1])
+    if len(testX) < max_lookback:
+        testX = pad_sequences(testX, maxlen=max_lookback, padding='pre')
+    predictedY = modelRNN.predict(testX)
     predictedY = predictedY[0][predictedY.shape[1] - 1]
     return predictedY
 
@@ -353,12 +358,12 @@ def runRNNKFoldExp(configDict):
         testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
         (sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN) = initRNNOneFoldTrain(trainIntentSessionFile, configDict)
         startTrain = time.time()
-        (modelRNN, sessionDict) = refineTemporalPredictor(keyOrder, configDict, sessionDict, modelRNN, sessionStreamDict)
+        (modelRNN, sessionDict, max_lookback) = refineTemporalPredictor(keyOrder, configDict, sessionDict, modelRNN, sessionStreamDict)
         trainTime = float(time.time() - startTrain)
         avgTrainTime.append(trainTime)
         (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
         startTest = time.time()
-        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, sessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
+        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
@@ -430,7 +435,7 @@ def updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent):
     sessionDict[sessID].append(curQueryIntent)
     return sessionDict
 
-def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
+def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
     try:
         os.remove(outputIntentFileName)
     except OSError:
@@ -457,7 +462,7 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
         updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent)
 
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
-            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, configDict)
+            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
             actual_vector = np.array(nextIntentList).astype(np.int)
@@ -507,6 +512,7 @@ def computePredictedIntentsRNN(predictedY, sessionDict, configDict, curSessID):
 def runRNNSingularityExp(configDict):
     (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionDict, numQueries, sessionLengthDict,
      sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY) = initRNNSingularity(configDict)
+    max_lookback = 0
     for key in keyOrder:
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
@@ -520,12 +526,12 @@ def runRNNSingularityExp(configDict):
         # -- Refinement is done only at the end of episode, prediction could be done outside but no use for CF and response time update also happens at one shot --
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             numEpisodes += 1
-            (modelRNN, sessionDict) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict)
+            (modelRNN, sessionDict, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict)
             # we do not have empty queryKeysSetAside because we want to comulatively train the RNN at the end of each episode
             #del queryKeysSetAside
             #queryKeysSetAside = []
         if modelRNN is not None and queryID < sessionLengthDict[sessID]-1:
-            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, configDict)
+            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
             actual_vector = np.array(nextIntentList).astype(np.int)

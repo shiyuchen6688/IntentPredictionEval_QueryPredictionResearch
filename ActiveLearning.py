@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import keras
 from keras.datasets import imdb
 from keras.preprocessing import sequence
+from keras.preprocessing.sequence import pad_sequences
 from keras import regularizers
 from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
@@ -25,15 +26,19 @@ from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten,
 import CFCosineSim
 import LSTM_RNN
 
-def exampleSelection(foldID, activeIter, modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
+def exampleSelection(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
     minimaxCosineSimDict = {}
     i=0
     print "foldID: "+str(foldID)+", activeIter: "+str(activeIter)+", #Hold-out-Pairs: "+str(len(holdOutTrainDictX))
     for sessIDQueryID in holdOutTrainDictX:
         leftX = np.array(holdOutTrainDictX[sessIDQueryID])
+        leftX = leftX.reshape(1, leftX.shape[0], leftX.shape[1])
+        if len(leftX) < max_lookback:
+            leftX = pad_sequences(leftX, maxlen=max_lookback, padding='pre')
         sessID = int(sessIDQueryID.split(",")[0])
-        predictedY = modelRNN.predict(leftX.reshape(1, leftX.shape[0], leftX.shape[1]))
+
+        predictedY = modelRNN.predict(leftX)
         predictedY = predictedY[0][predictedY.shape[1] - 1]
         # predict topK intent vectors based on the weight vector
         topKPredictedIntents = LSTM_RNN.computePredictedIntentsRNN(predictedY, trainSessionDict, configDict, sessID)
@@ -89,13 +94,12 @@ def initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile,
     # keep ACTIVE_SEED_TRAINING_SIZE pairs in available and remaining in hold-out
 
     (availTrainKeyX, availTrainKeyY, holdOutTrainX, holdOutTrainY) = createAvailHoldOutDicts(trainX, trainY, trainKeyOrder)
-    testSessionDict = {}
     (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = LSTM_RNN.initRNNOneFoldTest(testIntentSessionFile,
                                                                                         configDict)
-    return (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionDict, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainKeyX, availTrainKeyY, holdOutTrainX, holdOutTrainY)
+    return (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainKeyX, availTrainKeyY, holdOutTrainX, holdOutTrainY)
 
 
-def testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN):
+def testActiveRNN(sessionLengthDict, trainSessionDict, testKeyOrder, testSessionStreamDict, modelRNN, max_lookback):
     prevSessID = -1
     numSessions = 0
     avgAccuracyPerSession = []
@@ -111,25 +115,25 @@ def testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionS
         queryID = int(sessIDQueryID.split(",")[1])
         curQueryIntent = testSessionStreamDict[sessIDQueryID]
         if prevSessID != sessID:
-            if prevSessID in testSessionDict:
-                assert len(testSessionDict[prevSessID])>1
-                avgAccuracyPerSession.append(float(avgAccuracy)/float(len(testSessionDict[prevSessID])-1))
-                avgFMeasurePerSession.append(float(avgFMeasure)/float(len(testSessionDict[prevSessID])-1))
-                avgPrecisionPerSession.append(float(avgPrecision)/float(len(testSessionDict[prevSessID])-1))
-                avgRecallPerSession.append(float(avgRecall)/float(len(testSessionDict[prevSessID])-1))
+            if prevSessID in trainSessionDict:
+                assert len(trainSessionDict[prevSessID])>1
+                avgAccuracyPerSession.append(float(avgAccuracy)/float(len(trainSessionDict[prevSessID])-1))
+                avgFMeasurePerSession.append(float(avgFMeasure)/float(len(trainSessionDict[prevSessID])-1))
+                avgPrecisionPerSession.append(float(avgPrecision)/float(len(trainSessionDict[prevSessID])-1))
+                avgRecallPerSession.append(float(avgRecall)/float(len(trainSessionDict[prevSessID])-1))
                 avgFMeasure = 0.0
                 avgAccuracy = 0.0
                 avgPrecision = 0.0
                 avgRecall = 0.0
-                del testSessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
+                del trainSessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
                 numSessions = int(numSessions) + 1  # episodes start from 1
             prevSessID = sessID
         # update sessionDict with this new query
-        LSTM_RNN.updateSessionDictWithCurrentIntent(testSessionDict, sessID, curQueryIntent)
+        LSTM_RNN.updateSessionDictWithCurrentIntent(trainSessionDict, sessID, curQueryIntent)
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
-            predictedY = LSTM_RNN.predictTopKIntents(modelRNN, testSessionDict, sessID, configDict)
+            predictedY = LSTM_RNN.predictTopKIntents(modelRNN, trainSessionDict, sessID, max_lookback, configDict)
             if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                topKPredictedIntents = LSTM_RNN.computePredictedIntentsRNN(predictedY, testSessionDict, configDict, sessID)
+                topKPredictedIntents = LSTM_RNN.computePredictedIntentsRNN(predictedY, trainSessionDict, configDict, sessID)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             #compare topK with testY
@@ -162,21 +166,22 @@ def runActiveRNNKFoldExp(configDict):
     for foldID in range(int(configDict['KFOLD'])):
         trainIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
-        (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionDict,
-         testSessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainDictX, availTrainDictY, holdOutTrainDictX,
+        (sessionLengthDict, trainSessionDict, trainSessionStreamDict, trainKeyOrder, modelRNN, testSessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainDictX, availTrainDictY, holdOutTrainDictX,
          holdOutTrainDictY) = initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict)
         activeIter = 0
         while len(holdOutTrainDictX) > 0:
             startTime = time.time()
-            modelRNN = LSTM_RNN.trainRNN(availTrainDictX.values(), availTrainDictY.values(), modelRNN, configDict)
+            #reinitialize model to None before training it
+            #modelRNN=None
+            (modelRNN, max_lookback) = LSTM_RNN.trainRNN(availTrainDictX.values(), availTrainDictY.values(), modelRNN, configDict)
             trainTime = float(time.time() - startTime)
             startTime = time.time()
             # example selection phase
-            (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelection(foldID, activeIter, modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
+            (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelection(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
             exSelTime = float(time.time() - startTime)
             print "FoldID: "+str(foldID)+", activeIter: "+str(activeIter)+", Added " + str(len(availTrainDictX)) + " examples to the training data"
             startTime = time.time()
-            (avgFMeasure, avgAccuracy, avgPrecision, avgRecall) = testActiveRNN(sessionLengthDict, testSessionDict, testKeyOrder, testSessionStreamDict, modelRNN)
+            (avgFMeasure, avgAccuracy, avgPrecision, avgRecall) = testActiveRNN(sessionLengthDict, trainSessionDict, testKeyOrder, testSessionStreamDict, modelRNN, max_lookback)
             testTime = float(time.time() - startTime)
             # update quality measures
             assert len(avgTrainTime) == len(avgTestTime) and len(avgExSelTime) == len(avgTrainTime) and len(avgTrainTime) == len(avgKFoldAccuracy) and len(avgTrainTime) == len(avgKFoldFMeasure) and len(avgTrainTime) == len(avgKFoldPrecision) and len(avgTrainTime) == len(avgKFoldRecall)
@@ -196,6 +201,7 @@ def runActiveRNNKFoldExp(configDict):
             avgKFoldPrecision[activeIter].append(avgPrecision)
             avgKFoldRecall[activeIter].append(avgRecall)
             activeIter+=1
+    saveDictsBeforeAverage(avgTrainTime, avgExSelTime, avgTestTime, avgKFoldFMeasure, avgKFoldAccuracy, avgKFoldPrecision, avgKFoldRecall)
     # Now take the average
     avgTrainTime = computeAvgPerDict(avgTrainTime)
     avgExSelTime = computeAvgPerDict(avgExSelTime)
@@ -207,6 +213,16 @@ def runActiveRNNKFoldExp(configDict):
     avgKFoldRecall = computeAvgPerDict(avgKFoldRecall)
     #Now plot the avg Dicts using new methods in ParseResultsToExcel
     ParseResultsToExcel.parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime, avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall, algoName, outputDir, configDict)
+    return
+
+def saveDictsBeforeAverage(avgTrainTime, avgExSelTime, avgTestTime, avgKFoldFMeasure, avgKFoldAccuracy, avgKFoldPrecision, avgKFoldRecall):
+    QR.writeToPickleFile("avgTrainTimeAL.pickle", avgTrainTime)
+    QR.writeToPickleFile("avgTestTimeAL.pickle", avgTestTime)
+    QR.writeToPickleFile("avgExSelTime.pickle", avgExSelTime)
+    QR.writeToPickleFile("avgKFoldFMeasure.pickle", avgKFoldFMeasure)
+    QR.writeToPickleFile("avgKFoldAccuracy.pickle", avgKFoldAccuracy)
+    QR.writeToPickleFile("avgKFoldPrecision.pickle", avgKFoldPrecision)
+    QR.writeToPickleFile("avgKFoldRecall.pickle", avgKFoldRecall)
     return
 
 def computeAvgIterTime(avgTrainTime, avgExSelTime, avgTestTime):
