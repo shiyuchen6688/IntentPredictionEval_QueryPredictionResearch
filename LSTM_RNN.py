@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import keras
 from keras.datasets import imdb
 from keras.preprocessing import sequence
+from keras.preprocessing.sequence import pad_sequences
 from keras import regularizers
 from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
@@ -205,6 +206,19 @@ if __name__ == '__main__':
 
 '''
 
+def perform_input_padding(x_train):
+    if(len(x_train) > 0):
+        max_lookback = len(x_train[0])
+    else:
+        max_lookback = 0
+
+    for i in range(1, len(x_train)):
+        if len(x_train[i]) > max_lookback:
+            max_lookback = len(x_train[i])
+
+    x_train = pad_sequences(x_train, maxlen = max_lookback, padding='pre')
+    return x_train
+
 def createCharListFromIntent(intent, configDict):
     intentStrList = []
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
@@ -225,14 +239,20 @@ def appendTrainingXY(sessIntentList, configDict, dataX, dataY):
     yList = createCharListFromIntent(sessIntentList[numQueries-1], configDict)
     dataX.append(xList)
     dataY.append([yList])
+    dataX = perform_input_padding(dataX)
     return (dataX, dataY)
 
 def updateRNNIncrementalTrain(modelRNN, x_train, y_train):
-    for i in range(len(x_train)):
+    modelRNN.fit(x_train, y_train, epochs=100, batch_size=len(x_train))
+    return modelRNN
+    '''
+       for i in range(len(x_train)):
         sample_input = np.array(x_train[i])
         sample_output = np.array(y_train[i])
         modelRNN.fit(sample_input.reshape(1, sample_input.shape[0], sample_input.shape[1]), sample_output.reshape(1, sample_output.shape[0], sample_output.shape[1]), epochs = 1)
         return modelRNN
+    '''
+
 
 def initializeRNN(n_features, n_memUnits, configDict):
     modelRNN = Sequential()
@@ -500,8 +520,9 @@ def runRNNSingularityExp(configDict):
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             numEpisodes += 1
             (modelRNN, sessionDict) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict)
-            del queryKeysSetAside
-            queryKeysSetAside = []
+            # we do not have empty queryKeysSetAside because we want to comulatively train the RNN at the end of each episode
+            #del queryKeysSetAside
+            #queryKeysSetAside = []
         if modelRNN is not None and queryID < sessionLengthDict[sessID]-1:
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]

@@ -26,9 +26,6 @@ import CFCosineSim
 import LSTM_RNN
 
 def exampleSelection(foldID, activeIter, modelRNN, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
-    #delete all the elements in availTrainX and availTrainY thus far because RNNs can be trained incrementally, old train data is redundant
-    availTrainDictX.clear()
-    availTrainDictY.clear()
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
     minimaxCosineSimDict = {}
     i=0
