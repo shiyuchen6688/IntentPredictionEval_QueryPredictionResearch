@@ -145,6 +145,8 @@ def testActiveRNN(sessionLengthDict, trainSessionDict, testKeyOrder, testSession
             avgAccuracy+=accuracyAtMaxFMeasure
             avgPrecision+=precisionAtMaxFMeasure
             avgRecall+=recallAtMaxFMeasure
+    if prevSessID in trainSessionDict:
+        del trainSessionDict[prevSessID] # you also delete the last dangling test session from the overall session dict so far incl train n test
     avgFMeasure=float(sum(avgFMeasurePerSession))/float(numSessions)
     avgAccuracy = float(sum(avgAccuracyPerSession))/float(numSessions)
     avgPrecision = float(sum(avgPrecisionPerSession))/float(numSessions)
