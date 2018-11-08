@@ -218,13 +218,13 @@ def runActiveRNNKFoldExp(configDict):
     return
 
 def saveDictsBeforeAverage(avgTrainTime, avgExSelTime, avgTestTime, avgKFoldFMeasure, avgKFoldAccuracy, avgKFoldPrecision, avgKFoldRecall):
-    QR.writeToPickleFile("avgTrainTimeAL.pickle", avgTrainTime)
-    QR.writeToPickleFile("avgTestTimeAL.pickle", avgTestTime)
-    QR.writeToPickleFile("avgExSelTime.pickle", avgExSelTime)
-    QR.writeToPickleFile("avgKFoldFMeasure.pickle", avgKFoldFMeasure)
-    QR.writeToPickleFile("avgKFoldAccuracy.pickle", avgKFoldAccuracy)
-    QR.writeToPickleFile("avgKFoldPrecision.pickle", avgKFoldPrecision)
-    QR.writeToPickleFile("avgKFoldRecall.pickle", avgKFoldRecall)
+    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgTrainTimeAL.pickle", avgTrainTime)
+    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgTestTimeAL.pickle", avgTestTime)
+    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgExSelTime.pickle", avgExSelTime)
+    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgKFoldFMeasure.pickle", avgKFoldFMeasure)
+    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgKFoldAccuracy.pickle", avgKFoldAccuracy)
+    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgKFoldPrecision.pickle", avgKFoldPrecision)
+    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgKFoldRecall.pickle", avgKFoldRecall)
     return
 
 def computeAvgIterTime(avgTrainTime, avgExSelTime, avgTestTime):
