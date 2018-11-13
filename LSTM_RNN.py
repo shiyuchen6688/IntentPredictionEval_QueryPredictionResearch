@@ -252,7 +252,7 @@ def updateRNNIncrementalTrain(modelRNN, x_train, y_train):
 def updateRNNFullTrain(modelRNN, x_train, y_train):
     (x_train, max_lookback) = perform_input_padding(x_train)
     y_train = np.array(y_train)
-    modelRNN.fit(x_train, y_train, epochs=100, batch_size=len(x_train))
+    modelRNN.fit(x_train, y_train, epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']), batch_size=len(x_train))
     return (modelRNN, max_lookback)
     '''
        for i in range(len(x_train)):
