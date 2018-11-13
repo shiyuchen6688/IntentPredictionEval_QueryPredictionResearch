@@ -242,6 +242,14 @@ def appendTrainingXY(sessIntentList, configDict, dataX, dataY):
     return (dataX, dataY)
 
 def updateRNNIncrementalTrain(modelRNN, x_train, y_train):
+    for i in range(len(x_train)):
+        sample_input = np.array(x_train[i])
+        sample_output = np.array(y_train[i])
+        modelRNN.fit(sample_input.reshape(1, sample_input.shape[0], sample_input.shape[1]),
+                     sample_output.reshape(1, sample_output.shape[0], sample_output.shape[1]), epochs=1)
+        return (modelRNN,0)
+
+def updateRNNFullTrain(modelRNN, x_train, y_train):
     (x_train, max_lookback) = perform_input_padding(x_train)
     y_train = np.array(y_train)
     modelRNN.fit(x_train, y_train, epochs=100, batch_size=len(x_train))
@@ -524,9 +532,9 @@ def runRNNSingularityExp(configDict):
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             numEpisodes += 1
             (modelRNN, sessionDict, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict)
-            # we do not have empty queryKeysSetAside because we want to comulatively train the RNN at the end of each episode
-            #del queryKeysSetAside
-            #queryKeysSetAside = []
+            # we have empty queryKeysSetAside because we want to incrementally train the RNN at the end of each episode
+            del queryKeysSetAside
+            queryKeysSetAside = []
         if modelRNN is not None and queryID < sessionLengthDict[sessID]-1:
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]

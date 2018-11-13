@@ -27,6 +27,11 @@ import CFCosineSim
 import LSTM_RNN
 
 def exampleSelection(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
+    # get rid of the data that you trained on so far for incremental train
+    del availTrainDictX
+    del availTrainDictY
+    availTrainDictX = {}
+    availTrainDictY = {}
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
     minimaxCosineSimDict = {}
     i=0
