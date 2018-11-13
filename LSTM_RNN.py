@@ -301,7 +301,11 @@ def trainRNN(dataX, dataY, modelRNN, configDict):
     n_memUnits = int(configDict['RNN_NUM_MEM_UNITS'])
     if modelRNN is None:
         modelRNN = initializeRNN(n_features, n_memUnits, configDict)
-    (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
+    assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+    if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+        (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
+    elif configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL':
+        (modelRNN, max_lookback) = updateRNNFullTrain(modelRNN, dataX, dataY)
     return (modelRNN, max_lookback)
 
 def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict):
@@ -325,7 +329,11 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN
         n_memUnits = int(configDict['RNN_NUM_MEM_UNITS'])
         if modelRNN is None:
             modelRNN = initializeRNN(n_features, n_memUnits, configDict)
-        (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
+        assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+        if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+            (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
+        elif configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL':
+            (modelRNN, max_lookback) = updateRNNFullTrain(modelRNN, dataX, dataY)
     return (modelRNN, sessionDict, max_lookback)
 
 def predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict):
@@ -532,9 +540,12 @@ def runRNNSingularityExp(configDict):
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             numEpisodes += 1
             (modelRNN, sessionDict, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict)
+            assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
+                                                                                       'RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
             # we have empty queryKeysSetAside because we want to incrementally train the RNN at the end of each episode
-            del queryKeysSetAside
-            queryKeysSetAside = []
+            if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+                del queryKeysSetAside
+                queryKeysSetAside = []
         if modelRNN is not None and queryID < sessionLengthDict[sessID]-1:
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID)+","+str(queryID+1)]
