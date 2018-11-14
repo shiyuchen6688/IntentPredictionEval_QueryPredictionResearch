@@ -338,8 +338,8 @@ def predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict):
     # modify testX to be compatible with the RNN prediction
     testX = np.array(testX)
     testX = testX.reshape(1, testX.shape[0], testX.shape[1])
-    #if len(testX) < max_lookback:
-        #testX = pad_sequences(testX, maxlen=max_lookback, padding='pre')
+    if len(testX) < max_lookback:
+        testX = pad_sequences(testX, maxlen=max_lookback, padding='pre')
     predictedY = modelRNN.predict(testX)
     predictedY = predictedY[0][predictedY.shape[1] - 1]
     return predictedY
