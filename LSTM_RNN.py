@@ -241,15 +241,15 @@ def appendTrainingXY(sessIntentList, configDict, dataX, dataY):
     dataY.append([yList])
     return (dataX, dataY)
 
-def updateRNNIncrementalTrain(modelRNN, x_train, y_train):
+def updateRNNIncrementalTrain(modelRNN, x_train, y_train, configDict):
     for i in range(len(x_train)):
         sample_input = np.array(x_train[i])
         sample_output = np.array(y_train[i])
         modelRNN.fit(sample_input.reshape(1, sample_input.shape[0], sample_input.shape[1]),
-                     sample_output.reshape(1, sample_output.shape[0], sample_output.shape[1]), epochs=1)
+                     sample_output.reshape(1, sample_output.shape[0], sample_output.shape[1]), epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']))
         return (modelRNN,0)
 
-def updateRNNFullTrain(modelRNN, x_train, y_train):
+def updateRNNFullTrain(modelRNN, x_train, y_train, configDict):
     (x_train, max_lookback) = perform_input_padding(x_train)
     y_train = np.array(y_train)
     modelRNN.fit(x_train, y_train, epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']), batch_size=len(x_train))
@@ -303,9 +303,9 @@ def trainRNN(dataX, dataY, modelRNN, configDict):
         modelRNN = initializeRNN(n_features, n_memUnits, configDict)
     assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
     if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
-        (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, dataX, dataY)
+        (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, dataX, dataY, configDict)
     elif configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL':
-        (modelRNN, max_lookback) = updateRNNFullTrain(modelRNN, dataX, dataY)
+        (modelRNN, max_lookback) = updateRNNFullTrain(modelRNN, dataX, dataY, configDict)
     return (modelRNN, max_lookback)
 
 def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict):
