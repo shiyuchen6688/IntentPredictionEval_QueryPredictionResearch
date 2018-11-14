@@ -180,8 +180,10 @@ def runActiveRNNKFoldExp(configDict):
         activeIter = 0
         while len(holdOutTrainDictX) > 0:
             startTime = time.time()
-            #reinitialize model to None before training it
-            #modelRNN=None
+            assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+            #reinitialize model to None before training it if it is a full train
+            if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL':
+                modelRNN=None
             (modelRNN, max_lookback) = LSTM_RNN.trainRNN(availTrainDictX.values(), availTrainDictY.values(), modelRNN, configDict)
             trainTime = float(time.time() - startTime)
             startTime = time.time()
