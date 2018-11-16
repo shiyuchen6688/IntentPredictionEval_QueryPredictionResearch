@@ -23,8 +23,6 @@ def connectToMySQL(configDict):
             print("Database does not exist")
         else:
             print(err)
-    else:
-        cnx.close()
     return cnx
 
 def createTableDict(cnx):
@@ -33,11 +31,12 @@ def createTableDict(cnx):
     cursor = cnx.cursor()
     cursor.execute(query)
     index = 0
-    for tableName in cursor:
+    for cols in cursor:
+        tableName = str(cols[0])
         assert tableName not in tableDict
         tableDict[tableName] = index
+        print "tablename: "+str(tableName)+", index: "+str(index)
         index+=1
-        print "tablename: "+tableName+", index: "+str(index)
     return tableDict
 
 def fetchSchema(configDict):
