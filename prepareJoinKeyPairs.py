@@ -15,7 +15,7 @@ def connectToMySQL(configDict):
         passwd=configDict['MYSQL_PASSWORD']
         hostname=configDict['MYSQL_HOST']
         dbname=configDict['MYSQL_DB']
-        cnx = mysql.connector.connect(user=uname, password=passwd, host=hostname, database=dbname)
+        cnx = mysql.connector.connect(user=uname, password=passwd, host=hostname, database=dbname, auth_plugin='mysql_native_password')
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
             print("Something is wrong with your user name or password")
@@ -27,9 +27,23 @@ def connectToMySQL(configDict):
         cnx.close()
     return cnx
 
+def createTableDict(cnx):
+    tableDict = {}
+    query = "SHOW TABLES"
+    cursor = cnx.cursor()
+    cursor.execute(query)
+    index = 0
+    for tableName in cursor:
+        assert tableName not in tableDict
+        tableDict[tableName] = index
+        index+=1
+        print "tablename: "+tableName+", index: "+str(index)
+    return tableDict
+
 def fetchSchema(configDict):
     cnx = connectToMySQL(configDict)
-
+    tableDict = createTableDict(cnx)
+    print "connection successful"
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFileMinc.txt")
