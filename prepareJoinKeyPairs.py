@@ -108,12 +108,20 @@ def createJoinPairDict(tabColDict, tabColTypeDict):
         tabIndex+=1
     return joinPairDict
 
+def createSelPredBitCountDict(joinPairDict):
+    # key is tabPair and value is #bits reqd for that tabPair combination
+    bitCountDict = {}
+    for tabPair in joinPairDict:
+        bitCountDict[tabPair] = len(joinPairDict[tabPair])
+    return bitCountDict
+
 def fetchSchema(configDict):
     cnx = connectToMySQL(configDict)
     tableDict = createTableDict(cnx)
     (tabColDict, tabColTypeDict) = createTabColDict(cnx, tableDict)
     joinPairDict = createJoinPairDict(tabColDict, tabColTypeDict)
     joinPairDict = pruneEmptyJoinPairs(joinPairDict)
+    selPredBitCountDict = createSelPredBitCountDict(joinPairDict)
     print "connection successful"
 
 if __name__ == "__main__":
