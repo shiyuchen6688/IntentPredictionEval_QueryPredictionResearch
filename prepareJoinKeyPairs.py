@@ -44,7 +44,6 @@ def createTabColDict(cnx, tableDict):
     tabColTypeDict = {}
     # key is tableID and value is list of name,type
     for table in tableDict:
-        tabID = tableDict[table]
         query = "desc "+table
         cursor = cnx.cursor()
         cursor.execute(query)
@@ -56,8 +55,8 @@ def createTabColDict(cnx, tableDict):
             colType = str(cols[1])
             colList.append(colName)
             colTypeList.append(colType)
-        tabColDict[tabID] = colList
-        tabColTypeDict[tabID] = colTypeList
+        tabColDict[table] = colList
+        tabColTypeDict[table] = colTypeList
     return (tabColDict, tabColTypeDict)
 
 def createSelfJoinPairs(tabIndex, tabColDict, joinPairDict):
@@ -69,24 +68,32 @@ def createSelfJoinPairs(tabIndex, tabColDict, joinPairDict):
     return joinPairDict
 
 def createCrossJoinPairs(tabIndex, tabColDict, tabColTypeDict, joinPairDict):
-    curTabID = tabColDict.keys()[tabIndex]
-    curTabCols = tabColDict[tabIndex]
-    curTabColTypes = tabColTypeDict[tabIndex]
+    curTabName = tabColDict.keys()[tabIndex]
+    curTabCols = tabColDict[curTabName]
+    curTabColTypes = tabColTypeDict[curTabName]
     nextTabIndex = tabIndex+1
     while nextTabIndex < len(tabColDict):
-        nextTabID = tabColDict.keys()[nextTabIndex]
-        nextTabCols = tabColDict[nextTabIndex]
-        nextTabColTypes = tabColTypeDict.keys()[nextTabIndex]
-        joinPairDict[str(curTabID)+","+str(nextTabID)] = []
+        nextTabName = tabColDict.keys()[nextTabIndex]
+        nextTabCols = tabColDict[nextTabName]
+        nextTabColTypes = tabColTypeDict[nextTabName]
+        joinPairDict[str(curTabName)+","+str(nextTabName)] = []
         for curTabColName in curTabCols:
             curTabColIndex = curTabCols.index(curTabColName)
             curTabColType = curTabColTypes[curTabColIndex]
             for nextTabColName in nextTabCols:
                 nextTabColIndex = nextTabCols.index(nextTabColName)
                 nextTabColType = nextTabColTypes[nextTabColIndex]
-                if curTabColType == nextTabColType:
-                    joinPairDict[str(curTabID) + "," + str(nextTabID)].append(curTabColName+","+nextTabColName)
+                # if same data types, add them as a possible join key pair to the dictionary
+                if curTabColType.split(" ")[0] == nextTabColType.split(" ")[0]: # ignore unsigned from 'int unsigned' while comparison
+                    joinPairDict[str(curTabName) + "," + str(nextTabName)].append(curTabColName+","+nextTabColName)
         nextTabIndex+=1
+    return joinPairDict
+
+def pruneEmptyJoinPairs(joinPairDict):
+    tabPairs = joinPairDict.keys()
+    for tabPair in tabPairs:
+        if len(joinPairDict[tabPair])==0:
+            del joinPairDict[tabPair]
     return joinPairDict
 
 def createJoinPairDict(tabColDict, tabColTypeDict):
@@ -106,6 +113,7 @@ def fetchSchema(configDict):
     tableDict = createTableDict(cnx)
     (tabColDict, tabColTypeDict) = createTabColDict(cnx, tableDict)
     joinPairDict = createJoinPairDict(tabColDict, tabColTypeDict)
+    joinPairDict = pruneEmptyJoinPairs(joinPairDict)
     print "connection successful"
 
 if __name__ == "__main__":
