@@ -20,39 +20,45 @@ def cleanQuery(line):
 def countQueries(inputFile):
     sessionQueryCountDict = {}
     queryCount = 0
+    violated = 0
     with open(inputFile) as f:
         for line in f:
             if 'Query' in line and line.startswith('\t'):
                 line = cleanQuery(line)
                 sessTokens = line.split()
-                assert sessTokens[1] == 'Query'
+                if sessTokens[1] != 'Query':
+                    violated += 1
+                    print "discoverd violations so far: "+str(violated)
+                    continue # because the pattern is messed up and such queries can be ignored
                 sessIndex = sessTokens[0] # the ID is used as a string
                 if sessIndex in sessionQueryCountDict:
                     sessionQueryCountDict[sessIndex] += 1
                 else:
                     sessionQueryCountDict[sessIndex] = 1
                 queryCount +=1
-                #if queryCount % 10000 == 0:
-                #    print "Query count so far: "+str(queryCount)
-    print "Total Query Count: " + str(queryCount)
+                if queryCount % 1000000 == 0:
+                    print "Query count so far: "+str(queryCount)
+    print "Total Query Count: " + str(queryCount)+", session count: "+str(len(sessionQueryCountDict))
     return sessionQueryCountDict
 
 def retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex):
     with open(inputFile) as f:
         for line in f:
-            line = cleanQuery(line)
-            sessTokens = line.split()
-            curSessIndex = sessTokens[0]
-            assert sessTokens[1] == 'Query'
-            if sessIndex == curSessIndex:
-                # here we assume queryIndex starts from 1, count of queries covered so far gives the index of the next uncovered query
-                # but sessionName is the 0th token, so we need to add a 1 to get the query index
-                if sessIndex not in coveredSessQueries:
-                    queryIndex = 1
-                else:
-                    queryIndex = coveredSessQueries[sessIndex] + 1
-                sessQuery = " ".join(sessTokens[2:])
-                return (sessQuery,queryIndex)
+            if 'Query' in line and line.startswith('\t'):
+                line = cleanQuery(line)
+                sessTokens = line.split()
+                curSessIndex = sessTokens[0]
+                if sessTokens[1] != 'Query':
+                    continue  # because the pattern is messed up and such queries can be ignored
+                if sessIndex == curSessIndex:
+                    # here we assume queryIndex starts from 1, count of queries covered so far gives the index of the next uncovered query
+                    # but sessionName is the 0th token, so we need to add a 1 to get the query index
+                    if sessIndex not in coveredSessQueries:
+                        queryIndex = 1
+                    else:
+                        queryIndex = coveredSessQueries[sessIndex] + 1
+                    sessQuery = " ".join(sessTokens[2:])
+                    return (sessQuery,queryIndex)
 
 def createConcurrentSessions(inputFile, outputFile):
     sessionQueryCountDict = countQueries(inputFile)
@@ -77,7 +83,7 @@ def createConcurrentSessions(inputFile, outputFile):
             output_str="Session "+str(sessIndex)+", Query "+str(queryIndex)+";"+sessQuery
             ti.appendToFile(outputFile, output_str)
             queryCount+=1
-            if queryCount % 100000 == 0:
+            if queryCount % 1000000 == 0:
                 print "appended Session "+str(sessIndex)+", Query "+str(queryIndex)
         else:
             keyList.remove(sessIndex)
