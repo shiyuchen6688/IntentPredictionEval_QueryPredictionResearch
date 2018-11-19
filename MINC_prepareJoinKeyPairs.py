@@ -125,5 +125,5 @@ def fetchSchema(configDict):
     print "connection successful"
 
 if __name__ == "__main__":
-    configDict = parseConfig.parseConfigFile("configFileMinc.txt")
+    configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
     fetchSchema(configDict)
