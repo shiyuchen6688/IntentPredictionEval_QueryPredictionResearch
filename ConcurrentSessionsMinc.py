@@ -6,15 +6,27 @@ import ParseConfigFile as parseConfig
 import random
 import TupleIntent as ti
 
+def cleanQuery(line):
+    #remove trailing newline and replace consecutive tabs with a single tab
+    line = '\t'.join(line.strip().split("\t"))
+    #substitute tabs with spaces
+    line = line.replace("\t", " ")
+    #replace consecutive spaces with a single space
+    line = " ".join(line.split())
+    #remove starting spaces
+    line = line.strip()
+    return line
+
 def countQueries(inputFile):
     sessionQueryCountDict = {}
     queryCount = 0
     with open(inputFile) as f:
         for line in f:
             if 'Query' in line and line.startswith('\t'):
-                sessTokens = line.strip().split("\t")
-                assert sessTokens[2] == 'Query'
-                sessIndex = sessTokens[1] # the ID is used as a string
+                line = cleanQuery(line)
+                sessTokens = line.split()
+                assert sessTokens[1] == 'Query'
+                sessIndex = sessTokens[0] # the ID is used as a string
                 if sessIndex in sessionQueryCountDict:
                     sessionQueryCountDict[sessIndex] += 1
                 else:
@@ -28,9 +40,10 @@ def countQueries(inputFile):
 def retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex):
     with open(inputFile) as f:
         for line in f:
-            sessTokens = line.strip().split("\t")
-            curSessIndex = sessTokens[1]
-            assert sessTokens[2] == 'Query'
+            line = cleanQuery(line)
+            sessTokens = line.split()
+            curSessIndex = sessTokens[0]
+            assert sessTokens[1] == 'Query'
             if sessIndex == curSessIndex:
                 # here we assume queryIndex starts from 1, count of queries covered so far gives the index of the next uncovered query
                 # but sessionName is the 0th token, so we need to add a 1 to get the query index
@@ -38,9 +51,7 @@ def retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex):
                     queryIndex = 1
                 else:
                     queryIndex = coveredSessQueries[sessIndex] + 1
-                sessQuery = "\t".join(sessTokens[3:])
-                sessQuery.replace("\t", " ")
-                sessQuery = ' '.join(sessQuery.split()) # eliminate extra spaces within the SQL query
+                sessQuery = " ".join(sessTokens[2:])
                 return (sessQuery,queryIndex)
 
 def createConcurrentSessions(inputFile, outputFile):
