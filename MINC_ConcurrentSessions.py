@@ -32,8 +32,8 @@ def countQueries(inputFile):
                 else:
                     sessionQueryCountDict[sessIndex] = 1
                 queryCount +=1
-                if queryCount % 10000 == 0:
-                    print "Query count so far: "+str(queryCount)
+                #if queryCount % 10000 == 0:
+                #    print "Query count so far: "+str(queryCount)
     print "Total Query Count: " + str(queryCount)
     return sessionQueryCountDict
 
@@ -62,6 +62,7 @@ def createConcurrentSessions(inputFile, outputFile):
         pass
     keyList = list(sessionQueryCountDict.keys()) # this actually clones the keys into a new python object keyList, not the same as pointing to the existing list
     coveredSessQueries = {} # key is sessionID and value is the query count covered
+    queryCount = 0
     while len(keyList)!=0:
         sessIndex = random.choice(keyList)
         if sessIndex not in coveredSessQueries or coveredSessQueries[sessIndex] < sessionQueryCountDict[sessIndex]:
@@ -75,9 +76,13 @@ def createConcurrentSessions(inputFile, outputFile):
                 coveredSessQueries[sessIndex] += 1
             output_str="Session "+str(sessIndex)+", Query "+str(queryIndex)+";"+sessQuery
             ti.appendToFile(outputFile, output_str)
-            print "appended Session "+str(sessIndex)+", Query "+str(queryIndex)
+            queryCount+=1
+            if queryCount % 100000 == 0:
+                print "appended Session "+str(sessIndex)+", Query "+str(queryIndex)
         else:
             keyList.remove(sessIndex)
+            print "ERROR: invalid SessIndex !!"+str(sessIndex)
+            sys.exit(0)
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
