@@ -108,12 +108,15 @@ def createJoinPairDict(tabColDict, tabColTypeDict):
         tabIndex+=1
     return joinPairDict
 
-def createSelPredBitCountDict(joinPairDict):
-    # key is tabPair and value is #bits reqd for that tabPair combination
-    bitCountDict = {}
+def createJoinPredBitPosDict(joinPairDict):
+    # key is tabPair and value is startBitPos,endBitPos reqd for that tabPair combination
+    bitPosDict = {}
+    endPos = -1
     for tabPair in joinPairDict:
-        bitCountDict[tabPair] = len(joinPairDict[tabPair])
-    return bitCountDict
+        startPos = endPos+1
+        endPos = startPos+len(joinPairDict[tabPair])
+        bitPosDict[tabPair] = str(startPos)+","+str(endPos)
+    return bitPosDict
 
 def fetchSchema(configDict):
     cnx = connectToMySQL(configDict)
@@ -121,9 +124,10 @@ def fetchSchema(configDict):
     (tabColDict, tabColTypeDict) = createTabColDict(cnx, tableDict)
     joinPairDict = createJoinPairDict(tabColDict, tabColTypeDict)
     joinPairDict = pruneEmptyJoinPairs(joinPairDict)
-    selPredBitCountDict = createSelPredBitCountDict(joinPairDict)
-    print "connection successful"
+    joinPredBitPosDict = createJoinPredBitPosDict(joinPairDict)
+    print "Returning Dictionaries"
+    return (tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict)
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
-    fetchSchema(configDict)
+    (tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict) = fetchSchema(configDict)
