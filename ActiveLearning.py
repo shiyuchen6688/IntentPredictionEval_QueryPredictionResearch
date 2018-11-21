@@ -25,8 +25,35 @@ from keras.models import Sequential
 from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU
 import CFCosineSim
 import LSTM_RNN
+import random
 
-def exampleSelection(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
+def exampleSelectionRandom(foldID, activeIter, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY):
+    assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+    # get rid of the data that you trained on so far for incremental train
+    if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+        del availTrainDictX
+        del availTrainDictY
+        availTrainDictX = {}
+        availTrainDictY = {}
+    exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
+    print "foldID: "+str(foldID)+", activeIter: "+str(activeIter)+", #Hold-out-Pairs: "+str(len(holdOutTrainDictX))
+    # random selection
+    resCount = 0
+    if len(holdOutTrainDictX) < exampleBatchSize:
+        exampleBatchSize = len(holdOutTrainDictX)
+    chosenKeys = random.sample(holdOutTrainDictX.keys(), exampleBatchSize)
+    for sessIDQueryID in chosenKeys:
+        availTrainDictX[sessIDQueryID] = holdOutTrainDictX[sessIDQueryID]
+        availTrainDictY[sessIDQueryID] = holdOutTrainDictY[sessIDQueryID]
+        del holdOutTrainDictX[sessIDQueryID]
+        del holdOutTrainDictY[sessIDQueryID]
+        resCount+=1
+        if resCount >= exampleBatchSize:
+            break
+        print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) +", Added "+str(resCount)+"th example, sessIDQueryID: "+str(sessIDQueryID)+" with cosineSim: "+str(cosSimEntry[1])+" to the data"
+    return (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
+
+def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
     assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
     # get rid of the data that you trained on so far for incremental train
     if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
@@ -188,7 +215,11 @@ def runActiveRNNKFoldExp(configDict):
             trainTime = float(time.time() - startTime)
             startTime = time.time()
             # example selection phase
-            (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelection(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
+            assert configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'MINIMAX' or configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'RANDOM'
+            if configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'MINIMAX':
+                (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
+            else:
+                (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelectionRandom(foldID, activeIter, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
             exSelTime = float(time.time() - startTime)
             print "FoldID: "+str(foldID)+", activeIter: "+str(activeIter)+", Added " + str(len(availTrainDictX)) + " examples to the training data"
             startTime = time.time()
