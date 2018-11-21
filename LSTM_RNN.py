@@ -24,6 +24,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
 from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU
 import CFCosineSim
+import argparse
 
 '''
 # convert an array of values into a dataset matrix
@@ -246,7 +247,7 @@ def updateRNNIncrementalTrain(modelRNN, x_train, y_train, configDict):
         sample_input = np.array(x_train[i])
         sample_output = np.array(y_train[i])
         modelRNN.fit(sample_input.reshape(1, sample_input.shape[0], sample_input.shape[1]),
-                     sample_output.reshape(1, sample_output.shape[0], sample_output.shape[1]), epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']))
+                     sample_output.reshape(1, sample_output.shape[0], sample_output.shape[1]), epochs=1) # incremental needs only one epoch
     return (modelRNN,0)
 
 def updateRNNFullTrain(modelRNN, x_train, y_train, configDict):
@@ -577,7 +578,11 @@ def executeRNN(configDict):
     return
 
 if __name__ == "__main__":
-    configDict = parseConfig.parseConfigFile("configFile.txt")
+    #configDict = parseConfig.parseConfigFile("configFile.txt")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-config", help="Config parameters file", type=str, required=True)
+    args = parser.parse_args()
+    configDict = parseConfig.parseConfigFile(args.config)
     executeRNN(configDict)
 
 
