@@ -7,7 +7,7 @@ import ParseConfigFile as parseConfig
 def parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime, avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall, algoName, outputDir, configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
     outputExcelQualityTime = outputDir + "/OutputExcelQualityTimeActiveLearn_" + algoName + "_" + configDict['INTENT_REP'] + "_" + \
-                         configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + ".xlsx"
+                         configDict['BIT_OR_WEIGHTED'] + "_"+configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM']+"_TOP_K_" + configDict['TOP_K'] + ".xlsx"
     assert len(avgTrainTime) == len(avgTestTime) and len(avgExSelTime) == len(avgTrainTime) and len(
         avgTrainTime) == len(avgKFoldAccuracy) and len(avgTrainTime) == len(avgKFoldFMeasure) and len(
         avgTrainTime) == len(avgKFoldPrecision) and len(avgTrainTime) == len(avgKFoldRecall) and len(avgTrainTime) == len(avgIterTime)
