@@ -40,7 +40,6 @@ def exampleSelectionRandom(foldID, activeIter, availTrainDictX, availTrainDictY,
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
     print "foldID: "+str(foldID)+", activeIter: "+str(activeIter)+", #Hold-out-Pairs: "+str(len(holdOutTrainDictX))
     # random selection
-    resCount = 0
     if len(holdOutTrainDictX) < exampleBatchSize:
         exampleBatchSize = len(holdOutTrainDictX)
     chosenKeys = random.sample(holdOutTrainDictX.keys(), exampleBatchSize)
@@ -49,10 +48,7 @@ def exampleSelectionRandom(foldID, activeIter, availTrainDictX, availTrainDictY,
         availTrainDictY[sessIDQueryID] = holdOutTrainDictY[sessIDQueryID]
         del holdOutTrainDictX[sessIDQueryID]
         del holdOutTrainDictY[sessIDQueryID]
-        resCount+=1
-        if resCount >= exampleBatchSize:
-            break
-        print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) +", Added "+str(resCount)+"th example, sessIDQueryID: "+str(sessIDQueryID)+" with cosineSim: "+str(cosSimEntry[1])+" to the data"
+        print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) +", Added "+str(len(chosenKeys))+"th example, sessIDQueryID: "+str(sessIDQueryID)+" to the data"
     return (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
 
 def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
