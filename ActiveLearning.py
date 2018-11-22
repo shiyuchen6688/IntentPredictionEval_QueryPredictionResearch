@@ -227,20 +227,20 @@ def runActiveRNNKFoldExp(configDict):
             # update quality measures
             assert len(avgTrainTime) == len(avgTestTime) and len(avgExSelTime) == len(avgTrainTime) and len(avgTrainTime) == len(avgKFoldAccuracy) and len(avgTrainTime) == len(avgKFoldFMeasure) and len(avgTrainTime) == len(avgKFoldPrecision) and len(avgTrainTime) == len(avgKFoldRecall)
             if activeIter not in avgTrainTime:
-                avgTrainTime[activeIter] = []
-                avgExSelTime[activeIter] = []
-                avgTestTime[activeIter] = []
-                avgKFoldFMeasure[activeIter] = []
-                avgKFoldAccuracy[activeIter] = []
-                avgKFoldPrecision[activeIter] = []
-                avgKFoldRecall[activeIter] = []
-            avgTrainTime[activeIter].append(trainTime)
-            avgExSelTime[activeIter].append(exSelTime)
-            avgTestTime[activeIter].append(testTime)
-            avgKFoldAccuracy[activeIter].append(avgAccuracy)
-            avgKFoldFMeasure[activeIter].append(avgFMeasure)
-            avgKFoldPrecision[activeIter].append(avgPrecision)
-            avgKFoldRecall[activeIter].append(avgRecall)
+                avgTrainTime[activeIter] = {}
+                avgExSelTime[activeIter] = {}
+                avgTestTime[activeIter] = {}
+                avgKFoldFMeasure[activeIter] = {}
+                avgKFoldAccuracy[activeIter] = {}
+                avgKFoldPrecision[activeIter] = {}
+                avgKFoldRecall[activeIter] = {}
+            avgTrainTime[activeIter][foldID] = trainTime
+            avgExSelTime[activeIter][foldID] = exSelTime
+            avgTestTime[activeIter][foldID] = testTime
+            avgKFoldAccuracy[activeIter][foldID] = avgAccuracy
+            avgKFoldFMeasure[activeIter][foldID] = avgFMeasure
+            avgKFoldPrecision[activeIter][foldID] = avgPrecision
+            avgKFoldRecall[activeIter][foldID] = avgRecall
             activeIter+=1
     saveDictsBeforeAverage(avgTrainTime, avgExSelTime, avgTestTime, avgKFoldFMeasure, avgKFoldAccuracy, avgKFoldPrecision, avgKFoldRecall, configDict)
     # Now take the average
@@ -284,6 +284,27 @@ def computeAvgPerDict(avgDict, expectedIterLength):
             if maxValidKey < len(avgDict)-1: # only the last iteration is allowed to have fewer than kfold iteration length - coz remainder occurs only at the end
                 print "Invalid Max Key !!"
                 sys.exit(0)
+    avgOutputDict = {}
+    for key in avgDict:
+        if key == maxValidKey and key>=1:
+            for prevFoldID in avgDict[key-1]:
+                if prevFoldID not in avgDict[maxValidKey]:
+                    avgDict[maxValidKey][prevFoldID] = avgDict[key-1][prevFoldID]
+        avgOutputDict[key] = float(sum(avgDict[key].values())) / float(len(avgDict[key]))
+    del avgDict
+    return avgOutputDict
+
+'''
+def computeAvgPerDict(avgDict, expectedIterLength):
+    # Each key represents an active learning iteration. A few folds may have more iterations than others coz they may get slightly more training data than others
+    # In such a case include the before last active learning iteration's avg performance also into the last iteration, because both represent convergence
+    maxValidKey = -1
+    for key in avgDict:
+        if int(key) > maxValidKey and len(avgDict[key]) < expectedIterLength:
+            maxValidKey = key
+            if maxValidKey < len(avgDict)-1: # only the last iteration is allowed to have fewer than kfold iteration length - coz remainder occurs only at the end
+                print "Invalid Max Key !!"
+                sys.exit(0)
     prevLen = 1
     for key in avgDict:
         if int(key) == maxValidKey and key>=1:
@@ -295,6 +316,8 @@ def computeAvgPerDict(avgDict, expectedIterLength):
             prevLen = len(avgDict[key])
             avgDict[key] = float(sum(avgDict[key])) / float(len(avgDict[key]))
     return avgDict
+'''
+
 
 def executeAL(configDict):
     # ActiveLearning runs only on kFold
