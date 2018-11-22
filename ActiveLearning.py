@@ -244,14 +244,15 @@ def runActiveRNNKFoldExp(configDict):
             activeIter+=1
     saveDictsBeforeAverage(avgTrainTime, avgExSelTime, avgTestTime, avgKFoldFMeasure, avgKFoldAccuracy, avgKFoldPrecision, avgKFoldRecall, configDict)
     # Now take the average
-    avgTrainTime = computeAvgPerDict(avgTrainTime)
-    avgExSelTime = computeAvgPerDict(avgExSelTime)
-    avgTestTime = computeAvgPerDict(avgTestTime)
+    expectedIterLength = int(configDict['KFOLD'])
+    avgTrainTime = computeAvgPerDict(avgTrainTime, expectedIterLength)
+    avgExSelTime = computeAvgPerDict(avgExSelTime, expectedIterLength)
+    avgTestTime = computeAvgPerDict(avgTestTime, expectedIterLength)
     avgIterTime = computeAvgIterTime(avgTrainTime, avgExSelTime, avgTestTime)
-    avgKFoldFMeasure = computeAvgPerDict(avgKFoldFMeasure)
-    avgKFoldAccuracy = computeAvgPerDict(avgKFoldAccuracy)
-    avgKFoldPrecision = computeAvgPerDict(avgKFoldPrecision)
-    avgKFoldRecall = computeAvgPerDict(avgKFoldRecall)
+    avgKFoldFMeasure = computeAvgPerDict(avgKFoldFMeasure, expectedIterLength)
+    avgKFoldAccuracy = computeAvgPerDict(avgKFoldAccuracy, expectedIterLength)
+    avgKFoldPrecision = computeAvgPerDict(avgKFoldPrecision, expectedIterLength)
+    avgKFoldRecall = computeAvgPerDict(avgKFoldRecall, expectedIterLength)
     #Now plot the avg Dicts using new methods in ParseResultsToExcel
     ParseResultsToExcel.parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime, avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall, algoName, outputDir, configDict)
     return
@@ -273,9 +274,26 @@ def computeAvgIterTime(avgTrainTime, avgExSelTime, avgTestTime):
         avgIterTime[key] = avgTrainTime[key] + avgExSelTime[key] + avgTestTime[key]
     return avgIterTime
 
-def computeAvgPerDict(avgDict):
+def computeAvgPerDict(avgDict, expectedIterLength):
+    # Each key represents an active learning iteration. A few folds may have more iterations than others coz they may get slightly more training data than others
+    # In such a case include the before last active learning iteration's avg performance also into the last iteration, because both represent convergence
+    maxValidKey = -1
     for key in avgDict:
-        avgDict[key] = float(sum(avgDict[key]))/float(len(avgDict[key]))
+        if int(key) > maxValidKey and len(avgDict[key]) < expectedIterLength:
+            maxValidKey = key
+            if maxValidKey < len(avgDict)-1: # only the last iteration is allowed to have fewer than kfold iteration length - coz remainder occurs only at the end
+                print "Invalid Max Key !!"
+                sys.exit(0)
+    prevLen = 1
+    for key in avgDict:
+        if int(key) == maxValidKey and key>=1:
+            prevKey = key-1
+            numerator = sum(avgDict[key])+avgDict[prevKey]*prevLen
+            denominator = len(avgDict[key])+prevLen
+            avgDict[key] = float(numerator) / float(denominator)
+        else:
+            prevLen = len(avgDict[key])
+            avgDict[key] = float(sum(avgDict[key])) / float(len(avgDict[key]))
     return avgDict
 
 def executeAL(configDict):
