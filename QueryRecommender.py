@@ -400,17 +400,17 @@ def avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeD
                              'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                              'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
                              'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(
-        configDict['ACCURACY_THRESHOLD']) + ".xlsx"
+        configDict['ACCURACY_THRESHOLD']) +"_"+configDict['RNN_INCREMENTAL_OR_FULL_TRAIN']+ ".xlsx"
     ParseResultsToExcel.parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
 
     outputExcelTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelTime_" + algoName + "_" + configDict[
                               'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                               'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
-                          configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+                          configDict['EPISODE_IN_QUERIES'] +"_"+configDict['RNN_INCREMENTAL_OR_FULL_TRAIN']+ ".xlsx"
     outputExcelKFoldTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelKFoldTime_" + algoName + "_" + configDict[
                                    'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                    'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
-                               configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+                               configDict['EPISODE_IN_QUERIES'] +"_"+configDict['RNN_INCREMENTAL_OR_FULL_TRAIN']+ ".xlsx"
     # compute avg train time across kfolds and append it to the list
     avgTrainTime.append(float(sum(avgTrainTime)) / float(len(avgTrainTime)))
     # compute avg test time across kfolds and append it to the list
