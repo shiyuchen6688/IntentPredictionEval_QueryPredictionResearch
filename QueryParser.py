@@ -197,7 +197,7 @@ def rewriteHavingGroupByComplexQuery(sessQuery, selectList, projectList, groupBy
         colAlias = col.split(" AS ")[lenCol-1]
         colAliasList.append(colAlias)
     if projectList[parseLevel] not in sessQuery:
-        print "Incorrect sessQuery with extra spaces !!"
+        print ("Incorrect sessQuery with extra spaces !!")
         exit(0)
     tempQuery = sessQuery.replace(projectList[parseLevel], projectList[parseLevel] + " INTO TEMPTABLE")
     #tempQuery = "CREATE TABLE TEMPTABLE AS "+sessQuery
