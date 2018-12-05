@@ -44,7 +44,7 @@ if __name__ == "__main__":
             else:
                 outputIntentLine = sessQueryName + ";" + newQuery + ";" + str(resObj)
             appendToFile(tupleIntentSessionsFile, outputIntentLine)
-            print "Executed " + sessQueryName
+            print ("Executed " + sessQueryName)
 
 
 
