@@ -6,6 +6,7 @@ import ParseConfigFile as parseConfig
 import random
 import TupleIntent as ti
 from itertools import islice
+from ParseConfigFile import getConfig
 
 def cleanQuery(line):
     #remove trailing newline and replace consecutive tabs with a single tab
@@ -120,5 +121,5 @@ def createConcurrentSessions(inputFile, outputFile):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
-    createConcurrentSessions(configDict['QUERYSESSIONS'], configDict['CONCURRENT_QUERY_SESSIONS'])
+    createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
     print "Completed concurrent session order creation"

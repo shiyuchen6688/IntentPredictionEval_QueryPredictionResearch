@@ -1,3 +1,4 @@
+from os.path import expanduser
 def parseSchema(schemaFileName):
     schemaDict = {}
     colIndex = 0  #colIndex starts from 0
@@ -7,6 +8,11 @@ def parseSchema(schemaFileName):
             schemaDict[colName]=colIndex
             colIndex=colIndex+1 # no need to keep data type recorded in the schema Dict. It is column as key and colIndex as value
     return schemaDict
+
+def getConfig(relativePath):
+    homeDir = expanduser("~")
+    absPath = homeDir+"/"+relativePath
+    return absPath
 
 def parseConfigFile(fileName):
     configDict = {}
