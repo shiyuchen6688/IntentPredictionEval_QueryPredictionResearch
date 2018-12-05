@@ -18,8 +18,8 @@ def cleanQuery(line):
     line = line.strip()
     return line
 
-def countQueries(inputFile):
-    sessionQueryPosDict = {}
+def countQueries(inputFile): # this is an in-memory version, so holds all the lines in memory in dict
+    sessionQueryDict = {}
     queryCount = 0
     violated = 0
     lineNum = 0
@@ -33,15 +33,16 @@ def countQueries(inputFile):
                     print "discovered violations so far: "+str(violated)
                     continue # because the pattern is messed up and such queries can be ignored
                 sessIndex = sessTokens[0] # the ID is used as a string
-                if sessIndex not in sessionQueryPosDict:
-                    sessionQueryPosDict[sessIndex] = []
-                sessionQueryPosDict[sessIndex].append(str(lineNum))
+                if sessIndex not in sessionQueryDict:
+                    sessionQueryDict[sessIndex] = []
+                sessQuery = " ".join(sessTokens[2:])
+                sessionQueryDict[sessIndex].append(sessQuery)
                 queryCount +=1 # note that queryCount is not the same as lineNum
                 if queryCount % 1000000 == 0:
                     print "Query count so far: "+str(queryCount)
             lineNum+=1
-    print "Total Query Count: " + str(queryCount)+", session count: "+str(len(sessionQueryPosDict))
-    return sessionQueryPosDict
+    print "Total Query Count: " + str(queryCount)+", session count: "+str(len(sessionQueryDict))
+    return sessionQueryDict
 
 def raiseError():
     print "Error as correct line not found !!"
@@ -78,19 +79,28 @@ def retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex, sessionQuery
             raiseError()
     raiseError()
 
+def retrieveQueryFromMemory(coveredSessQueries, sessIndex, sessionQueryDict):
+    if sessIndex not in coveredSessQueries:
+        queryPos = 0
+    else:
+        queryPos = coveredSessQueries[sessIndex]
+    sessQuery = sessionQueryDict[sessIndex][queryPos]
+    queryIndex = queryPos+1
+    return (sessQuery, queryIndex)
+
 def createConcurrentSessions(inputFile, outputFile):
-    sessionQueryPosDict = countQueries(inputFile)
+    sessionQueryDict = countQueries(inputFile)
     try:
         os.remove(outputFile)
     except OSError:
         pass
-    keyList = list(sessionQueryPosDict.keys()) # this actually clones the keys into a new python object keyList, not the same as pointing to the existing list
+    keyList = list(sessionQueryDict.keys()) # this actually clones the keys into a new python object keyList, not the same as pointing to the existing list
     coveredSessQueries = {} # key is sessionID and value is the query count covered
     queryCount = 0
     while len(keyList)!=0:
         sessIndex = random.choice(keyList)
-        if sessIndex not in coveredSessQueries or coveredSessQueries[sessIndex] < len(sessionQueryPosDict[sessIndex]):
-            (sessQuery,queryIndex) = retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex, sessionQueryPosDict)
+        if sessIndex not in coveredSessQueries or coveredSessQueries[sessIndex] < len(sessionQueryDict[sessIndex]):
+            (sessQuery,queryIndex) = retrieveQueryFromMemory(coveredSessQueries, sessIndex, sessionQueryDict)
             if sessQuery == "":
                 keyList.remove(sessIndex)
                 continue
