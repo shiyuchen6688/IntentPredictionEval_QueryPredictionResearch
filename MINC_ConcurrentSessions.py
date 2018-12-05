@@ -40,13 +40,13 @@ def countQueries(inputFile): # this is an in-memory version, so holds all the li
                 sessionQueryDict[sessIndex].append(sessQuery)
                 queryCount +=1 # note that queryCount is not the same as lineNum
                 if queryCount % 1000000 == 0:
-                    print "Query count so far: "+str(queryCount)
+                    print ("Query count so far: "+str(queryCount))
             lineNum+=1
-    print "Total Query Count: " + str(queryCount)+", session count: "+str(len(sessionQueryDict))
+    print ("Total Query Count: " + str(queryCount)+", session count: "+str(len(sessionQueryDict)))
     return sessionQueryDict
 
 def raiseError():
-    print "Error as correct line not found !!"
+    print ("Error as correct line not found !!")
     exit(0)
 
 def retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex, sessionQueryPosDict):
@@ -65,7 +65,7 @@ def retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex, sessionQuery
         sessTokens = line.split()
         curSessIndex = sessTokens[0]
         if sessTokens[1] != 'Query':
-            print "Error following pattern !!"
+            print ("Error following pattern !!")
             exit(0)
         if sessIndex == curSessIndex:
             # here we assume queryIndex starts from 1, count of queries covered so far gives the index of the next uncovered query
@@ -113,13 +113,13 @@ def createConcurrentSessions(inputFile, outputFile):
             ti.appendToFile(outputFile, output_str)
             queryCount+=1
             if queryCount % 1000000 == 0:
-                print "appended Session "+str(sessIndex)+", Query "+str(queryIndex)
+                print ("appended Session "+str(sessIndex)+", Query "+str(queryIndex))
         else:
             keyList.remove(sessIndex)
-            print "ERROR: invalid SessIndex !!"+str(sessIndex)
+            print ("ERROR: invalid SessIndex !!"+str(sessIndex))
             sys.exit(0)
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
     createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
-    print "Completed concurrent session order creation"
+    print ("Completed concurrent session order creation")
