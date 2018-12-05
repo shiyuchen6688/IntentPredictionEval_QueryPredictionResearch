@@ -31,7 +31,7 @@ def countQueries(inputFile): # this is an in-memory version, so holds all the li
                 sessTokens = line.split()
                 if sessTokens[1] != 'Query':
                     violated += 1
-                    print "discovered violations so far: "+str(violated)
+                    print ("discovered violations so far: "+str(violated))
                     continue # because the pattern is messed up and such queries can be ignored
                 sessIndex = sessTokens[0] # the ID is used as a string
                 if sessIndex not in sessionQueryDict:
