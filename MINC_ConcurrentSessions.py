@@ -58,7 +58,7 @@ def retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex, sessionQuery
     with open(inputFile) as f:
         lines = list(islice(f, int(queryLineNum), int(queryLineNum)+1)) # only one line
     for line in lines:
-        print sessIndex+","+line
+        print (sessIndex+","+line)
     line = lines[0]
     if 'Query' in line and line.startswith('\t'):
         line = cleanQuery(line)
