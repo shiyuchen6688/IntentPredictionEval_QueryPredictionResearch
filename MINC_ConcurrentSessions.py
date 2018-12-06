@@ -117,8 +117,8 @@ def createConcurrentSessions(inputFile, outputFile):
             queryCount+=1
             aggQueryCount += queryCount
             if queryCount % 1000000 == 0:
-                ti.appendToFile(outputFile, output_str)
-                queryCount = 0
+                #ti.appendToFile(outputFile, output_str)
+                #queryCount = 0
                 print ("appended Session "+str(sessIndex)+", Query "+str(queryIndex)+", aggQueryCount: "+str(aggQueryCount))
         else:
             keyList.remove(sessIndex)
