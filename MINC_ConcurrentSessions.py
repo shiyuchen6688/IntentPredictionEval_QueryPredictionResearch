@@ -89,7 +89,7 @@ def retrieveQueryFromMemory(coveredSessQueries, sessIndex, sessionQueryDict):
     queryIndex = queryPos+1
     return (sessQuery, queryIndex)
 
-def createConcurrentSessions(inputFile, outputFile):
+def createConcurrentSessionsIdeal(inputFile, outputFile):
     sessionQueryDict = countQueries(inputFile)
     try:
         os.remove(outputFile)
@@ -122,7 +122,35 @@ def createConcurrentSessions(inputFile, outputFile):
             #queryCount = 0
     if queryCount > 0:
         ti.appendToFile(outputFile, output_str)
-        print ("appended Sessions and Queries for an queryCount: "+str(queryCount))
+        print ("appended Sessions and Queries for a queryCount: "+str(queryCount))
+
+def createConcurrentSessions(inputFile, outputFile):
+    sessionQueryDict = countQueries(inputFile)
+    try:
+        os.remove(outputFile)
+    except OSError:
+        pass
+    queryCount = 0
+    queryIndex = 0
+    while len(sessionQueryDict)!=0:
+        random.shuffle(sessionQueryDict.keys())
+        queryIndex += 1
+        for sessIndex in sessionQueryDict.keys():
+            sessQuery = sessionQueryDict[sessIndex][0]
+            sessionQueryDict[sessIndex].remove(sessQuery)
+            if len(sessionQueryDict[sessIndex]) == 0:
+                del sessionQueryDict[sessIndex]
+            if queryCount == 0:
+                output_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQuery
+            elif queryCount > 1:
+                output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQuery
+            queryCount += 1
+            if queryCount % 1000000 == 0:
+                print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", queryCount: " + str(queryCount))
+                #ti.appendToFile(outputFile, output_str)
+                #queryCount = 0
+    ti.appendToFile(outputFile, output_str)
+    print ("appended Sessions and Queries for a queryCount: "+str(queryCount))
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
