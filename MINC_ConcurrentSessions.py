@@ -109,13 +109,19 @@ def createConcurrentSessions(inputFile, outputFile):
                 coveredSessQueries[sessIndex] = 1
             else:
                 coveredSessQueries[sessIndex] += 1
-            output_str="Session "+str(sessIndex)+", Query "+str(queryIndex)+";"+sessQuery
-            ti.appendToFile(outputFile, output_str)
+            if queryCount == 0:
+                output_str ="Session "+str(sessIndex)+", Query "+str(queryIndex)+";"+sessQuery
+            elif queryCount > 1:
+                output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQuery
             queryCount+=1
             if queryCount % 1000000 == 0:
+                ti.appendToFile(outputFile, output_str)
+                queryCount = 0
                 print ("appended Session "+str(sessIndex)+", Query "+str(queryIndex))
         else:
             keyList.remove(sessIndex)
+    if queryCount > 0:
+        ti.appendToFile(outputFile, output_str)
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
