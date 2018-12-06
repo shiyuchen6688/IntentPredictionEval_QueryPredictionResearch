@@ -19,6 +19,33 @@ def cleanQuery(line):
     line = line.strip()
     return line
 
+def assertConcurrentSessions(rawFile, concSessFile):
+    inputQueries = []
+    violated = 0
+    with open(rawFile) as f:
+        for line in f:
+            if 'Query' in line and line.startswith('\t'):
+                line = cleanQuery(line)
+                sessTokens = line.split()
+                if sessTokens[1] != 'Query':
+                    violated += 1
+                    print ("discovered violations so far: "+str(violated))
+                    continue # because the pattern is messed up and such queries can be ignored
+                sessQuery = " ".join(sessTokens[2:])
+                inputQueries.append(sessQuery)
+    queryCount = 0
+    with open(concSessFile) as f:
+        for line in f:
+            sessQuery = line.strip().split(";")[1]
+            if sessQuery not in inputQueries:
+                print "query not present !! exiting"
+                exit(0)
+            queryCount+=1
+            if queryCount % 1000000 == 0:
+                print ("Completed Assertion for "+str(queryCount)+" queries")
+    print "Assertion Met !!"
+    return
+
 def countQueries(inputFile): # this is an in-memory version, so holds all the lines in memory in dict
     sessionQueryDict = {}
     queryCount = 0
@@ -154,5 +181,7 @@ def createConcurrentSessions(inputFile, outputFile):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
-    createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
-    print ("Completed concurrent session order creation")
+    #createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
+    #print ("Completed concurrent session order creation")
+    assertConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
+    print ("Completed assertion of concurrent sessions")
