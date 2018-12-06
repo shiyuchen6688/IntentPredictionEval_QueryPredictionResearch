@@ -116,8 +116,6 @@ def createConcurrentSessions(inputFile, outputFile):
                 print ("appended Session "+str(sessIndex)+", Query "+str(queryIndex))
         else:
             keyList.remove(sessIndex)
-            print ("ERROR: invalid SessIndex !!"+str(sessIndex))
-            sys.exit(0)
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
