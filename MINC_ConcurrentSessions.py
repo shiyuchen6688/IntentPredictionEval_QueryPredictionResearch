@@ -99,7 +99,8 @@ def createConcurrentSessions(inputFile, outputFile):
     queryCount = 0
     aggQueryCount = 0
     while len(sessionQueryDict)!=0:
-        sessIndex = random.choice(sessionQueryDict.keys())
+        sessIndex = sessionQueryDict.keys()[random.randint(0,len(sessionQueryDict))]
+        #sessIndex = random.choice(sessionQueryDict.keys())
         sessQuery = sessionQueryDict[sessIndex][0]
         if sessIndex in coveredSessQueries:
             coveredSessQueries[sessIndex] += 1
