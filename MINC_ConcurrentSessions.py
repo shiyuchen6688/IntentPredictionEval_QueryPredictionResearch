@@ -95,36 +95,34 @@ def createConcurrentSessions(inputFile, outputFile):
         os.remove(outputFile)
     except OSError:
         pass
-    keyList = list(sessionQueryDict.keys()) # this actually clones the keys into a new python object keyList, not the same as pointing to the existing list
     coveredSessQueries = {} # key is sessionID and value is the query count covered
     queryCount = 0
     aggQueryCount = 0
-    while len(keyList)!=0:
-        sessIndex = random.choice(keyList)
-        if sessIndex not in coveredSessQueries or coveredSessQueries[sessIndex] < len(sessionQueryDict[sessIndex]):
-            (sessQuery,queryIndex) = retrieveQueryFromMemory(coveredSessQueries, sessIndex, sessionQueryDict)
-            if sessQuery == "":
-                keyList.remove(sessIndex)
-                continue
-            if sessIndex not in coveredSessQueries:
-                coveredSessQueries[sessIndex] = 1
-            else:
-                coveredSessQueries[sessIndex] += 1
-            if queryCount == 0:
-                output_str ="Session "+str(sessIndex)+", Query "+str(queryIndex)+";"+sessQuery
-            elif queryCount > 1:
-                output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQuery
-            queryCount+=1
-            aggQueryCount += queryCount
-            if queryCount % 1000000 == 0:
-                #ti.appendToFile(outputFile, output_str)
-                #queryCount = 0
-                print ("appended Session "+str(sessIndex)+", Query "+str(queryIndex)+", aggQueryCount: "+str(aggQueryCount))
+    while len(sessionQueryDict)!=0:
+        sessIndex = random.choice(sessionQueryDict.keys())
+        sessQuery = sessionQueryDict[sessIndex][0]
+        if sessIndex in coveredSessQueries:
+            coveredSessQueries[sessIndex] += 1
         else:
-            keyList.remove(sessIndex)
+            coveredSessQueries[sessIndex] = 0
+        sessionQueryDict[sessIndex].remove(sessQuery)
+        if len(sessionQueryDict[sessIndex]) == 0:
+            del sessionQueryDict[sessIndex]
+        queryIndex = coveredSessQueries[sessIndex]+1
+        if queryCount == 0:
+            output_str ="Session "+str(sessIndex)+", Query "+str(queryIndex)+";"+sessQuery
+        elif queryCount > 1:
+            output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQuery
+        queryCount+=1
+        aggQueryCount += queryCount
+        if queryCount % 1000000 == 0:
+            print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", queryCount: " + str(
+                queryCount))
+            #ti.appendToFile(outputFile, output_str)
+            #queryCount = 0
     if queryCount > 0:
         ti.appendToFile(outputFile, output_str)
-        print ("appended Sessions and Queries for an aggQueryCount: "+str(aggQueryCount))
+        print ("appended Sessions and Queries for an queryCount: "+str(queryCount))
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
