@@ -40,6 +40,7 @@ def assertConcurrentSessions(rawFile, concSessFile):
             if sessQuery not in inputQueries:
                 print "query not present !! exiting"
                 exit(0)
+            inputQueries.remove(sessQuery)
             queryCount+=1
             if queryCount % 1000000 == 0:
                 print ("Completed Assertion for "+str(queryCount)+" queries")
