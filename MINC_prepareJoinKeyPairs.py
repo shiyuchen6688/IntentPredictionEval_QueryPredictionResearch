@@ -118,6 +118,25 @@ def createJoinPredBitPosDict(joinPairDict):
         bitPosDict[tabPair] = str(startPos)+","+str(endPos)
     return bitPosDict
 
+def writeSchemaInfoToFile(dict, fn):
+    try:
+        os.remove(fn)
+    except OSError:
+        pass
+    # key,value pair from each dictionary is written as key:value in each separate row in the file
+    with open(fn, 'a') as f:
+        for key in dict:
+            f.write(str(key)+":"+str(dict[key])+"\n")
+    f.flush()
+    f.close()
+
+def writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict, configDict):
+    writeSchemaInfoToFile(tableDict, configDict['MINC_TABLES'])
+    writeSchemaInfoToFile(tabColDict, configDict['MINC_COLS'])
+    writeSchemaInfoToFile(tabColTypeDict, configDict['MINC_COL_TYPES'])
+    writeSchemaInfoToFile(joinPairDict, configDict['MINC_JOIN_PREDS'])
+    writeSchemaInfoToFile(joinPredBitPosDict, configDict['MINC_JOIN_PRED_BIT_POS'])
+
 def fetchSchema(configDict):
     cnx = connectToMySQL(configDict)
     tableDict = createTableDict(cnx)
@@ -125,7 +144,8 @@ def fetchSchema(configDict):
     joinPairDict = createJoinPairDict(tabColDict, tabColTypeDict)
     joinPairDict = pruneEmptyJoinPairs(joinPairDict)
     joinPredBitPosDict = createJoinPredBitPosDict(joinPairDict)
-    print "Returning Dictionaries"
+    print "Writing Dictionaries To Files"
+    writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict, configDict)
     return (tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict)
 
 if __name__ == "__main__":
