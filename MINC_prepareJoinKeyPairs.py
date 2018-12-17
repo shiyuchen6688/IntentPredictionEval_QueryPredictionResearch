@@ -128,8 +128,8 @@ def writeSchemaInfoToFile(dict, fn):
     with open(fn, 'a') as f:
         for key in dict:
             f.write(str(key)+":"+str(dict[key])+"\n")
-    f.flush()
-    f.close()
+        f.flush()
+        f.close()
 
 def writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict, configDict):
     writeSchemaInfoToFile(tableDict, getConfig('MINC_TABLES'))
