@@ -8,6 +8,7 @@ import TupleIntent as ti
 import re
 import mysql.connector
 from mysql.connector import errorcode
+from ParseConfigFile import getConfig
 
 def connectToMySQL(configDict):
     try:
@@ -131,11 +132,11 @@ def writeSchemaInfoToFile(dict, fn):
     f.close()
 
 def writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict, configDict):
-    writeSchemaInfoToFile(tableDict, configDict['MINC_TABLES'])
-    writeSchemaInfoToFile(tabColDict, configDict['MINC_COLS'])
-    writeSchemaInfoToFile(tabColTypeDict, configDict['MINC_COL_TYPES'])
-    writeSchemaInfoToFile(joinPairDict, configDict['MINC_JOIN_PREDS'])
-    writeSchemaInfoToFile(joinPredBitPosDict, configDict['MINC_JOIN_PRED_BIT_POS'])
+    writeSchemaInfoToFile(tableDict, getConfig('MINC_TABLES'))
+    writeSchemaInfoToFile(tabColDict, getConfig('MINC_COLS'))
+    writeSchemaInfoToFile(tabColTypeDict, getConfig('MINC_COL_TYPES'))
+    writeSchemaInfoToFile(joinPairDict, getConfig('MINC_JOIN_PREDS'))
+    writeSchemaInfoToFile(joinPredBitPosDict, getConfig('MINC_JOIN_PRED_BIT_POS'))
 
 def fetchSchema(configDict):
     cnx = connectToMySQL(configDict)
