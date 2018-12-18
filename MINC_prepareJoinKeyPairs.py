@@ -133,11 +133,11 @@ def writeSchemaInfoToFile(dict, fn):
     print "Wrote to file "+fn
 
 def writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict, configDict):
-    writeSchemaInfoToFile(tableDict, getConfig('MINC_TABLES'))
-    writeSchemaInfoToFile(tabColDict, getConfig('MINC_COLS'))
-    writeSchemaInfoToFile(tabColTypeDict, getConfig('MINC_COL_TYPES'))
-    writeSchemaInfoToFile(joinPairDict, getConfig('MINC_JOIN_PREDS'))
-    writeSchemaInfoToFile(joinPredBitPosDict, getConfig('MINC_JOIN_PRED_BIT_POS'))
+    writeSchemaInfoToFile(tableDict, getConfig(configDict['MINC_TABLES']))
+    writeSchemaInfoToFile(tabColDict, getConfig(configDict['MINC_COLS']))
+    writeSchemaInfoToFile(tabColTypeDict, getConfig(configDict['MINC_COL_TYPES']))
+    writeSchemaInfoToFile(joinPairDict, getConfig(configDict['MINC_JOIN_PREDS']))
+    writeSchemaInfoToFile(joinPredBitPosDict, getConfig(configDict['MINC_JOIN_PRED_BIT_POS']))
 
 def fetchSchema(configDict):
     cnx = connectToMySQL(configDict)
