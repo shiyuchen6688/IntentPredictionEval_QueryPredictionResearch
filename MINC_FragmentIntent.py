@@ -49,6 +49,8 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             if len(sessionQueryDict[sessIndex]) == 0:
                 del sessionQueryDict[sessIndex]
             queryIndexRec = sessQueryIntent.split(";")[0].split(", ")[1].split(" ")[1]
+            if queryIndexRec != str(queryIndex):
+                print "queryIndexRec != queryIndex !!"
             assert queryIndexRec == str(queryIndex)
             assert queryCount>=0
             if queryCount == 0:
