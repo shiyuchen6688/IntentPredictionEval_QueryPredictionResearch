@@ -17,13 +17,18 @@ def concatenateSeqIntentVectorFiles(configDict):
     numFiles = int(configDict['BIT_FRAGMENT_SEQ_SPLIT_THREADS'])
     sessionQueryDict = {} # key is session ID and value is line
     queryCount = 0
+    prevSessName = None
+    sessID = -1
     for i in range(numFiles):
         fileNamePerThread = splitDir+"/"+splitFileName+str(i)
         with open(fileNamePerThread) as f:
             for line in f:
                 line = line.strip()
                 tokens = line.split(";")
-                sessID = tokens[0].split(", ")[0].split(" ")[1]
+                sessName = tokens[0].split(", ")[0].split(" ")[1]
+                if sessName != prevSessName:
+                    sessID+=1
+                    prevSessName = sessName
                 if sessID not in sessionQueryDict:
                     sessionQueryDict[sessID] = []
                 sessionQueryDict[sessID].append(line)
@@ -53,11 +58,12 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             if queryIndexRec != str(queryIndex):
                 print "queryIndexRec != queryIndex !!"
             assert queryIndexRec == str(queryIndex)
+            assert len(sessQueryIntent.split(";")) == 3
             assert queryCount>=0
             if queryCount == 0:
-                output_str = sessQueryIntent
+                output_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQueryIntent[1] + ";" + sessQueryIntent[2]
             else:
-                output_str += "\n"+sessQueryIntent
+                output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQueryIntent[1] + ";" + sessQueryIntent[2]
             queryCount += 1
             absCount+=1
             if queryCount % 100 == 0:
