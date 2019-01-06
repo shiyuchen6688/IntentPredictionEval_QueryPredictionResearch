@@ -170,7 +170,7 @@ def createConcurrentSessions(inputFile, outputFile):
                 del sessionQueryDict[sessIndex]
             if queryCount == 0:
                 output_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQuery
-            elif queryCount > 1:
+            else:
                 output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQuery
             queryCount += 1
             if queryCount % 1000000 == 0:
