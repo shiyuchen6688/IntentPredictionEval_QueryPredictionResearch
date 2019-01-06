@@ -40,6 +40,7 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
         pass
     queryCount = 0
     queryIndex = 0
+    absCount = 0
     while len(sessionQueryDict)!=0:
         random.shuffle(sessionQueryDict.keys())
         queryIndex += 1
@@ -58,8 +59,9 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             else:
                 output_str += "\n"+sessQueryIntent
             queryCount += 1
+            absCount+=1
             if queryCount % 100 == 0:
-                print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", queryCount: " + str(queryCount))
+                print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", queryCount: " + str(absCount))
                 ti.appendToFile(intentFile, output_str)
                 queryCount = 0
     #ti.appendToFile(intentFile, output_str)
