@@ -85,7 +85,7 @@ def createCrossJoinPairs(tabIndex, tabColDict, tabColTypeDict, joinPairDict):
                 nextTabColIndex = nextTabCols.index(nextTabColName)
                 nextTabColType = nextTabColTypes[nextTabColIndex]
                 # if same data types, add them as a possible join key pair to the dictionary
-                if curTabColType.split(" ")[0] == nextTabColType.split(" ")[0]: # ignore unsigned from 'int unsigned' while comparison
+                if curTabColType.split(" ")[0].split("(")[0] == nextTabColType.split(" ")[0].split("(")[0]: # ignore unsigned and num bytes from 'int unsigned' while comparison
                     joinPairDict[str(curTabName) + "," + str(nextTabName)].append(curTabColName+","+nextTabColName)
         nextTabIndex+=1
     return joinPairDict
