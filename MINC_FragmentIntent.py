@@ -23,7 +23,7 @@ def concatenateSeqIntentVectorFiles(configDict):
             for line in f:
                 line = line.strip()
                 tokens = line.split(";")
-                sessID = tokens[0].split(",")[0].split(" ")[1]
+                sessID = tokens[0].split(", ")[0].split(" ")[1]
                 if sessID not in sessionQueryDict:
                     sessionQueryDict[sessID] = []
                 sessionQueryDict[sessID].append(line)
@@ -48,7 +48,7 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             sessionQueryDict[sessIndex].remove(sessQueryIntent)
             if len(sessionQueryDict[sessIndex]) == 0:
                 del sessionQueryDict[sessIndex]
-            queryIndexRec = sessQueryIntent.split(";")[0].split(",")[1].split(" ")[1]
+            queryIndexRec = sessQueryIntent.split(";")[0].split(", ")[1].split(" ")[1]
             assert queryIndexRec == str(queryIndex)
             assert queryCount>=0
             if queryCount == 0:
