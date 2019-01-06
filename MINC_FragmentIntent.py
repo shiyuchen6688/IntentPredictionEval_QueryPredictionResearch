@@ -13,7 +13,7 @@ import random
 
 def concatenateSeqIntentVectorFiles(configDict):
     splitDir = getConfig(configDict['BIT_FRAGMENT_SEQ_SPLITS'])
-    splitFileName = getConfig(configDict['BIT_FRAGMENT_SEQ_SPLIT_NAME_FORMAT'])
+    splitFileName = configDict['BIT_FRAGMENT_SEQ_SPLIT_NAME_FORMAT']
     numFiles = int(configDict['BIT_FRAGMENT_SEQ_SPLIT_THREADS'])
     sessionQueryDict = {} # key is session ID and value is line
     queryCount = 0
