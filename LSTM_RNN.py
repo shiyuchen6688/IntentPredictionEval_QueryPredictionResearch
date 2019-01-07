@@ -295,16 +295,13 @@ def createTemporalPairs(queryKeysSetAside, configDict, sessionDict, sessionStrea
     return (dataX, dataY)
 
 def trainRNN(dataX, dataY, modelRNN, configDict):
-    max_lookback = -1
-    n_features = -1
-    if len(dataX) > 0:
-        n_features = len(dataX[0][0])
+    n_features = len(dataX[0][0])
     # assert configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY' or configDict['INTENT_REP'] == 'TUPLE'
     # if configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
     #   n_memUnits = len(dataX[0][0])
     # elif configDict['INTENT_REP'] == 'TUPLE':
     n_memUnits = int(configDict['RNN_NUM_MEM_UNITS'])
-    if modelRNN is None and n_features > -1:
+    if modelRNN is None:
         modelRNN = initializeRNN(n_features, n_memUnits, configDict)
     assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
     if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
@@ -316,6 +313,7 @@ def trainRNN(dataX, dataY, modelRNN, configDict):
 def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN, sessionStreamDict):
     dataX = []
     dataY = []
+    max_lookback = -1
     for key in queryKeysSetAside:
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
@@ -326,7 +324,8 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDict, modelRNN
         if int(queryID) == 0:
             continue
         (dataX, dataY) = appendTrainingXY(sessionDict[sessID], configDict, dataX, dataY)
-    (modelRNN, max_lookback) = trainRNN(dataX, dataY, modelRNN, configDict)
+    if len(dataX) > 0:
+        (modelRNN, max_lookback) = trainRNN(dataX, dataY, modelRNN, configDict)
     return (modelRNN, sessionDict, max_lookback)
 
 def predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict):
