@@ -9,16 +9,17 @@ import TupleIntent as ti
 import ParseConfigFile as parseConfig
 import ParseResultsToExcel
 import pickle
+from ParseConfigFile import getConfig
 
 def fetchIntentFileFromConfigDict(configDict):
     if configDict['INTENT_REP'] == 'TUPLE':
-        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
+        intentSessionFile = getConfig(configDict['TUPLEINTENTSESSIONS'])
     elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'BIT':
-        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
+        intentSessionFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
     elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
+        intentSessionFile = getConfig(configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS'])
     elif configDict['INTENT_REP'] == 'QUERY':
-        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
+        intentSessionFile = getConfig(configDict['QUERY_INTENT_SESSIONS'])
     else:
         print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
         sys.exit(0)
@@ -168,10 +169,10 @@ def createQueryExecIntentCreationTimes(configDict):
     return (episodeQueryExecutionTime, episodeIntentCreationTime)
 
 def writeKFoldTrainTestTimesToPickleFiles(avgTrainTime, avgTestTime, algoName, configDict):
-    trainFN = configDict['KFOLD_OUTPUT_DIR'] + "/avgKFoldTrainTime_" + algoName + "_" + \
+    trainFN = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/avgKFoldTrainTime_" + algoName + "_" + \
                                configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                configDict['TOP_K']
-    testFN = configDict['KFOLD_OUTPUT_DIR'] + "/avgKFoldTestTime_" + algoName + "_" + \
+    testFN = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/avgKFoldTestTime_" + algoName + "_" + \
                                configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                configDict['TOP_K']
     writeToPickleFile(trainFN, avgTrainTime)
@@ -348,7 +349,7 @@ def computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict):
                 avgPrecision = appendToDict(avgPrecision, numEpisodes, precision)
                 avgRecall = appendToDict(avgRecall, numEpisodes, recall)
                 avgFMeasure = appendToDict(avgFMeasure, numEpisodes, FMeasure)
-    outputEvalQualityFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + algoName + "_" + configDict[
+    outputEvalQualityFileName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + algoName + "_" + configDict[
         'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_ACCURACY_THRESHOLD_" + str(accThres)
     try:
         os.remove(outputEvalQualityFileName)
@@ -371,9 +372,9 @@ def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoN
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
     outputDir = None
     if configDict['SINGULARITY_OR_KFOLD'] =='SINGULARITY':
-        outputDir = configDict['OUTPUT_DIR']
+        outputDir = getConfig(configDict['OUTPUT_DIR'])
     elif configDict['SINGULARITY_OR_KFOLD'] =='KFOLD':
-        outputDir = configDict['KFOLD_OUTPUT_DIR']
+        outputDir = getConfig(configDict['KFOLD_OUTPUT_DIR'])
     outputEvalQualityFileName = outputDir + "/OutputEvalQualityShortTermIntent_" + algoName+"_"+configDict[
         'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                                 configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
@@ -396,18 +397,18 @@ def avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeD
     (outputEvalQualityFileName, avgKFoldTimeDictName) = plotAllFoldQualityTime(kFoldOutputIntentFiles,
                                                                                   kFoldEpisodeResponseTimeDicts,
                                                                                   algoName, configDict)
-    outputExcelQuality = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelQuality_" + algoName + "_" + configDict['INTENT_REP'] + "_" + configDict[
+    outputExcelQuality = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputExcelQuality_" + algoName + "_" + configDict['INTENT_REP'] + "_" + configDict[
                              'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                              'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
                              'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(
         configDict['ACCURACY_THRESHOLD']) +"_"+configDict['RNN_INCREMENTAL_OR_FULL_TRAIN']+ ".xlsx"
     ParseResultsToExcel.parseQualityFileWithoutEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
 
-    outputExcelTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelTime_" + algoName + "_" + configDict[
+    outputExcelTimeEval = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputExcelTime_" + algoName + "_" + configDict[
                               'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                               'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                           configDict['EPISODE_IN_QUERIES'] +"_"+configDict['RNN_INCREMENTAL_OR_FULL_TRAIN']+ ".xlsx"
-    outputExcelKFoldTimeEval = configDict['KFOLD_OUTPUT_DIR'] + "/OutputExcelKFoldTime_" + algoName + "_" + configDict[
+    outputExcelKFoldTimeEval = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputExcelKFoldTime_" + algoName + "_" + configDict[
                                    'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                    'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                                configDict['EPISODE_IN_QUERIES'] +"_"+configDict['RNN_INCREMENTAL_OR_FULL_TRAIN']+ ".xlsx"
@@ -422,7 +423,7 @@ def avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeD
 
 
 def computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, algoName, configDict):
-    avgKFoldTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/AvgFoldTimeDict_" + algoName + "_" + \
+    avgKFoldTimeDictName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/AvgFoldTimeDict_" + algoName + "_" + \
                                       configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                       configDict['TOP_K'] + ".pickle"
     avgKFoldTimeDict = {}
@@ -446,9 +447,9 @@ def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
     outputDir = None
     if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
-        outputDir = configDict['OUTPUT_DIR']
+        outputDir = getConfig(configDict['OUTPUT_DIR'])
     elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
-        outputDir = configDict['KFOLD_OUTPUT_DIR']
+        outputDir = getConfig(configDict['KFOLD_OUTPUT_DIR'])
     outputEvalTimeFileName = outputDir + "/OutputEvalTimeShortTermIntent_" + algoName+"_"+\
                              configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                              configDict['EPISODE_IN_QUERIES']
@@ -458,10 +459,10 @@ def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
         pass
     # Simulate or borrow query execution and intent creation to record their times #
     # the following should be configDict['OUTPUT_DIR] and not outputDir because it gets intent creation and queryExec times from the existing pickle files in the outer directory for kfold exp"
-    intentCreationTimeDictName = configDict['OUTPUT_DIR'] + "/IntentCreationTimeDict_" + configDict[
+    intentCreationTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/IntentCreationTimeDict_" + configDict[
         'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_EPISODE_IN_QUERIES_" + configDict[
                                      'EPISODE_IN_QUERIES'] + ".pickle"
-    queryExecutionTimeDictName = configDict['OUTPUT_DIR'] + "/QueryExecutionTimeDict_" + configDict[
+    queryExecutionTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/QueryExecutionTimeDict_" + configDict[
         'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_EPISODE_IN_QUERIES_" + configDict[
                                      'EPISODE_IN_QUERIES'] + ".pickle"
     if os.path.exists(intentCreationTimeDictName) and os.path.exists(queryExecutionTimeDictName):
@@ -507,7 +508,7 @@ if __name__ == "__main__":
     elif configDict['ALGORITHM'] == 'RNN':
         algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
     if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
-        outputDir = configDict['OUTPUT_DIR']
+        outputDir = getConfig(configDict['OUTPUT_DIR'])
         outputIntentFileName = outputDir + "/OutputFileShortTermIntent_" + configDict[
             'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
                                    'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
@@ -520,7 +521,7 @@ if __name__ == "__main__":
                                           'EPISODE_IN_QUERIES'] + ".pickle"
         evaluateTimePredictions(episodeResponseTimeDictName, configDict, configDict['ALGORITHM'])
     elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
-        outputDir = configDict['KFOLD_OUTPUT_DIR']
+        outputDir = getConfig(configDict['KFOLD_OUTPUT_DIR'])
         outputIntentFileName = configDict[
                                    'KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + algoName + "_" + \
                                configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
@@ -528,18 +529,18 @@ if __name__ == "__main__":
         kFoldOutputIntentFiles = []
         kFoldEpisodeResponseTimeDicts = []
         for foldID in range(int(configDict['KFOLD'])):
-            outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + algoName + "_" + \
+            outputIntentFileName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + algoName + "_" + \
                                    configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                    configDict['TOP_K'] + "_FOLD_" + str(foldID)
-            episodeResponseTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/ResponseTimeDict_" + algoName + "_" + \
+            episodeResponseTimeDictName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/ResponseTimeDict_" + algoName + "_" + \
                                           configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                           configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
             kFoldOutputIntentFiles.append(outputIntentFileName)
             kFoldEpisodeResponseTimeDicts.append(episodeResponseTimeDictName)
-        avgTrainTimeFN = configDict['KFOLD_OUTPUT_DIR'] + "/avgKFoldTrainTime_" + algoName + "_" + \
+        avgTrainTimeFN = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/avgKFoldTrainTime_" + algoName + "_" + \
                   configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                   configDict['TOP_K']
-        avgTestTimeFN = configDict['KFOLD_OUTPUT_DIR'] + "/avgKFoldTestTime_" + algoName + "_" + \
+        avgTestTimeFN = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/avgKFoldTestTime_" + algoName + "_" + \
                  configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                  configDict['TOP_K']
         avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles, kFoldEpisodeResponseTimeDicts, avgTrainTimeFN,
@@ -547,9 +548,9 @@ if __name__ == "__main__":
 
 '''
     if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
-        outputDir = configDict['OUTPUT_DIR']
+        outputDir = getConfig(configDict['OUTPUT_DIR'])
     elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
-        outputDir = configDict['KFOLD_OUTPUT_DIR']
+        outputDir = getConfig(configDict['KFOLD_OUTPUT_DIR'])
     if configDict['ALGORITHM'] == 'CF':
         algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
         if configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
@@ -608,7 +609,7 @@ def recommendQuery(resObj, timeStepObj):
 def simulateHumanQueriesWithCreateIntent(configDict):
     timeStep = 0
     timeStepObj = TimeStep(0,None,None)
-    with open(configDict['QUERYSESSIONS']) as f:
+    with open(getConfig(configDict['QUERYSESSIONS'])) as f:
         for line in f:
             sessQueries = line.split(";")
             sessName = sessQueries[0]
