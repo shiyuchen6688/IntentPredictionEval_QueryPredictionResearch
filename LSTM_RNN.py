@@ -295,7 +295,8 @@ def createTemporalPairs(queryKeysSetAside, configDict, sessionDict, sessionStrea
     return (dataX, dataY)
 
 def trainRNN(dataX, dataY, modelRNN, configDict):
-    max_lookback = 0
+    max_lookback = -1
+    n_features = -1
     if len(dataX) > 0:
         n_features = len(dataX[0][0])
     # assert configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY' or configDict['INTENT_REP'] == 'TUPLE'
@@ -303,7 +304,7 @@ def trainRNN(dataX, dataY, modelRNN, configDict):
     #   n_memUnits = len(dataX[0][0])
     # elif configDict['INTENT_REP'] == 'TUPLE':
     n_memUnits = int(configDict['RNN_NUM_MEM_UNITS'])
-    if modelRNN is None:
+    if modelRNN is None and n_features > -1:
         modelRNN = initializeRNN(n_features, n_memUnits, configDict)
     assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
     if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
