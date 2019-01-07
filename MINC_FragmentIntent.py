@@ -74,9 +74,10 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
     absCount = 0
     numSessions = len(sessionQueryDict)
     while len(sessionQueryDict)!=0:
-        random.shuffle(sessionQueryDict.keys())
+        keyList = sessionQueryDict.keys()
+        random.shuffle(keyList)
         queryIndex += 1
-        for sessIndex in sessionQueryDict.keys():
+        for sessIndex in keyList:
             sessQueryIntent = sessionQueryDict[sessIndex][0]
             sessionQueryDict[sessIndex].remove(sessQueryIntent)
             if len(sessionQueryDict[sessIndex]) == 0:
