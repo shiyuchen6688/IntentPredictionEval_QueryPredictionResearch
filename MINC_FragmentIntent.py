@@ -42,6 +42,10 @@ def concatenateSeqIntentVectorFiles(configDict):
 
 def createQuerySessions(sessionQueryDict, configDict):
     sessQueryFile = getConfig(configDict['QUERYSESSIONS'])
+    try:
+        os.remove(sessQueryFile)
+    except OSError:
+        pass
     for sessID in sessionQueryDict:
         output_str = "Session "+str(sessID)+";"
         for i in range(len(sessionQueryDict[sessID])):
