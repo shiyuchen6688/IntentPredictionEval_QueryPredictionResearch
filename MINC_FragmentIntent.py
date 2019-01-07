@@ -24,6 +24,9 @@ def concatenateSeqIntentVectorFiles(configDict):
         with open(fileNamePerThread) as f:
             for line in f:
                 line = line.strip()
+                if len(line.split(";")) > 3:
+                    line = removeExcessDelimiters(line)
+                assert len(line.split(";")) == 3
                 tokens = line.split(";")
                 sessName = tokens[0].split(", ")[0].split(" ")[1]
                 if sessName != prevSessName:
@@ -36,6 +39,14 @@ def concatenateSeqIntentVectorFiles(configDict):
                 if queryCount % 10000 == 0:
                     print ("Query count so far: "+str(queryCount))
     return sessionQueryDict
+
+def createQuerySessions(sessionQueryDict, configDict):
+    sessQueryFile = getConfig(configDict['QUERYSESSIONS'])
+    for sessID in sessionQueryDict:
+        output_str = "Session "+str(sessID)+";"
+        for i in range(len(sessionQueryDict[sessID])):
+            output_str = output_str + sessionQueryDict[sessID][i].split(";")[1].split(": ")[1]
+        ti.appendToFile(sessQueryFile, output_str)
 
 def removeExcessDelimiters(sessQueryIntent):
     tokens = sessQueryIntent.split(";")
@@ -70,8 +81,6 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             if queryIndexRec != str(queryIndex):
                 print "queryIndexRec != queryIndex !!"
             assert queryIndexRec == str(queryIndex)
-            if len(sessQueryIntent.split(";")) > 3:
-                sessQueryIntent = removeExcessDelimiters(sessQueryIntent)
             assert len(sessQueryIntent.split(";")) == 3
             assert queryCount>=0
             if queryCount == 0:
@@ -97,4 +106,5 @@ if __name__ == "__main__":
     except OSError:
         pass
     sessionQueryDict = concatenateSeqIntentVectorFiles(configDict)
+    createQuerySessions(sessionQueryDict, configDict)
     createConcurrentIntentVectors(sessionQueryDict, configDict)
