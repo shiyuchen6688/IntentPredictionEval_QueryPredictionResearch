@@ -95,9 +95,10 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             queryCount += 1
             absCount+=1
             if queryCount % 100 == 0:
-                print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", queryCount: " + str(absCount))
                 ti.appendToFile(intentFile, output_str)
                 queryCount = 0
+            if absCount % 10000 == 0:
+                print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", absQueryCount: " + str(absCount))
     #ti.appendToFile(intentFile, output_str)
     print ("Created intent vectors for # Sessions: "+str(numSessions)+" and # Queries: "+str(absCount))
 
