@@ -57,6 +57,7 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
     queryCount = 0
     queryIndex = 0
     absCount = 0
+    numSessions = len(sessionQueryDict)
     while len(sessionQueryDict)!=0:
         random.shuffle(sessionQueryDict.keys())
         queryIndex += 1
@@ -84,7 +85,7 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
                 ti.appendToFile(intentFile, output_str)
                 queryCount = 0
     #ti.appendToFile(intentFile, output_str)
-    print ("Created intent vectors for # Sessions: "+str(len(sessionQueryDict))+" and # Queries: "+str(absCount))
+    print ("Created intent vectors for # Sessions: "+str(numSessions)+" and # Queries: "+str(absCount))
 
 
 if __name__ == "__main__":
