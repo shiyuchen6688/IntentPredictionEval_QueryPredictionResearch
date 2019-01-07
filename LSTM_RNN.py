@@ -432,7 +432,7 @@ def initRNNSingularity(configDict):
     startEpisode = time.time()
     predictedY = None
     modelRNN = None
-    return (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionDict, numQueries, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
+    return (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, numQueries, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
 
 def updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent):
     # update sessionDict with this new query
@@ -513,7 +513,7 @@ def computePredictedIntentsRNN(predictedY, sessionDict, configDict, curSessID):
     return topKPredictedIntents
 
 def runRNNSingularityExp(configDict):
-    (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionDict, numQueries, sessionLengthDict,
+    (sessionDict, numEpisodes, queryKeysSetAside, episodeResponseTime, numQueries, sessionLengthDict,
      sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY) = initRNNSingularity(configDict)
     max_lookback = 0
     for key in keyOrder:
