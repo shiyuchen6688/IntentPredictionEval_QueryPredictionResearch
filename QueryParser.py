@@ -2,6 +2,7 @@ import sys
 import os
 import time, argparse
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import QueryExecution as QExec
 import re, gc
 
@@ -296,7 +297,7 @@ def fetchRowIDs(sessQuery, configDict):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    with open(configDict['QUERYSESSIONS']) as f:
+    with open(getConfig(configDict['QUERYSESSIONS'])) as f:
         for line in f:
             sessQueries = line.split(";")
             sessName = sessQueries[0]

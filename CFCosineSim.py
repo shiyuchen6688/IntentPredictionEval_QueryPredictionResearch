@@ -8,6 +8,7 @@ import math
 import heapq
 import TupleIntent as ti
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import ConcurrentSessions
 import ParseResultsToExcel
 
@@ -241,16 +242,16 @@ def runCFCosineSimKFoldExp(configDict):
     avgTestTime = []
     algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
     for foldID in range(int(configDict['KFOLD'])):
-        outputIntentFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + configDict['ALGORITHM'] + "_" + \
+        outputIntentFileName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict['ALGORITHM'] + "_" + \
                                   configDict['CF_COSINESIM_MF'] + "_" + \
                                   configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                   configDict['TOP_K'] + "_FOLD_" + str(foldID)
-        episodeResponseTimeDictName = configDict['KFOLD_OUTPUT_DIR'] + "/ResponseTimeDict_" + configDict['ALGORITHM'] + "_" + \
+        episodeResponseTimeDictName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict['ALGORITHM'] + "_" + \
                                       configDict['CF_COSINESIM_MF'] + "_" + \
                                       configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                       configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
-        trainIntentSessionFile = configDict['KFOLD_INPUT_DIR']+intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]+"_TRAIN_FOLD_"+str(foldID)
-        testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
+        trainIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR'])+intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]+"_TRAIN_FOLD_"+str(foldID)
+        testIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
         (sessionSummaries, sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, episodeResponseTime) = initCFCosineSimOneFold(trainIntentSessionFile, configDict)
         startTrain = time.time()
         (sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(keyOrder, configDict, sessionDict, sessionSummaries, sessionStreamDict)
@@ -320,7 +321,7 @@ def initCFCosineSimOneFold(trainIntentSessionFile, configDict):
     sessionStreamDict = {}
     keyOrder = []
     episodeResponseTime = {}
-    sessionLengthDict = ConcurrentSessions.countQueries(configDict['QUERYSESSIONS'])
+    sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
     with open(trainIntentSessionFile) as f:
         for line in f:
             (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
@@ -336,7 +337,7 @@ def initCFCosineSimSingularity(intentSessionFile, outputIntentFileName, configDi
     queryKeysSetAside = []
     episodeResponseTime = {}
 
-    sessionLengthDict = ConcurrentSessions.countQueries(configDict['QUERYSESSIONS'])
+    sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
     try:
         os.remove(outputIntentFileName)
     except OSError:
@@ -355,7 +356,7 @@ def initCFCosineSimSingularity(intentSessionFile, outputIntentFileName, configDi
 
 def runCFCosineSimSingularityExp(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
-    outputIntentFileName = configDict['OUTPUT_DIR'] + "/OutputFileShortTermIntent_" + configDict['ALGORITHM'] + "_" + \
+    outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict['ALGORITHM'] + "_" + \
                            configDict['CF_COSINESIM_MF'] + "_" + \
                            configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
@@ -383,7 +384,7 @@ def runCFCosineSimSingularityExp(configDict):
         if numQueries % int(configDict['EPISODE_IN_QUERIES']) == 0:
             numEpisodes += 1
             (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
-    episodeResponseTimeDictName = configDict['OUTPUT_DIR'] + "/ResponseTimeDict_" +configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
+    episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" +configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+\
                                   configDict['INTENT_REP']+"_"+configDict['BIT_OR_WEIGHTED']+"_TOP_K_"+configDict['TOP_K']+"_EPISODE_IN_QUERIES_"+configDict['EPISODE_IN_QUERIES']+ ".pickle"
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     accThres=float(configDict['ACCURACY_THRESHOLD'])
@@ -391,12 +392,12 @@ def runCFCosineSimSingularityExp(configDict):
     print "--Completed Quality Evaluation for accThres:" + str(accThres)
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict, configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
 
-    outputEvalQualityFileName = configDict['OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
-    outputExcelQuality = configDict['OUTPUT_DIR'] + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + ".xlsx"
+    outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+    outputExcelQuality = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + ".xlsx"
     ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
 
-    outputEvalTimeFileName = configDict['OUTPUT_DIR'] + "/OutputEvalTimeShortTermIntent_" + configDict['ALGORITHM'] + "_" +configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
-    outputExcelTimeEval = configDict['OUTPUT_DIR'] + "/OutputExcelTime_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" +configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+    outputEvalTimeFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalTimeShortTermIntent_" + configDict['ALGORITHM'] + "_" +configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    outputExcelTimeEval = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelTime_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" +configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".xlsx"
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
     return (outputIntentFileName, episodeResponseTimeDictName)
 

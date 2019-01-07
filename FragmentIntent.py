@@ -3,6 +3,7 @@ import os
 import time, argparse
 from bitmap import BitMap
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import QueryParser as qp
 import TupleIntent as ti
 import re
@@ -150,7 +151,7 @@ def createFragmentsFromAttrList(attrListDict, schemaDict, opString, configDict, 
     return resObjOp
 
 def createFragmentIntentRep(sessQuery, configDict):
-    schemaDict = parseConfig.parseSchema(configDict['SCHEMA'])
+    schemaDict = parseConfig.parseSchema(getConfig(configDict['SCHEMA']))
     numCols = len(schemaDict)
     ### expected dimensionality is numCols * 10 + 1 -- 5*numCols dims for AVG, MIN, MAX, SUM, COUNT, 5*numCols dims for SELECT, PROJECT, GROUP BY, ORDER BY, HAVING, 1 Dim for LIMIT
     # 1 for TableDim ###
@@ -175,9 +176,9 @@ def createFragmentIntentRep(sessQuery, configDict):
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
     if configDict["BIT_OR_WEIGHTED"] == "BIT":
-        fragmentIntentSessionsFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
+        fragmentIntentSessionsFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
     elif configDict["BIT_OR_WEIGHTED"] == "WEIGHTED":
-        fragmentIntentSessionsFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
+        fragmentIntentSessionsFile = getConfig(configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS'])
     else:
         print "BIT_OR_WEIGHTED should be set either to BIT or WEIGHTED in the Config File !!"
         sys.exit(0)
@@ -185,7 +186,7 @@ if __name__ == "__main__":
         os.remove(fragmentIntentSessionsFile)
     except OSError:
         pass
-    with open(configDict['CONCURRENT_QUERY_SESSIONS']) as f:
+    with open(getConfig(configDict['CONCURRENT_QUERY_SESSIONS'])) as f:
         for line in f:
             tokens = line.split(";")
             sessQueryName = tokens[0]

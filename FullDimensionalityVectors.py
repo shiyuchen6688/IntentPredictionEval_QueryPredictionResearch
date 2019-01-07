@@ -3,6 +3,7 @@ import os
 import time, argparse
 from bitmap import BitMap
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import QueryParser as qp
 import TupleIntent as ti
 import re
@@ -32,14 +33,14 @@ def computeEmbeddingVectors(inputFile, outputFile, bitOrWeighted):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    tupleIntentInputFile = configDict['TUPLEINTENTSESSIONS']
-    tupleIntentOutputFile = configDict['TUPLEINTENTSESSIONS_RNN_EMBEDDING']
+    tupleIntentInputFile = getConfig(configDict['TUPLEINTENTSESSIONS'])
+    tupleIntentOutputFile = getConfig(configDict['TUPLEINTENTSESSIONS_RNN_EMBEDDING'])
 
-    bitFragmentIntentInputFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
-    bitFragmentIntentOutputFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS_RNN_EMBEDDING']
+    bitFragmentIntentInputFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
+    bitFragmentIntentOutputFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS_RNN_EMBEDDING'])
 
-    weightedFragmentIntentInputFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
-    weightedFragmentIntentOutputFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS_RNN_EMBEDDING']
+    weightedFragmentIntentInputFile = getConfig(configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS'])
+    weightedFragmentIntentOutputFile = getConfig(configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS_RNN_EMBEDDING'])
 
     computeEmbeddingVectors(tupleIntentInputFile, tupleIntentOutputFile, 'BIT')
     computeEmbeddingVectors(bitFragmentIntentInputFile, bitFragmentIntentOutputFile, 'BIT')

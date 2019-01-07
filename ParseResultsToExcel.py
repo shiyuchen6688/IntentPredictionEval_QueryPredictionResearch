@@ -3,6 +3,7 @@ import argparse
 import sys, os
 from pandas import DataFrame
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 
 def parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime, avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall, algoName, outputDir, configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
@@ -139,13 +140,13 @@ if __name__ == "__main__":
     algoName = None
     outputEvalQualityFileName = None
     if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
-        outputDir = configDict['OUTPUT_DIR']
+        outputDir = getConfig(configDict['OUTPUT_DIR'])
     elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
-        outputDir = configDict['KFOLD_OUTPUT_DIR']
+        outputDir = getConfig(configDict['KFOLD_OUTPUT_DIR'])
     if configDict['ALGORITHM'] == 'CF':
         algoName = configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']
         if configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
-            outputEvalQualityFileName = configDict['KFOLD_OUTPUT_DIR'] + "/OutputEvalQualityShortTermIntent_" + algoName + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+            outputEvalQualityFileName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + algoName + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_ACCURACY_THRESHOLD_" + str(accThres)
         elif configDict['SINGULARITY_OR_KFOLD']=='SINGULARITY':
             outputEvalQualityFileName = outputDir + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM']+"_"+configDict['CF_COSINESIM_MF']+"_"+configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)
     elif configDict['ALGORITHM'] == 'RNN':

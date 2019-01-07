@@ -8,14 +8,15 @@ import math
 import heapq
 import TupleIntent as ti
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import ConcurrentSessions
 import ParseResultsToExcel
 import random
 
 def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intentSessionFile, sessionLengthDict):
     fileNameWithoutDir = intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]
-    outputIntentTrainSessions = configDict['KFOLD_INPUT_DIR']+fileNameWithoutDir+"_TRAIN_FOLD_"+str(foldID)
-    outputIntentTestSessions = configDict['KFOLD_INPUT_DIR']+fileNameWithoutDir + "_TEST_FOLD_" + str(foldID)
+    outputIntentTrainSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir+"_TRAIN_FOLD_"+str(foldID)
+    outputIntentTestSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir + "_TEST_FOLD_" + str(foldID)
     try:
         os.remove(outputIntentTrainSessions)
         os.remove(outputIntentTestSessions)
@@ -38,7 +39,7 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
     return
 
 def prepareKFoldTrainTest(configDict, intentSessionFile):
-    inputSessionFile = configDict['QUERYSESSIONS']
+    inputSessionFile = getConfig(configDict['QUERYSESSIONS'])
     #sessID and queryID should start from 0
     sessNames = []
     with open(inputSessionFile) as f:
@@ -54,7 +55,7 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
     # for K fold CV
     testSessNames = [[] for i in range(kFold)]
     testEndIndex = -1
-    sessionLengthDict = ConcurrentSessions.countQueries(configDict['QUERYSESSIONS'])
+    sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
     for i in range(kFold):
         testStartIndex = testEndIndex+1
         testEndIndex = testStartIndex + numTest
@@ -69,13 +70,13 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
     if configDict['INTENT_REP']=='TUPLE':
-        intentSessionFile = configDict['TUPLEINTENTSESSIONS']
+        intentSessionFile = getConfig(configDict['TUPLEINTENTSESSIONS'])
     elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='BIT':
-        intentSessionFile = configDict['BIT_FRAGMENT_INTENT_SESSIONS']
+        intentSessionFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
     elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='WEIGHTED':
-        intentSessionFile = configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS']
+        intentSessionFile = getConfig(configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS'])
     elif configDict['INTENT_REP']=='QUERY':
-        intentSessionFile = configDict['QUERY_INTENT_SESSIONS']
+        intentSessionFile = getConfig(configDict['QUERY_INTENT_SESSIONS'])
     else:
         print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
         sys.exit(0)

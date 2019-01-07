@@ -3,6 +3,7 @@ import os
 import time, argparse
 import QueryParser as qp
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import random
 import TupleIntent as ti
 
@@ -59,5 +60,5 @@ def createConcurrentSessions(inputFile, outputFile):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    createConcurrentSessions(configDict['QUERYSESSIONS'], configDict['CONCURRENT_QUERY_SESSIONS'])
+    createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
     print "Completed concurrent session order creation"

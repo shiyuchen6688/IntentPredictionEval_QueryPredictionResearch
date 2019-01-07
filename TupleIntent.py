@@ -3,7 +3,9 @@ import os
 import time, argparse
 from bitmap import BitMap
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import QueryParser as qp
+
 def createTupleIntentRep(rowIDs, sessQuery, configDict):
     resObj = None
     if configDict['EXEC_SAMPLE']:
@@ -27,12 +29,12 @@ def appendToFile(outputFile, outputLine):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    tupleIntentSessionsFile = configDict['TUPLEINTENTSESSIONS']
+    tupleIntentSessionsFile = getConfig(configDict['TUPLEINTENTSESSIONS'])
     try:
         os.remove(tupleIntentSessionsFile)
     except OSError:
         pass
-    with open(configDict['CONCURRENT_QUERY_SESSIONS']) as f:
+    with open(getConfig(configDict['CONCURRENT_QUERY_SESSIONS'])) as f:
         for line in f:
             sessQueries = line.split(";")
             sessQueryName = sessQueries[0]

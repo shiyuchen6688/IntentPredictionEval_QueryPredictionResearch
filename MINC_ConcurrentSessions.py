@@ -161,9 +161,10 @@ def createConcurrentSessions(inputFile, outputFile):
     queryCount = 0
     queryIndex = 0
     while len(sessionQueryDict)!=0:
-        random.shuffle(sessionQueryDict.keys())
+        keyList = sessionQueryDict.keys()
+        random.shuffle(keyList)
         queryIndex += 1
-        for sessIndex in sessionQueryDict.keys():
+        for sessIndex in keyList:
             sessQuery = sessionQueryDict[sessIndex][0]
             sessionQueryDict[sessIndex].remove(sessQuery)
             if len(sessionQueryDict[sessIndex]) == 0:

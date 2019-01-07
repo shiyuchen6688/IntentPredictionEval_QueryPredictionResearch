@@ -4,6 +4,7 @@ import time, argparse
 import psycopg2
 import psycopg2.extras
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import TupleIntent as tupleIntent
 import FragmentIntent as fragmentIntent
 import QueryIntent as queryIntent
@@ -70,7 +71,7 @@ def executeQueryWithIntent(sessQuery, configDict, queryVocabulary):
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
-    with open(configDict['QUERYSESSIONS']) as f:
+    with open(getConfig(configDict['QUERYSESSIONS'])) as f:
         for line in f:
             sessQueries = line.split(";")
             sessName = sessQueries[0]

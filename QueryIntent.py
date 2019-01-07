@@ -3,9 +3,11 @@ import os
 import time, argparse
 from bitmap import BitMap
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import QueryParser as qp
 import TupleIntent as ti
 import re
+
 def createQueryIntentRep(sessQuery, configDict, queryVocabulary):
     if sessQuery not in queryVocabulary:
         newBitPos = len(queryVocabulary)
@@ -27,7 +29,7 @@ def createQueryIntentRepFullDimensionality(sessQuery, configDict, queryVocabular
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
     if configDict["INTENT_REP"] == "QUERY":
-        queryIntentSessionsFile = configDict['QUERY_INTENT_SESSIONS']
+        queryIntentSessionsFile = getConfig(configDict['QUERY_INTENT_SESSIONS'])
     else:
         print "This supports only query intent gen !!"
         sys.exit(0)
@@ -35,7 +37,7 @@ if __name__ == "__main__":
         os.remove(queryIntentSessionsFile)
     except OSError:
         pass
-    with open(configDict['CONCURRENT_QUERY_SESSIONS']) as f:
+    with open(getConfig(configDict['CONCURRENT_QUERY_SESSIONS'])) as f:
         queryVocabulary = {}  # dict with query as key and bit position/dimension as value
         queryCount = 0
         for line in f:
