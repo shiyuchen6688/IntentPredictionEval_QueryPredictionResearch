@@ -37,6 +37,17 @@ def concatenateSeqIntentVectorFiles(configDict):
                     print ("Query count so far: "+str(queryCount))
     return sessionQueryDict
 
+def removeExcessDelimiters(sessQueryIntent):
+    tokens = sessQueryIntent.split(";")
+    ret_str = tokens[0]+";"
+    for i in range(1,len(tokens)-1):
+        if i == 1:
+            ret_str = ret_str+tokens[i]
+        else:
+            ret_str = ret_str+","+tokens[i]
+    ret_str = ret_str + ";"+tokens[len(tokens)-1]
+    return ret_str
+
 def createConcurrentIntentVectors(sessionQueryDict, configDict):
     intentFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
     try:
@@ -58,8 +69,8 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             if queryIndexRec != str(queryIndex):
                 print "queryIndexRec != queryIndex !!"
             assert queryIndexRec == str(queryIndex)
-            if len(sessQueryIntent.split(";")) != 3:
-                print "len(sessQueryIntent.split(\";\")) != 3"
+            if len(sessQueryIntent.split(";")) > 3:
+                sessQueryIntent = removeExcessDelimiters(sessQueryIntent)
             assert len(sessQueryIntent.split(";")) == 3
             assert queryCount>=0
             if queryCount == 0:
