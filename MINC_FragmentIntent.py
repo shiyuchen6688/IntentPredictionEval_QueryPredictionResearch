@@ -49,7 +49,7 @@ def createQuerySessions(sessionQueryDict, configDict):
     for sessID in sessionQueryDict:
         output_str = "Session "+str(sessID)+";"
         for i in range(len(sessionQueryDict[sessID])):
-            output_str = output_str + sessionQueryDict[sessID][i].split(";")[1].split(": ")[1]
+            output_str = output_str + sessionQueryDict[sessID][i].split(";")[1].split(": ")[1]+";"
         ti.appendToFile(sessQueryFile, output_str)
 
 def removeExcessDelimiters(sessQueryIntent):
