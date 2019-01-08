@@ -9,6 +9,10 @@ import TupleIntent as tupleIntent
 import FragmentIntent as fragmentIntent
 import QueryIntent as queryIntent
 import gc
+import mysql.connector
+from mysql.connector import errorcode
+import MINC_prepareJoinKeyPairs as minc_mysql
+
 def replaceTableName(sessQuery, configDict):
     if configDict['DATASET'] == 'NYCTaxiTrips':
         sessQuery.replace(configDict['SAMPLETABLE'], configDict['FULLTABLE'])
@@ -54,20 +58,42 @@ def executeQuery(sessQuery, configDict):
         print ("cannot execute the query on Postgres")
         exit(0)
 
-def executeQueryWithIntent(sessQuery, configDict, queryVocabulary):
+def executeNYCQueryWithIntent(sessQuery, configDict, queryVocabulary):
     startTime = time.time()
     cur = executeQuery(sessQuery, configDict)
-    queryExecutionTime = float(time.time()-startTime)
+    queryExecutionTime = float(time.time() - startTime)
     startTime = time.time()
-    if configDict['INTENT_REP']=='TUPLE':
-        #rowIDs = getRowIDs(cur)
-        (newQuery,resObj) = tupleIntent.createTupleIntentRep(None, sessQuery, configDict)
-    elif configDict['INTENT_REP']=='FRAGMENT':
+    if configDict['INTENT_REP'] == 'TUPLE':
+        # rowIDs = getRowIDs(cur)
+        (newQuery, resObj) = tupleIntent.createTupleIntentRep(None, sessQuery, configDict)
+    elif configDict['INTENT_REP'] == 'FRAGMENT':
         resObj = fragmentIntent.createFragmentIntentRep(sessQuery, configDict)
     elif configDict['INTENT_REP'] == 'QUERY':
-        (queryVocabulary,resObj) = queryIntent.createQueryIntentRepFullDimensionality(sessQuery, configDict, queryVocabulary)
+        (queryVocabulary, resObj) = queryIntent.createQueryIntentRepFullDimensionality(sessQuery, configDict,
+                                                                                       queryVocabulary)
     intentCreationTime = float(time.time() - startTime)
     return (queryVocabulary, resObj, queryExecutionTime, intentCreationTime)
+
+
+def executeMINCQueryWithIntent(sessQuery, configDict, queryVocabulary):
+    resObj = None
+    startTime = time.time()
+    cnx = minc_mysql.connectToMySQL(configDict)
+    cursor = cnx.cursor()
+    cursor.execute(sessQuery)
+    queryExecutionTime = float(time.time() - startTime)
+    # no need to worry about query vocabulary or resObj here
+    # intent creation happens in Java and the avg time per query is a second. To be fairer we can run using Python Java connector later
+    intentCreationTime = 1.0
+    return (queryVocabulary, resObj, queryExecutionTime, intentCreationTime)
+
+
+def executeQueryWithIntent(sessQuery, configDict, queryVocabulary):
+    assert configDict['DATASET'] == 'NYCTaxitrips' or configDict['DATASET'] == 'MINC'
+    if configDict['DATASET'] == 'NYCTaxiTrips':
+        return executeNYCQueryWithIntent(sessQuery, configDict, queryVocabulary)
+    elif configDict['DATASET'] == 'MINC':
+        return executeMINCQueryWithIntent(sessQuery, configDict, queryVocabulary)
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("configFile.txt")
