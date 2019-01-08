@@ -67,8 +67,10 @@ def removeExcessDelimiters(sessQueryIntent):
 
 def createConcurrentIntentVectors(sessionQueryDict, configDict):
     intentFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
+    concurrentFile = getConfig(configDict['CONCURRENT_QUERY_SESSIONS'])
     try:
         os.remove(intentFile)
+        os.remove(concurrentFile)
     except OSError:
         pass
     queryCount = 0
@@ -93,12 +95,15 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             assert queryCount>=0
             if queryCount == 0:
                 output_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + tokens[2]
+                conc_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1].split(":")[1]
             else:
                 output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + tokens[2]
+                conc_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1].split(":")[1]
             queryCount += 1
             absCount+=1
             if queryCount % 100 == 0:
                 ti.appendToFile(intentFile, output_str)
+                ti.appendToFile(concurrentFile, conc_str)
                 queryCount = 0
             if absCount % 10000 == 0:
                 print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", absQueryCount: " + str(absCount))

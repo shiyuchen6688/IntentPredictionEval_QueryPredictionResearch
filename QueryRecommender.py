@@ -141,13 +141,21 @@ def updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAp
     return (episodeResponseTime, startEpisode, elapsedAppendTime)
 
 def createQueryExecIntentCreationTimes(configDict):
+    assert configDict['DATASET'] == 'NYCTaxitrips' or configDict['DATASET'] == 'MINC'
+    if configDict['DATASET'] == 'NYCTaxiTrips':
+        return createQueryExecIntentCreationTimesNYC(configDict)
+    elif configDict['DATASET'] == 'MINC':
+        return executeMINCQueryWithIntent(sessQuery, configDict, queryVocabulary)
+
+def createQueryExecIntentCreationTimes(configDict):
+    assert configDict['DATASET'] == 'NYCTaxitrips' or configDict['DATASET'] == 'MINC'
     numQueries = 0
     episodeQueryExecutionTime = {}
     episodeIntentCreationTime = {}
     numEpisodes = 0
     tempExecTimeEpisode = 0.0
     tempIntentTimeEpisode = 0.0
-    with open(configDict['CONCURRENT_QUERY_SESSIONS']) as f:
+    with open(getConfig(configDict['CONCURRENT_QUERY_SESSIONS'])) as f:
         for line in f:
             sessQueries = line.split(";")
             sessQueryName = sessQueries[0]

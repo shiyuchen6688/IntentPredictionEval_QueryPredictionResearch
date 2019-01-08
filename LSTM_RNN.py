@@ -26,6 +26,7 @@ from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten,
 import CFCosineSim
 import argparse
 from ParseConfigFile import getConfig
+import LSTM_RNN_Parallel
 
 '''
 # convert an array of values into a dataset matrix
@@ -574,10 +575,14 @@ def runRNNSingularityExp(configDict):
     return
 
 def executeRNN(configDict):
-    if configDict['SINGULARITY_OR_KFOLD']=='SINGULARITY':
+    if configDict['SINGULARITY_OR_KFOLD']=='SINGULARITY' and int(configDict['RNN_THREADS']==1):
         runRNNSingularityExp(configDict)
+    elif configDict['SINGULARITY_OR_KFOLD']=='SINGULARITY' and int(configDict['RNN_THREADS']>1):
+        LSTM_RNN_Parallel.runRNNSingularityExp(configDict)
     elif configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
         runRNNKFoldExp(configDict)
+    elif configDict['SINGULARITY_OR_KFOLD']=='KFOLD' and int(configDict['RNN_THREADS']>1):
+        LSTM_RNN_Parallel.runRNNKFoldExp(configDict)
     return
 
 if __name__ == "__main__":
