@@ -70,8 +70,11 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
     concurrentFile = getConfig(configDict['CONCURRENT_QUERY_SESSIONS'])
     try:
         os.remove(intentFile)
-        os.remove(concurrentFile)
     except OSError:
+        pass
+    try:
+        os.remove(concurrentFile)
+    except:
         pass
     queryCount = 0
     queryIndex = 0

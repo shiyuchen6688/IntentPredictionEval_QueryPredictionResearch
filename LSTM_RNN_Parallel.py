@@ -240,8 +240,26 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
-def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
-    cosineSimDict = {}
+def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries):
+    numQueriesPerThread = int(float(numQueries)/float(configDict['RNN_THREADS']))
+    queryPartitions = {}
+    queryCount = 0
+    relCount = 0
+    threadID = 0
+    for sessID in sessionDictCurThread:
+        for queryID in range(sessionDictCurThread[sessID]+1):
+            queryCount += 1
+            relCount+=1
+            if queryCount == 1 or relCount == 1:
+                p_lo = str(sessID)+","+str(queryID)
+            if queryCount % numQueriesPerThread == 0 or queryCount == numQueries:
+                p_hi = str(sessID)+","+str(queryID)
+                relCount = 0
+                queryPartitions[threadID] = (p_lo, p_hi)
+                threadID += 1
+    return queryPartitions
+
+def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict):
     for sessID in sessionDictCurThread:
         if len(sessionDictCurThread) == 1 or sessID != curSessID: # we are not going to suggest query intents from the same session unless it is the only session in the dictionary
             numQueries = sessionDictCurThread[sessID]+1
@@ -249,6 +267,65 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
                 queryIntent = sessionStreamDict[str(sessID)+","+str(queryID)]
                 cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
                 cosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
+    return cosineSimDict
+
+def multiThreadedTopKDetection(localCosineSimDict, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict):
+    (loKey, hiKey) = queryPartition
+    sessID_lo = loKey.split(",")[0]
+    sessID_lo_index = sessionDictCurThread.keys().index(sessID_lo)
+    queryID_lo = loKey.split(",")[1]
+    sessID_hi = hiKey.split(",")[0]
+    sessID_hi_index = sessionDictCurThread.keys().index(sessID_hi)
+    queryID_hi = hiKey.split(",")[1]
+    finishFlag = False
+    for index in range(sessID_lo_index, sessID_hi_index+1):
+        sessID = sessionStreamDict.keys()[index]
+        if len(sessionDictCurThread) == 1 or sessID != curSessID:
+            numQueries = sessionDictCurThread[sessID] + 1
+            queryID_lo_index = 0
+            queryID_hi_index = numQueries-1
+            if sessID == sessID_lo:
+                queryID_lo_index = queryID_lo
+            elif sessID == sessID_hi:
+                queryID_hi_index = queryID_hi
+            for queryID in range(queryID_lo_index, queryID_hi_index+1):
+                queryIntent = sessionStreamDict[str(sessID) + "," + str(queryID)]
+                cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
+                localCosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
+                if sessID == sessID_hi and queryID == queryID_hi:
+                    finishFlag = True
+                    break
+            if finishFlag:
+                break
+    return localCosineSimDict
+
+
+def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
+    for threadID in localCosineSimDicts:
+        for sessQueryID in localCosineSimDicts[threadID]:
+            cosineSimDict[sessQueryID] = localCosineSimDicts[threadID][sessQueryID]
+    return cosineSimDict
+
+
+def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
+    cosineSimDict = {}
+    numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
+    numSubThreads = int(configDict['RNN_SUB_THREADS'])
+    if numQueries >= int(numSubThreads):
+        queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries)
+        assert len(queryPartitions) == int(numSubThreads)
+        subThreads = {}
+        localCosineSimDicts = {}
+        for i in range(len(queryPartitions)):
+            localCosineSimDicts[i] = {}
+            subThreads[i] = threading.Thread(target=multiThreadedTopKDetection, args=(
+                localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
+            subThreads[i].start()
+        for i in range(numSubThreads):
+            subThreads[i].join()
+        cosineSimDict = concatenateLocalDicts(localCosineSimDicts, cosineSimDict)
+    else:
+        cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict)
     # sorted_d is a list of lists, not a dictionary. Each list entry has key as 0th entry and value as 1st entry, we need the key
     sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKPredictedIntents = []
@@ -270,24 +347,24 @@ def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, s
     #resList  = list()
     #with graph.as_default():
         #modelRNNThread = keras.models.load_model(modelRNNFileName)
-        for i in range(t_lo, t_hi+1):
-            sessQueryID = keyOrder[i]
-            sessID = int(sessQueryID.split(",")[0])
-            queryID = int(sessQueryID.split(",")[1])
-            if queryID < sessionLengthDict[sessID]-1:
-                predictedY = predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
-                nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
-                nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
-                print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
-                actual_vector = np.array(nextIntentList).astype(np.int)
-                if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                    topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict, sessID, queryID, sessionDictCurThread, sessionStreamDict)
-                elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-                    topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
-                resList.append((sessID, queryID, topKPredictedIntents, nextQueryIntent))
-                print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
-        #QR.deleteIfExists(modelRNNFileName)
-        return resList
+    for i in range(t_lo, t_hi+1):
+        sessQueryID = keyOrder[i]
+        sessID = int(sessQueryID.split(",")[0])
+        queryID = int(sessQueryID.split(",")[1])
+        if queryID < sessionLengthDict[sessID]-1:
+            predictedY = predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
+            nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
+            nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
+            print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            actual_vector = np.array(nextIntentList).astype(np.int)
+            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict, sessID, queryID, sessionDictCurThread, sessionStreamDict)
+            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
+            resList.append((sessID, queryID, topKPredictedIntents, nextQueryIntent))
+            print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+    #QR.deleteIfExists(modelRNNFileName)
+    return resList
 
 def updateSessionDictsThreads(threadID, sessionDictsThreads, t_lo, t_hi, keyOrder):
     sessionDictCurThread = sessionDictsThreads[threadID]
