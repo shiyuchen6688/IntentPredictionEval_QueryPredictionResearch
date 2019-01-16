@@ -30,6 +30,7 @@ import argparse
 from ParseConfigFile import getConfig
 import threading
 import copy
+import multiprocessing
 
 
 class ThreadSafeDict(dict) :
@@ -325,7 +326,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
             for i in range(len(queryPartitions)):
                 localCosineSimDicts[i] = {}
                 #multiThreadedTopKDetection(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict)
-                subThreads[i] = threading.Thread(target=multiThreadedTopKDetection, args=(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
+                subThreads[i] = multiprocessing.Process(target=multiThreadedTopKDetection, args=(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
                 subThreads[i].start()
             for i in range(numSubThreads):
                 subThreads[i].join()
@@ -408,7 +409,7 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         resList = resultDict[i]
         #predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
         modelRNN._make_predict_function()
-        threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
+        threads[i] = multiprocessing.Process(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
         threads[i].start()
     for i in range(numThreads):
         threads[i].join()
