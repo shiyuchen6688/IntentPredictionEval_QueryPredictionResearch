@@ -305,7 +305,7 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
     t_hi = lo-1
     for i in range(numThreads):
         t_lo = t_hi + 1
-        if hi - t_lo + 1 < numKeysPerThread:
+        if i == numThreads -1:
             t_hi = hi
         else:
             t_hi = t_lo + numKeysPerThread - 1
@@ -317,7 +317,7 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         assert i in sessionDictsThreads.keys()
         sessionDictCurThread = sessionDictsThreads[i]
         resList = resultDict[i]
-        modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/Thread_Model_'+str(i)+'.h5'
+        #modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/Thread_Model_'+str(i)+'.h5'
         #modelRNN.save(modelRNNFileName, overwrite=True)
         modelRNN._make_predict_function()
         #predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNFileName, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
