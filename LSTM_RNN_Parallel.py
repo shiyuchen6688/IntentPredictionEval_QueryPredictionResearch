@@ -240,7 +240,7 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
     return (outputIntentFileName, episodeResponseTimeDictName)
 
 def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries):
-    numQueriesPerThread = numQueries/int(configDict['RNN_SUB_THREADS'])
+    numQueriesPerThread = int(numQueries/int(configDict['RNN_SUB_THREADS']))
     queryPartitions = {}
     queryCount = 0
     relCount = 0
