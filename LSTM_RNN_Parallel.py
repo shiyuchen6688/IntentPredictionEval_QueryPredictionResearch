@@ -410,10 +410,12 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
         elapsedAppendTime = 0.0
 
         # test first for each query in the batch if the classifier is not None
+        print "Starting prediction in Episode "+str(numEpisodes)
         if modelRNN is not None:
             sessionDictsThreads = copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict)
             resultDict = predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
 
+        print "Starting training in Episode " + str(numEpisodes)
         # update SessionDictGlobal and train with the new batch
         (sessionDictGlobal, queryKeysSetAside) = updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal)
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal,
@@ -432,6 +434,7 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
             (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = clear(resultDict)
     # update results to excel sheet
+    print "Starting Excel Write after all Episodes: " + str(numEpisodes)
     updateResultsToExcel(configDict, episodeResponseTime, outputIntentFileName)
 
 
