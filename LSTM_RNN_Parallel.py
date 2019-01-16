@@ -311,23 +311,28 @@ def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
 
 def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
     cosineSimDict = {}
-    numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
     numSubThreads = int(configDict['RNN_SUB_THREADS'])
-    if numQueries >= numSubThreads and numSubThreads > 1:
-        queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries)
-        assert len(queryPartitions) == int(numSubThreads)
-        subThreads = {}
-        localCosineSimDicts = {}
-        for i in range(len(queryPartitions)):
-            localCosineSimDicts[i] = {}
-            #multiThreadedTopKDetection(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict)
-            subThreads[i] = threading.Thread(target=multiThreadedTopKDetection, args=(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
-            subThreads[i].start()
-        for i in range(numSubThreads):
-            subThreads[i].join()
-        cosineSimDict = concatenateLocalDicts(localCosineSimDicts, cosineSimDict)
+    startFetchTime = time.time()
+    if numSubThreads == 1:
+        cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread,
+                                                    sessionStreamDict)
     else:
-        cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict)
+        numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
+        if numQueries >= numSubThreads:
+            queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries)
+            assert len(queryPartitions) == int(numSubThreads)
+            subThreads = {}
+            localCosineSimDicts = {}
+            for i in range(len(queryPartitions)):
+                localCosineSimDicts[i] = {}
+                #multiThreadedTopKDetection(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict)
+                subThreads[i] = threading.Thread(target=multiThreadedTopKDetection, args=(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
+                subThreads[i].start()
+            for i in range(numSubThreads):
+                subThreads[i].join()
+            cosineSimDict = concatenateLocalDicts(localCosineSimDicts, cosineSimDict)
+        else:
+            cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict)
     # sorted_d is a list of lists, not a dictionary. Each list entry has key as 0th entry and value as 1st entry, we need the key
     sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKPredictedIntents = []
@@ -342,6 +347,8 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
             break
     del cosineSimDict
     del sorted_csd
+    totalFetchTime = float(time.time()-startFetchTime)
+    print "Total Fetch Time: "+str(totalFetchTime)
     return topKPredictedIntents
 
 
