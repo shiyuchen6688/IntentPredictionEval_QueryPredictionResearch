@@ -313,7 +313,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
     cosineSimDict = {}
     numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
     numSubThreads = int(configDict['RNN_SUB_THREADS'])
-    if numQueries >= int(numSubThreads):
+    if numQueries >= numSubThreads and numSubThreads > 1:
         queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries)
         assert len(queryPartitions) == int(numSubThreads)
         subThreads = {}
