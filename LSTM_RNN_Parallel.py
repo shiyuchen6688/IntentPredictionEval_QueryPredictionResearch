@@ -190,7 +190,7 @@ def predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_l
     #print "Padded sequences sessID: " + str(sessID) + ", queryID: " + str(queryID)
     predictedY = modelRNNThread.predict(testX)
     predictedY = predictedY[0][predictedY.shape[1] - 1]
-    #print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
+    print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
     return predictedY
 
 def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
