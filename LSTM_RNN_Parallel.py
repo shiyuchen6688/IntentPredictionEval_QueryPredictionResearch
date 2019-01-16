@@ -312,6 +312,7 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         t_loHiDict[i] = (t_lo, t_hi)
         sessionDictsThreads = updateSessionDictsThreads(i, sessionDictsThreads, t_lo, t_hi, keyOrder)
         resultDict[i] = list()
+    print "Updated Session Dictionaries for Threads"
     for i in range(numThreads):
         (t_lo, t_hi) = t_loHiDict[i]
         assert i in sessionDictsThreads.keys()
