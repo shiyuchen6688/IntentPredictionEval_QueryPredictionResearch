@@ -182,13 +182,16 @@ def predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_l
         curSessIntent = sessionStreamDict[curSessQueryID]
         intentStrList = createCharListFromIntent(curSessIntent, configDict)
         testX.append(intentStrList)
+    print "Appended charList sessID: "+str(sessID)+", queryID: "+str(queryID)
     # modify testX to be compatible with the RNN prediction
     testX = np.array(testX)
     testX = testX.reshape(1, testX.shape[0], testX.shape[1])
     if len(testX) < max_lookback:
         testX = pad_sequences(testX, maxlen=max_lookback, padding='pre')
+    print "Padded sequences sessID: " + str(sessID) + ", queryID: " + str(queryID)
     predictedY = modelRNNThread.predict(testX)
     predictedY = predictedY[0][predictedY.shape[1] - 1]
+    print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
     return predictedY
 
 def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
@@ -275,12 +278,14 @@ def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, s
                 predictedY = predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
                 nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
                 nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
+                print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
                 actual_vector = np.array(nextIntentList).astype(np.int)
                 if configDict['BIT_OR_WEIGHTED'] == 'BIT':
                     topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict, sessID, queryID, sessionDictCurThread, sessionStreamDict)
                 elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                     topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
                 resList.append((sessID, queryID, topKPredictedIntents, nextQueryIntent))
+                print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
         #QR.deleteIfExists(modelRNNFileName)
         return resList
 
