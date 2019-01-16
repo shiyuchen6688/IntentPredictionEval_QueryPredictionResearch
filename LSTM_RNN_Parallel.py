@@ -418,7 +418,7 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
         elapsedAppendTime = 0.0
 
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode "+str(numEpisodes)+", lo: "+str(lo)+", hi: "+str(hi)+", len(keyOrder): "+len(keyOrder)
+        print "Starting prediction in Episode "+str(numEpisodes)+", lo: "+str(lo)+", hi: "+str(hi)+", len(keyOrder): "+str(len(keyOrder))
         if modelRNN is not None:
             sessionDictsThreads = copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict)
             resultDict = predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
