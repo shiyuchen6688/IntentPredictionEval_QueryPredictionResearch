@@ -240,7 +240,7 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
     return (outputIntentFileName, episodeResponseTimeDictName)
 
 def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries):
-    numQueriesPerThread = int(float(numQueries)/float(configDict['RNN_SUB_THREADS']))
+    numQueriesPerThread = numQueries/int(configDict['RNN_SUB_THREADS'])
     queryPartitions = {}
     queryCount = 0
     relCount = 0
@@ -399,12 +399,12 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         assert i in sessionDictsThreads.keys()
         sessionDictCurThread = sessionDictsThreads[i]
         resList = resultDict[i]
-        predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
-        #modelRNN._make_predict_function()
-        #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
-        #threads[i].start()
-    #for i in range(numThreads):
-        #threads[i].join()
+        #predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
+        modelRNN._make_predict_function()
+        threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
+        threads[i].start()
+    for i in range(numThreads):
+        threads[i].join()
     return resultDict
 
 def updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal):
