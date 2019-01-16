@@ -312,7 +312,7 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         t_loHiDict[i] = (t_lo, t_hi)
         sessionDictsThreads = updateSessionDictsThreads(i, sessionDictsThreads, t_lo, t_hi, keyOrder)
         resultDict[i] = list()
-    print "Updated Session Dictionaries for Threads"
+    #print "Updated Session Dictionaries for Threads"
     for i in range(numThreads):
         (t_lo, t_hi) = t_loHiDict[i]
         assert i in sessionDictsThreads.keys()
@@ -337,7 +337,7 @@ def updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlob
         queryID = int(sessQueryID.split(",")[1])
         sessionDictGlobal[sessID]= queryID # key is sessID and value is the latest queryID
         cur+=1
-    print "updated Global Session Dict"
+    #print "updated Global Session Dict"
     return (sessionDictGlobal, queryKeysSetAside)
 
 def copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict):
@@ -346,7 +346,7 @@ def copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict):
         if i not in sessionDictsThreads:
             sessionDictsThreads[i] = {}
         sessionDictsThreads[i].update(sessionDictGlobal)
-    print "Copied Thread Session Dicts from Global Session Dict"
+    #print "Copied Thread Session Dicts from Global Session Dict"
     return sessionDictsThreads
 
 def appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict):
