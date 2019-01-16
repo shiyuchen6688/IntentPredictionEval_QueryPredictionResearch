@@ -249,9 +249,10 @@ def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries):
         for queryID in range(sessionDictCurThread[sessID]+1):
             queryCount += 1
             relCount+=1
+            remCount = numQueries - queryCount
             if queryCount == 1 or relCount == 1:
                 p_lo = str(sessID)+","+str(queryID)
-            if queryCount % numQueriesPerThread == 0 or queryCount == numQueries:
+            if (queryCount % numQueriesPerThread == 0 and remCount >= queryCount) or queryCount == numQueries:
                 p_hi = str(sessID)+","+str(queryID)
                 relCount = 0
                 queryPartitions[threadID] = (p_lo, p_hi)
