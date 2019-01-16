@@ -134,6 +134,13 @@ def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, ses
     elapsedAppendTime = float(time.time()-startAppendTime)
     return elapsedAppendTime
 
+def deleteIfExists(fileName):
+    try:
+        os.remove(fileName)
+    except OSError:
+        pass
+    return
+
 def updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime):
     episodeResponseTime[numEpisodes] = float(time.time()-startEpisode) - elapsedAppendTime # we exclude the time consumed by appending predicted intents to the output intent file
     elapsedAppendTime = 0.0

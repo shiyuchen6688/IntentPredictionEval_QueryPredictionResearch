@@ -16,6 +16,8 @@ from numpy import dot
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
 import keras
+import tensorflow as tf
+from keras import backend as K
 from keras.datasets import imdb
 from keras.preprocessing import sequence
 from keras.preprocessing.sequence import pad_sequences
@@ -27,6 +29,9 @@ import CFCosineSim
 import argparse
 from ParseConfigFile import getConfig
 import threading
+import copy
+
+#graph = tf.get_default_graph()
 
 class ThreadSafeDict(dict) :
     def __init__(self, * p_arg, ** n_arg) :
@@ -64,13 +69,21 @@ def perform_input_padding(x_train):
     x_train = pad_sequences(x_train, maxlen = max_lookback, padding='pre')
     return (x_train, max_lookback)
 
-def updateRNNIncrementalTrain(modelRNN, x_train, y_train, configDict):
+def updateRNNIncrementalTrainBackUp(modelRNN, x_train, y_train, configDict):
     for i in range(len(x_train)):
         sample_input = np.array(x_train[i])
         sample_output = np.array(y_train[i])
         modelRNN.fit(sample_input.reshape(1, sample_input.shape[0], sample_input.shape[1]),
                      sample_output.reshape(1, sample_output.shape[0], sample_output.shape[1]), epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS'])) # incremental needs only one epoch
     return (modelRNN,0)
+
+def updateRNNIncrementalTrain(modelRNN, max_lookback, x_train, y_train, configDict):
+    (x_train, max_lookback_this) = perform_input_padding(x_train)
+    y_train = np.array(y_train)
+    modelRNN.fit(x_train, y_train, epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']), batch_size=len(x_train))
+    if max_lookback_this > max_lookback:
+        max_lookback = max_lookback_this
+    return (modelRNN, max_lookback)
 
 def updateRNNFullTrain(modelRNN, x_train, y_train, configDict):
     (x_train, max_lookback) = perform_input_padding(x_train)
@@ -123,7 +136,7 @@ def updateSessionDictWithCurrentIntent(sessionDictGlobal, sessID, queryID):
     sessionDictGlobal[sessID] = queryID
     return sessionDictGlobal
 
-def trainRNN(dataX, dataY, modelRNN, configDict):
+def trainRNN(dataX, dataY, modelRNN, max_lookback, configDict):
     n_features = len(dataX[0][0])
     # assert configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY' or configDict['INTENT_REP'] == 'TUPLE'
     # if configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
@@ -134,7 +147,7 @@ def trainRNN(dataX, dataY, modelRNN, configDict):
         modelRNN = initializeRNN(n_features, n_memUnits, configDict)
     assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
     if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
-        (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, dataX, dataY, configDict)
+        (modelRNN, max_lookback) = updateRNNIncrementalTrain(modelRNN, max_lookback, dataX, dataY, configDict)
     elif configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL':
         (modelRNN, max_lookback) = updateRNNFullTrain(modelRNN, dataX, dataY, configDict)
     return (modelRNN, max_lookback)
@@ -148,9 +161,8 @@ def createTemporalPairs(queryKeysSetAside, configDict, sessionDictGlobal, sessio
         #because for Kfold this is training phase but for singularity it would already have been added
         if configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
             updateSessionDictWithCurrentIntent(sessionDictGlobal, sessID, queryID)
-        if int(queryID) == 0:
-            continue
-        (dataX, dataY) = appendTrainingXY(sessionStreamDict, sessID, queryID, configDict, dataX, dataY)
+        if int(queryID) > 0:
+            (dataX, dataY) = appendTrainingXY(sessionStreamDict, sessID, queryID, configDict, dataX, dataY)
     return (dataX, dataY)
 
 
@@ -158,10 +170,10 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal, mo
     (dataX, dataY) = createTemporalPairs(queryKeysSetAside, configDict, sessionDictGlobal, sessionStreamDict)
     max_lookback = -1
     if len(dataX) > 0:
-        (modelRNN, max_lookback) = trainRNN(dataX, dataY, modelRNN, configDict)
+        (modelRNN, max_lookback) = trainRNN(dataX, dataY, modelRNN, max_lookback, configDict)
     return (modelRNN, sessionDictGlobal, max_lookback)
 
-def predictTopKIntents(modelRNN, sessionStreamDict, sessID, queryID, max_lookback, configDict):
+def predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict):
     # predicts the next query to the query indexed by queryID in the sessID session
     numQueries = queryID + 1
     testX = []
@@ -175,7 +187,7 @@ def predictTopKIntents(modelRNN, sessionStreamDict, sessID, queryID, max_lookbac
     testX = testX.reshape(1, testX.shape[0], testX.shape[1])
     if len(testX) < max_lookback:
         testX = pad_sequences(testX, maxlen=max_lookback, padding='pre')
-    predictedY = modelRNN.predict(testX)
+    predictedY = modelRNNThread.predict(testX)
     predictedY = predictedY[0][predictedY.shape[1] - 1]
     return predictedY
 
@@ -251,23 +263,26 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
     return topKPredictedIntents
 
 
-def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict):
+def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict):
     #resList  = list()
-    for i in range(t_lo, t_hi+1):
-        sessQueryID = keyOrder[i]
-        sessID = int(sessQueryID.split(",")[0])
-        queryID = int(sessQueryID.split(",")[1])
-        if queryID < sessionLengthDict[sessID]-1:
-            predictedY = predictTopKIntents(modelRNN, sessionStreamDict, sessID, queryID, max_lookback, configDict)
-            nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
-            nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
-            actual_vector = np.array(nextIntentList).astype(np.int)
-            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict, sessID, queryID, sessionDictCurThread, sessionStreamDict)
-            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-                topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
-            resList.append((sessID, queryID, topKPredictedIntents, nextQueryIntent))
-    return resList
+    #with graph.as_default():
+        #modelRNNThread = keras.models.load_model(modelRNNFileName)
+        for i in range(t_lo, t_hi+1):
+            sessQueryID = keyOrder[i]
+            sessID = int(sessQueryID.split(",")[0])
+            queryID = int(sessQueryID.split(",")[1])
+            if queryID < sessionLengthDict[sessID]-1:
+                predictedY = predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
+                nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
+                nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
+                actual_vector = np.array(nextIntentList).astype(np.int)
+                if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                    topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict, sessID, queryID, sessionDictCurThread, sessionStreamDict)
+                elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                    topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
+                resList.append((sessID, queryID, topKPredictedIntents, nextQueryIntent))
+        #QR.deleteIfExists(modelRNNFileName)
+        return resList
 
 def updateSessionDictsThreads(threadID, sessionDictsThreads, t_lo, t_hi, keyOrder):
     sessionDictCurThread = sessionDictsThreads[threadID]
@@ -277,6 +292,7 @@ def updateSessionDictsThreads(threadID, sessionDictsThreads, t_lo, t_hi, keyOrde
         sessID = int(sessQueryID.split(",")[0])
         queryID = int(sessQueryID.split(",")[1])
         sessionDictCurThread[sessID]= queryID # key is sessID and value is the latest queryID
+        cur+=1
     for i in range(threadID+1, len(sessionDictsThreads)):
         sessionDictsThreads[i].update(sessionDictCurThread)
     return sessionDictsThreads
@@ -301,20 +317,26 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         assert i in sessionDictsThreads.keys()
         sessionDictCurThread = sessionDictsThreads[i]
         resList = resultDict[i]
+        modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/Thread_Model_'+str(i)+'.h5'
+        #modelRNN.save(modelRNNFileName, overwrite=True)
+        modelRNN._make_predict_function()
+        #predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNFileName, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
         threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
         threads[i].start()
     for i in range(numThreads):
         threads[i].join()
     return resultDict
 
-def updateGlobalSessionDict(lo, hi, keyOrder, sessionDictGlobal):
+def updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal):
     cur = lo
     while(cur<hi+1):
         sessQueryID = keyOrder[cur]
+        queryKeysSetAside.append(sessQueryID)
         sessID = int(sessQueryID.split(",")[0])
         queryID = int(sessQueryID.split(",")[1])
         sessionDictGlobal[sessID]= queryID # key is sessID and value is the latest queryID
-    return sessionDictGlobal
+        cur+=1
+    return (sessionDictGlobal, queryKeysSetAside)
 
 def copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict):
     numThreads = int(configDict['RNN_THREADS'])
@@ -369,13 +391,19 @@ def updateResultsToExcel(configDict, episodeResponseTime, outputIntentFileName):
     print "--Completed Quality and Time Evaluation--"
     return
 
+def clear(resultDict):
+    keys = resultDict.keys()
+    for resKey in keys:
+        del resultDict[resKey]
+    return resultDict
 
 def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
-    batchSize = configDict['EPISODE_IN_QUERIES']
+    batchSize = int(configDict['EPISODE_IN_QUERIES'])
     lo = 0
-    hi = 0
-    resultDict = None
-    while lo<len(keyOrder):
+    hi = -1
+    resultDict = {}
+    while hi<len(keyOrder):
+        lo = hi+1
         if len(keyOrder) - lo < batchSize:
             batchSize = len(keyOrder) - lo
         hi = lo + batchSize - 1
@@ -387,9 +415,7 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
             resultDict = predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
 
         # update SessionDictGlobal and train with the new batch
-        for key in keyOrder:
-            queryKeysSetAside.append(key)
-        sessionDictGlobal = updateGlobalSessionDict(lo, hi, keyOrder, sessionDictGlobal)
+        (sessionDictGlobal, queryKeysSetAside) = updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal)
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal,
                                                                         modelRNN, sessionStreamDict)
         assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
@@ -401,9 +427,10 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
 
         # we record the times including train and test
         numEpisodes += 1
-        if resultDict is not None:
+        if len(resultDict)> 0:
             elapsedAppendTime = appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict)
             (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+            resultDict = clear(resultDict)
     # update results to excel sheet
     updateResultsToExcel(configDict, episodeResponseTime, outputIntentFileName)
 
@@ -413,7 +440,7 @@ def initRNNSingularity(configDict):
     numEpisodes = 0
     queryKeysSetAside = []
     episodeResponseTime = {}
-    resultDict = {}
+    resultDict = None
     sessionDictGlobal = {} # one global session dictionary updated after all the threads have finished execution
     sessionDictsThreads = {} # one session dictionary per thread
     outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + \
@@ -482,6 +509,7 @@ def runRNNKFoldExp(configDict):
     return
 
 def executeRNN(configDict):
+    assert int(configDict['EPISODE_IN_QUERIES'])>=int(configDict['RNN_THREADS'])
     if configDict['SINGULARITY_OR_KFOLD']=='SINGULARITY':
         runRNNSingularityExp(configDict)
     elif configDict['SINGULARITY_OR_KFOLD']=='KFOLD':

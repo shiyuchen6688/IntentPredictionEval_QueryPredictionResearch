@@ -418,7 +418,7 @@ def initRNNSingularity(configDict):
                            configDict['INTENT_REP'] + "_" + \
                            configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                            configDict['EPISODE_IN_QUERIES']
-    print "Counting queries in sessions"
+    #print "Counting queries in sessions"
     sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
     try:
         os.remove(outputIntentFileName)
