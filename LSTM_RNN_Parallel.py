@@ -31,7 +31,6 @@ from ParseConfigFile import getConfig
 import threading
 import copy
 
-#graph = tf.get_default_graph()
 
 class ThreadSafeDict(dict) :
     def __init__(self, * p_arg, ** n_arg) :
@@ -182,16 +181,16 @@ def predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_l
         curSessIntent = sessionStreamDict[curSessQueryID]
         intentStrList = createCharListFromIntent(curSessIntent, configDict)
         testX.append(intentStrList)
-    print "Appended charList sessID: "+str(sessID)+", queryID: "+str(queryID)
+    #print "Appended charList sessID: "+str(sessID)+", queryID: "+str(queryID)
     # modify testX to be compatible with the RNN prediction
     testX = np.array(testX)
     testX = testX.reshape(1, testX.shape[0], testX.shape[1])
     if len(testX) < max_lookback:
         testX = pad_sequences(testX, maxlen=max_lookback, padding='pre')
-    print "Padded sequences sessID: " + str(sessID) + ", queryID: " + str(queryID)
+    #print "Padded sequences sessID: " + str(sessID) + ", queryID: " + str(queryID)
     predictedY = modelRNNThread.predict(testX)
     predictedY = predictedY[0][predictedY.shape[1] - 1]
-    print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
+    #print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
     return predictedY
 
 def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
@@ -241,7 +240,7 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
     return (outputIntentFileName, episodeResponseTimeDictName)
 
 def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries):
-    numQueriesPerThread = int(float(numQueries)/float(configDict['RNN_THREADS']))
+    numQueriesPerThread = int(float(numQueries)/float(configDict['RNN_SUB_THREADS']))
     queryPartitions = {}
     queryCount = 0
     relCount = 0
@@ -271,15 +270,15 @@ def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDic
 
 def multiThreadedTopKDetection(localCosineSimDict, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict):
     (loKey, hiKey) = queryPartition
-    sessID_lo = loKey.split(",")[0]
+    sessID_lo = int(loKey.split(",")[0])
     sessID_lo_index = sessionDictCurThread.keys().index(sessID_lo)
-    queryID_lo = loKey.split(",")[1]
-    sessID_hi = hiKey.split(",")[0]
+    queryID_lo = int(loKey.split(",")[1])
+    sessID_hi = int(hiKey.split(",")[0])
     sessID_hi_index = sessionDictCurThread.keys().index(sessID_hi)
-    queryID_hi = hiKey.split(",")[1]
+    queryID_hi = int(hiKey.split(",")[1])
     finishFlag = False
     for index in range(sessID_lo_index, sessID_hi_index+1):
-        sessID = sessionStreamDict.keys()[index]
+        sessID = sessionDictCurThread.keys()[index]
         if len(sessionDictCurThread) == 1 or sessID != curSessID:
             numQueries = sessionDictCurThread[sessID] + 1
             queryID_lo_index = 0
@@ -318,8 +317,8 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
         localCosineSimDicts = {}
         for i in range(len(queryPartitions)):
             localCosineSimDicts[i] = {}
-            subThreads[i] = threading.Thread(target=multiThreadedTopKDetection, args=(
-                localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
+            #multiThreadedTopKDetection(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict)
+            subThreads[i] = threading.Thread(target=multiThreadedTopKDetection, args=(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
             subThreads[i].start()
         for i in range(numSubThreads):
             subThreads[i].join()
@@ -355,14 +354,14 @@ def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, s
             predictedY = predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
-            print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            #print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
             actual_vector = np.array(nextIntentList).astype(np.int)
             if configDict['BIT_OR_WEIGHTED'] == 'BIT':
                 topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict, sessID, queryID, sessionDictCurThread, sessionStreamDict)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             resList.append((sessID, queryID, topKPredictedIntents, nextQueryIntent))
-            print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            #print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
     #QR.deleteIfExists(modelRNNFileName)
     return resList
 
@@ -400,10 +399,8 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         assert i in sessionDictsThreads.keys()
         sessionDictCurThread = sessionDictsThreads[i]
         resList = resultDict[i]
-        #modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/Thread_Model_'+str(i)+'.h5'
-        #modelRNN.save(modelRNNFileName, overwrite=True)
+        #predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
         modelRNN._make_predict_function()
-        #predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNFileName, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
         threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
         threads[i].start()
     for i in range(numThreads):
@@ -666,4 +663,9 @@ if __name__ == "__main__":
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
 
     print "--Completed Quality and Time Evaluation--"
+    
+            #modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/Thread_Model_'+str(i)+'.h5'
+        #modelRNN.save(modelRNNFileName, overwrite=True)
+        #graph = tf.get_default_graph()
+
 '''
