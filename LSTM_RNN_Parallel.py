@@ -410,7 +410,7 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
     lo = 0
     hi = -1
     resultDict = {}
-    while hi<len(keyOrder):
+    while hi<len(keyOrder)-1:
         lo = hi+1
         if len(keyOrder) - lo < batchSize:
             batchSize = len(keyOrder) - lo
