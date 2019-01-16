@@ -143,6 +143,7 @@ def deleteIfExists(fileName):
 
 def updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime):
     episodeResponseTime[numEpisodes] = float(time.time()-startEpisode) - elapsedAppendTime # we exclude the time consumed by appending predicted intents to the output intent file
+    print "Episode Response Time: "+str(episodeResponseTime[numEpisodes])
     elapsedAppendTime = 0.0
     startEpisode = time.time()
     return (episodeResponseTime, startEpisode, elapsedAppendTime)

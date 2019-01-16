@@ -312,7 +312,6 @@ def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
 def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
     cosineSimDict = {}
     numSubThreads = int(configDict['RNN_SUB_THREADS'])
-    startFetchTime = time.time()
     if numSubThreads == 1:
         cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread,
                                                     sessionStreamDict)
@@ -347,8 +346,6 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
             break
     del cosineSimDict
     del sorted_csd
-    totalFetchTime = float(time.time()-startFetchTime)
-    print "Total Fetch Time: "+str(totalFetchTime)
     return topKPredictedIntents
 
 
