@@ -337,6 +337,7 @@ def updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlob
         queryID = int(sessQueryID.split(",")[1])
         sessionDictGlobal[sessID]= queryID # key is sessID and value is the latest queryID
         cur+=1
+    print "updated Global Session Dict"
     return (sessionDictGlobal, queryKeysSetAside)
 
 def copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict):
@@ -345,6 +346,7 @@ def copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict):
         if i not in sessionDictsThreads:
             sessionDictsThreads[i] = {}
         sessionDictsThreads[i].update(sessionDictGlobal)
+    print "Copied Thread Session Dicts from Global Session Dict"
     return sessionDictsThreads
 
 def appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict):
