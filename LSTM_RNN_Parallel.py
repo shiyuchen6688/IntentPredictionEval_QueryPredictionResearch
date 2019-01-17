@@ -402,18 +402,13 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         sessionDictsThreads = updateSessionDictsThreads(i, sessionDictsThreads, t_lo, t_hi, keyOrder)
         resultDict[i] = list()
     #print "Updated Session Dictionaries for Threads"
-    pool = multiprocessing.Pool(processes=numThreads)
     for i in range(numThreads):
         (t_lo, t_hi) = t_loHiDict[i]
         assert i in sessionDictsThreads.keys()
         sessionDictCurThread = sessionDictsThreads[i]
         resList = resultDict[i]
-        #predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
         modelRNN._make_predict_function()
-
-
-        pool.apply_async(predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
-    pool.join()
+        predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
         #threads[i] = multiprocessing.Process(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
         #threads[i].start()
     #for i in range(numThreads):
