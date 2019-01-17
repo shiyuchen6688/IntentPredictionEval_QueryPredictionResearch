@@ -287,7 +287,7 @@ def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDic
                 cosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
     return cosineSimDict
 
-def multiThreadedTopKDetection((localCosineSimDict, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
+def multiThreadedTopKDetection(localCosineSimDict, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict):
     for sessQueryID in queryPartition:
         sessID = sessQueryID.split(",")[0]
         if len(sessionDictCurThread) == 1 or sessID != curSessID:
@@ -344,24 +344,24 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
     else:
         numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
         numSubThreads = min(numSubThreads, numQueries)
-        pool = multiprocessing.Pool()
-        argList = []
+        #pool = multiprocessing.Pool()
+        #argList = []
         if numQueries >= numSubThreads:
             queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries, numSubThreads)
             assert len(queryPartitions) == int(numSubThreads)
-            #subThreads = {}
+            subThreads = {}
             localCosineSimDicts = {}
             for i in range(len(queryPartitions)):
                 localCosineSimDicts[i] = {}
-                #multiThreadedTopKDetection((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict))
-                argList.append((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
-                #subThreads[i] = threading.Thread(target=multiThreadedTopKDetection, args=(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
-                #subThreads[i].start()
-            #for i in range(numSubThreads):
-                #subThreads[i].join()
-            pool.map(multiThreadedTopKDetection, argList)
-            pool.close()
-            pool.join()
+                #multiThreadedTopKDetection(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict)
+                #argList.append((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
+                subThreads[i] = multiprocessing.Process(target=multiThreadedTopKDetection, args=(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
+                subThreads[i].start()
+            for i in range(numSubThreads):
+                localCosineSimDicts[i] = subThreads[i].join()
+            #pool.map(multiThreadedTopKDetection, argList)
+            #pool.close()
+            #pool.join()
             cosineSimDict = concatenateLocalDicts(localCosineSimDicts, cosineSimDict)
         else:
             cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict)
