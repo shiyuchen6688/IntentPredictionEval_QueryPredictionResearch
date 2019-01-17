@@ -489,7 +489,7 @@ def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
         len(episodeIntentCreationTime)) + ", len(episodeResponseTime) = " + str(len(episodeResponseTime))
 
   #  assert len(episodeQueryExecutionTime) == len(episodeResponseTime) and len(episodeIntentCreationTime) == len(episodeResponseTime)
-    for episodes in range(episodeResponseTime):
+    for episodes in episodeResponseTime:
         totalResponseTime = float(episodeIntentCreationTime[episodes]) + float(
             episodeQueryExecutionTime[episodes]) + float(episodeResponseTime[episodes])
         outputEvalTimeStr = "#Episodes:" + str(episodes) + ";QueryExecutionTime(secs):" + str(
