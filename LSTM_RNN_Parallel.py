@@ -241,8 +241,22 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
-def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries):
-    numQueriesPerThread = int(numQueries/int(configDict['RNN_SUB_THREADS']))
+def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries, numSubThreads):
+    numQueriesPerThread = int(numQueries/numSubThreads)
+    #round robin assignment of queries to threads
+    queryPartitions = {}
+    for i in range(numSubThreads):
+        queryPartitions[i] = []
+    queryCount = 0
+    for sessID in sessionDictCurThread:
+        for queryID in range(sessionDictCurThread[sessID]+1):
+            queryCount += 1
+            threadID = queryCount % numSubThreads
+            queryPartitions[threadID].append(str(sessID)+","+str(queryID))
+    return queryPartitions
+
+def partitionPrevQueriesAmongThreads_Deprecated(sessionDictCurThread, numQueries, numSubThreads):
+    numQueriesPerThread = int(numQueries/numSubThreads)
     queryPartitions = {}
     queryCount = 0
     relCount = 0
@@ -274,6 +288,15 @@ def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDic
     return cosineSimDict
 
 def multiThreadedTopKDetection((localCosineSimDict, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
+    for sessQueryID in queryPartition:
+        sessID = sessQueryID.split(",")[0]
+        if len(sessionDictCurThread) == 1 or sessID != curSessID:
+            queryIntent = sessionStreamDict[sessQueryID]
+            cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
+            localCosineSimDict[sessQueryID] = cosineSim
+    return localCosineSimDict
+
+def multiThreadedTopKDetection_Deprecated((localCosineSimDict, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
     (loKey, hiKey) = queryPartition
     sessID_lo = int(loKey.split(",")[0])
     sessID_lo_index = sessionDictCurThread.keys().index(sessID_lo)
@@ -323,9 +346,9 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
         pool = multiprocessing.Pool()
         argList = []
         if numQueries >= numSubThreads:
-            queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries)
+            queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries, numSubThreads)
             assert len(queryPartitions) == int(numSubThreads)
-            subThreads = {}
+            #subThreads = {}
             localCosineSimDicts = {}
             for i in range(len(queryPartitions)):
                 localCosineSimDicts[i] = {}
