@@ -673,8 +673,8 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    #executeRNN(configDict)
-    runFromExistingOutput(configDict)
+    executeRNN(configDict)
+    #runFromExistingOutput(configDict)
 
 '''
     for key in keyOrder:
