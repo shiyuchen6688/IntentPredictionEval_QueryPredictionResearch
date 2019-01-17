@@ -381,7 +381,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
     return topKPredictedIntents
 
 
-def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict):
+def predictTopKIntentsPerThread((t_lo, t_hi, keyOrder, modelRNNThread, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)):
     #resList  = list()
     #with graph.as_default():
         #modelRNNThread = keras.models.load_model(modelRNNFileName)
@@ -434,19 +434,26 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         resultDict[i] = list()
     #print "Updated Session Dictionaries for Threads"
     if numThreads == 1:
-        predictTopKIntentsPerThread(lo, hi, keyOrder, modelRNN, resultDict[0], sessionDictsThreads[0], sessionStreamDict,
-                                    sessionLengthDict, max_lookback, configDict)
+        predictTopKIntentsPerThread((lo, hi, keyOrder, modelRNN, resultDict[0], sessionDictsThreads[0], sessionStreamDict,
+                                    sessionLengthDict, max_lookback, configDict))
     else:
+        pool = ThreadPool()
+        argsList = []
         for i in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[i]
             assert i in sessionDictsThreads.keys()
             sessionDictCurThread = sessionDictsThreads[i]
             resList = resultDict[i]
+            argsList.append((t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
             modelRNN._make_predict_function()
-            threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
-            threads[i].start()
-        for i in range(numThreads):
-            threads[i].join()
+            #arg = (t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict)
+            #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(arg))
+            #threads[i].start()
+        #for i in range(numThreads):
+            #threads[i].join()
+        pool.map(predictTopKIntentsPerThread, argsList)
+        pool.close()
+        pool.join()
     return resultDict
 
 def updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal):
@@ -479,12 +486,7 @@ def appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntent
                                                                    outputIntentFileName, configDict, -1)
     return elapsedAppendTime
 
-def updateResultsToExcel(configDict, episodeResponseTime, outputIntentFileName):
-    episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
-        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + \
-                                  configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                                      'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
-    QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
+def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
     accThres = float(configDict['ACCURACY_THRESHOLD'])
     QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
                                   configDict['ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU'])
@@ -559,7 +561,12 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
             resultDict = clear(resultDict)
     # update results to excel sheet
     print "Starting Excel Write after all Episodes: " + str(numEpisodes)
-    updateResultsToExcel(configDict, episodeResponseTime, outputIntentFileName)
+    episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + \
+                                  configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                      'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
+    QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
+    updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
 
 def initRNNSingularity(configDict):
@@ -643,13 +650,31 @@ def executeRNN(configDict):
         runRNNKFoldExp(configDict)
     return
 
+def runFromExistingOutput(configDict):
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + \
+                               configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + \
+                               configDict['INTENT_REP'] + "_" + \
+                               configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                   'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                               configDict['EPISODE_IN_QUERIES']
+        episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
+            'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + \
+                                      configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                          'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                          'EPISODE_IN_QUERIES'] + ".pickle"
+        updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+
+
+
 if __name__ == "__main__":
     #configDict = parseConfig.parseConfigFile("configFile.txt")
     parser = argparse.ArgumentParser()
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    executeRNN(configDict)
+    #executeRNN(configDict)
+    runFromExistingOutput(configDict)
 
 '''
     for key in keyOrder:
