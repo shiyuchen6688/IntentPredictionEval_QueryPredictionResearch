@@ -263,7 +263,7 @@ def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID
         #if len(sessionDictCurThread) == 1 or sessID != curSessID: # we are not going to suggest query intents from the same session unless it is the only session in the dictionary
         numQueries = sessionDictCurThread[sessID]+1
         for queryID in range(numQueries):
-            assert configDict['INCLUDE_CUR_SESSION'] == 'True' or configDict['INCLUDE_CUR_SESSION'] == 'False'
+            assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
             if configDict['INCLUDE_CUR_SESS'] == 'False':
                 expToCheck = (len(sessionDictCurThread) == 1 or sessID != curSessID)
             elif configDict['INCLUDE_CUR_SESS'] == 'True':
