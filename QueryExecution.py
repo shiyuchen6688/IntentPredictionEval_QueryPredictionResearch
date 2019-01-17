@@ -78,10 +78,13 @@ def executeNYCQueryWithIntent(sessQuery, configDict, queryVocabulary):
 def executeMINCQueryWithIntent(sessQuery, configDict, queryVocabulary):
     resObj = None
     startTime = time.time()
+    '''
     cnx = minc_mysql.connectToMySQL(configDict)
     cursor = cnx.cursor()
     cursor.execute(sessQuery)
     queryExecutionTime = float(time.time() - startTime)
+    '''
+    queryExecutionTime = 0.3
     # no need to worry about query vocabulary or resObj here
     # intent creation happens in Java and the avg time per query is a second. To be fairer we can run using Python Java connector later
     intentCreationTime = 1.0
