@@ -352,7 +352,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
             localCosineSimDicts = {}
             for i in range(len(queryPartitions)):
                 localCosineSimDicts[i] = {}
-                #multiThreadedTopKDetection(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict)
+                #multiThreadedTopKDetection((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict))
                 argList.append((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
                 #subThreads[i] = threading.Thread(target=multiThreadedTopKDetection, args=(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
                 #subThreads[i].start()
