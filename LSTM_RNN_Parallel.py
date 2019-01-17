@@ -319,6 +319,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
                                                     sessionStreamDict)
     else:
         numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
+        numSubThreads = min(numSubThreads, numQueries)
         pool = multiprocessing.Pool()
         argList = []
         if numQueries >= numSubThreads:
