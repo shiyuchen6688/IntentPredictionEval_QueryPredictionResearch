@@ -258,21 +258,34 @@ def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries, numSubThr
 
 
 
-def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict):
+def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict):
     for sessID in sessionDictCurThread:
-        if len(sessionDictCurThread) == 1 or sessID != curSessID: # we are not going to suggest query intents from the same session unless it is the only session in the dictionary
-            numQueries = sessionDictCurThread[sessID]+1
-            for queryID in range(numQueries):
+        #if len(sessionDictCurThread) == 1 or sessID != curSessID: # we are not going to suggest query intents from the same session unless it is the only session in the dictionary
+        numQueries = sessionDictCurThread[sessID]+1
+        for queryID in range(numQueries):
+            assert configDict['INCLUDE_CUR_SESSION'] == 'True' or configDict['INCLUDE_CUR_SESSION'] == 'False'
+            if configDict['INCLUDE_CUR_SESS'] == 'False':
+                expToCheck = (len(sessionDictCurThread) == 1 or sessID != curSessID)
+            elif configDict['INCLUDE_CUR_SESS'] == 'True':
+                expToCheck = (sessID != curSessID and queryID != curQueryID)
+            if expToCheck:
                 queryIntent = sessionStreamDict[str(sessID)+","+str(queryID)]
                 cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
                 cosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
     return cosineSimDict
 
-def multiThreadedTopKDetection((threadID, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
+def multiThreadedTopKDetection((threadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)):
     localCosineSimDict = {}
     for sessQueryID in queryPartition:
         sessID = sessQueryID.split(",")[0]
-        if len(sessionDictCurThread) == 1 or sessID != curSessID:
+        queryID = sessQueryID.split(",")[1]
+        assert configDict['INCLUDE_CUR_SESSION'] == 'True' or configDict['INCLUDE_CUR_SESSION'] == 'False'
+        if configDict['INCLUDE_CUR_SESS'] == 'False':
+            expToCheck = (len(sessionDictCurThread) == 1 or sessID != curSessID)
+        elif configDict['INCLUDE_CUR_SESS'] == 'True':
+            expToCheck = (sessID != curSessID and queryID != curQueryID)
+        #if len(sessionDictCurThread) == 1 or sessID != curSessID:
+        if expToCheck:
             queryIntent = sessionStreamDict[sessQueryID]
             cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
             localCosineSimDict[sessQueryID] = cosineSim
@@ -291,8 +304,8 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
     cosineSimDict = {}
     numSubThreads = int(configDict['RNN_SUB_THREADS'])
     if numSubThreads == 1:
-        cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread,
-                                                    sessionStreamDict)
+        cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread,
+                                                    sessionStreamDict, configDict)
     else:
         numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
         numSubThreads = min(numSubThreads, numQueries)
@@ -305,9 +318,9 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
             subThreads = {}
             localCosineSimDicts = {}
             for i in range(len(queryPartitions)):
-                #multiThreadedTopKDetection((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict))
-                argList.append((i, queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
-                #subThreads[i] = multiprocessing.Process(target=multiThreadedTopKDetection, args=(localCosineSimDicts, i, queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
+                #multiThreadedTopKDetection((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread,sessionStreamDict, configDict))
+                argList.append((i, queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
+                #subThreads[i] = multiprocessing.Process(target=multiThreadedTopKDetection, args=(localCosineSimDicts, i, queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
                 #subThreads[i].start()
             #for i in range(numSubThreads):
                 #subThreads[i].join()
@@ -318,7 +331,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
                 localCosineSimDicts[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle")
             cosineSimDict = concatenateLocalDicts(localCosineSimDicts, cosineSimDict)
         else:
-            cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict)
+            cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)
     # sorted_d is a list of lists, not a dictionary. Each list entry has key as 0th entry and value as 1st entry, we need the key
     sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKPredictedIntents = []
