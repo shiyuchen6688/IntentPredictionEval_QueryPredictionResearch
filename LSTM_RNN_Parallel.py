@@ -255,27 +255,7 @@ def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries, numSubThr
             queryPartitions[threadID].append(str(sessID)+","+str(queryID))
     return queryPartitions
 
-def partitionPrevQueriesAmongThreads_Deprecated(sessionDictCurThread, numQueries, numSubThreads):
-    numQueriesPerThread = int(numQueries/numSubThreads)
-    queryPartitions = {}
-    queryCount = 0
-    relCount = 0
-    threadID = 0
-    for sessID in sessionDictCurThread:
-        for queryID in range(sessionDictCurThread[sessID]+1):
-            queryCount += 1
-            relCount+=1
-            remCount = numQueries - queryCount
-            if queryCount == 1 or relCount == 1:
-                p_lo = str(sessID)+","+str(queryID)
-            #if (queryCount % numQueriesPerThread == 0 and remCount < numQueriesPerThread):
-                #print "I am here "
-            if (queryCount % numQueriesPerThread == 0 and remCount >= numQueriesPerThread) or queryCount == numQueries:
-                p_hi = str(sessID)+","+str(queryID)
-                relCount = 0
-                queryPartitions[threadID] = (p_lo, p_hi)
-                threadID += 1
-    return queryPartitions
+
 
 def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict):
     for sessID in sessionDictCurThread:
@@ -296,40 +276,8 @@ def multiThreadedTopKDetection((threadID, queryPartition, predictedY, curSessID,
             cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
             localCosineSimDict[sessQueryID] = cosineSim
     #print localCosineSimDict
-    QR.writeToPickleFile(getConfig(configDict['PICKLE_OUTPUT_TEMP_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
+    QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
     return localCosineSimDict
-
-def multiThreadedTopKDetection_Deprecated((localCosineSimDict, threadID, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
-    (loKey, hiKey) = queryPartition
-    sessID_lo = int(loKey.split(",")[0])
-    sessID_lo_index = sessionDictCurThread.keys().index(sessID_lo)
-    queryID_lo = int(loKey.split(",")[1])
-    sessID_hi = int(hiKey.split(",")[0])
-    sessID_hi_index = sessionDictCurThread.keys().index(sessID_hi)
-    queryID_hi = int(hiKey.split(",")[1])
-    finishFlag = False
-    for index in range(sessID_lo_index, sessID_hi_index+1):
-        sessID = sessionDictCurThread.keys()[index]
-        if len(sessionDictCurThread) == 1 or sessID != curSessID:
-            numQueries = sessionDictCurThread[sessID] + 1
-            queryID_lo_index = 0
-            queryID_hi_index = numQueries-1
-            if sessID == sessID_lo:
-                queryID_lo_index = queryID_lo
-            elif sessID == sessID_hi:
-                queryID_hi_index = queryID_hi
-            for queryID in range(queryID_lo_index, queryID_hi_index+1):
-                queryIntent = sessionStreamDict[str(sessID) + "," + str(queryID)]
-                cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
-                localCosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
-                if sessID == sessID_hi and queryID == queryID_hi:
-                    finishFlag = True
-                    break
-            if finishFlag:
-                break
-    QR.writeToPickleFile(getConfig(configDict['PICKLE_OUTPUT_TEMP_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
-    return localCosineSimDict
-
 
 def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
     for threadID in localCosineSimDicts:
@@ -365,7 +313,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
             pool.close()
             pool.join()
             for threadID in range(len(queryPartitions)):
-                localCosineSimDicts[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_OUTPUT_TEMP_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle")
+                localCosineSimDicts[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle")
             cosineSimDict = concatenateLocalDicts(localCosineSimDicts, cosineSimDict)
         else:
             cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict)
@@ -739,5 +687,58 @@ if __name__ == "__main__":
             #modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/Thread_Model_'+str(i)+'.h5'
         #modelRNN.save(modelRNNFileName, overwrite=True)
         #graph = tf.get_default_graph()
+        
+def partitionPrevQueriesAmongThreads_Deprecated(sessionDictCurThread, numQueries, numSubThreads):
+    numQueriesPerThread = int(numQueries/numSubThreads)
+    queryPartitions = {}
+    queryCount = 0
+    relCount = 0
+    threadID = 0
+    for sessID in sessionDictCurThread:
+        for queryID in range(sessionDictCurThread[sessID]+1):
+            queryCount += 1
+            relCount+=1
+            remCount = numQueries - queryCount
+            if queryCount == 1 or relCount == 1:
+                p_lo = str(sessID)+","+str(queryID)
+            #if (queryCount % numQueriesPerThread == 0 and remCount < numQueriesPerThread):
+                #print "I am here "
+            if (queryCount % numQueriesPerThread == 0 and remCount >= numQueriesPerThread) or queryCount == numQueries:
+                p_hi = str(sessID)+","+str(queryID)
+                relCount = 0
+                queryPartitions[threadID] = (p_lo, p_hi)
+                threadID += 1
+    return queryPartitions
+
+def multiThreadedTopKDetection_Deprecated((localCosineSimDict, threadID, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
+    (loKey, hiKey) = queryPartition
+    sessID_lo = int(loKey.split(",")[0])
+    sessID_lo_index = sessionDictCurThread.keys().index(sessID_lo)
+    queryID_lo = int(loKey.split(",")[1])
+    sessID_hi = int(hiKey.split(",")[0])
+    sessID_hi_index = sessionDictCurThread.keys().index(sessID_hi)
+    queryID_hi = int(hiKey.split(",")[1])
+    finishFlag = False
+    for index in range(sessID_lo_index, sessID_hi_index+1):
+        sessID = sessionDictCurThread.keys()[index]
+        if len(sessionDictCurThread) == 1 or sessID != curSessID:
+            numQueries = sessionDictCurThread[sessID] + 1
+            queryID_lo_index = 0
+            queryID_hi_index = numQueries-1
+            if sessID == sessID_lo:
+                queryID_lo_index = queryID_lo
+            elif sessID == sessID_hi:
+                queryID_hi_index = queryID_hi
+            for queryID in range(queryID_lo_index, queryID_hi_index+1):
+                queryIntent = sessionStreamDict[str(sessID) + "," + str(queryID)]
+                cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
+                localCosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
+                if sessID == sessID_hi and queryID == queryID_hi:
+                    finishFlag = True
+                    break
+            if finishFlag:
+                break
+    QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
+    return localCosineSimDict
 
 '''
