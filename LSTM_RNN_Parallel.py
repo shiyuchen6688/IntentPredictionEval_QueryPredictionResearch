@@ -32,6 +32,7 @@ import threading
 import copy
 import multiprocessing
 from multiprocessing.pool import ThreadPool
+from multiprocessing import Array
 
 
 class ThreadSafeDict(dict) :
@@ -295,6 +296,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
     else:
         numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
         numSubThreads = min(numSubThreads, numQueries)
+        #sharedArr = Array()
         pool = multiprocessing.Pool()
         argList = []
         if numQueries >= numSubThreads:
