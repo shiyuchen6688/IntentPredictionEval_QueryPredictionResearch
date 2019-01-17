@@ -279,7 +279,7 @@ def multiThreadedTopKDetection((threadID, queryPartition, predictedY, curSessID,
     for sessQueryID in queryPartition:
         sessID = sessQueryID.split(",")[0]
         queryID = sessQueryID.split(",")[1]
-        assert configDict['INCLUDE_CUR_SESSION'] == 'True' or configDict['INCLUDE_CUR_SESSION'] == 'False'
+        assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
         if configDict['INCLUDE_CUR_SESS'] == 'False':
             expToCheck = (len(sessionDictCurThread) == 1 or sessID != curSessID)
         elif configDict['INCLUDE_CUR_SESS'] == 'True':
