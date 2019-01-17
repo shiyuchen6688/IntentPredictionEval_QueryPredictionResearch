@@ -294,6 +294,7 @@ def multiThreadedTopKDetection((localCosineSimDict, queryPartition, predictedY, 
             queryIntent = sessionStreamDict[sessQueryID]
             cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
             localCosineSimDict[sessQueryID] = cosineSim
+    print localCosineSimDict
     return localCosineSimDict
 
 def multiThreadedTopKDetection_Deprecated((localCosineSimDict, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
