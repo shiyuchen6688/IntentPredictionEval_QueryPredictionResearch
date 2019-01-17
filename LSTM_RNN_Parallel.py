@@ -287,19 +287,19 @@ def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDic
                 cosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
     return cosineSimDict
 
-def multiThreadedTopKDetection(localCosineSimDicts, i, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict):
-    localCosineSimDict = localCosineSimDicts[i]
+def multiThreadedTopKDetection((threadID, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
+    localCosineSimDict = {}
     for sessQueryID in queryPartition:
         sessID = sessQueryID.split(",")[0]
         if len(sessionDictCurThread) == 1 or sessID != curSessID:
             queryIntent = sessionStreamDict[sessQueryID]
             cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
             localCosineSimDict[sessQueryID] = cosineSim
-    print localCosineSimDict
+    #print localCosineSimDict
+    QR.writeToPickleFile(getConfig(configDict['PICKLE_OUTPUT_TEMP_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
     return localCosineSimDict
 
-def multiThreadedTopKDetection_Deprecated((localCosineSimDicts, i, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
-    localCosineSimDict = localCosineSimDicts[i]
+def multiThreadedTopKDetection_Deprecated((localCosineSimDict, threadID, queryPartition, predictedY, curSessID, sessionDictCurThread, sessionStreamDict)):
     (loKey, hiKey) = queryPartition
     sessID_lo = int(loKey.split(",")[0])
     sessID_lo_index = sessionDictCurThread.keys().index(sessID_lo)
@@ -327,6 +327,7 @@ def multiThreadedTopKDetection_Deprecated((localCosineSimDicts, i, queryPartitio
                     break
             if finishFlag:
                 break
+    QR.writeToPickleFile(getConfig(configDict['PICKLE_OUTPUT_TEMP_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
     return localCosineSimDict
 
 
@@ -346,24 +347,25 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
     else:
         numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
         numSubThreads = min(numSubThreads, numQueries)
-        #pool = multiprocessing.Pool()
-        #argList = []
+        pool = multiprocessing.Pool()
+        argList = []
         if numQueries >= numSubThreads:
             queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries, numSubThreads)
             assert len(queryPartitions) == int(numSubThreads)
             subThreads = {}
             localCosineSimDicts = {}
             for i in range(len(queryPartitions)):
-                localCosineSimDicts[i] = {}
-                #multiThreadedTopKDetection(localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict)
-                #argList.append((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
-                subThreads[i] = multiprocessing.Process(target=multiThreadedTopKDetection, args=(localCosineSimDicts, i, queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
-                subThreads[i].start()
-            for i in range(numSubThreads):
-                subThreads[i].join()
-            #pool.map(multiThreadedTopKDetection, argList)
-            #pool.close()
-            #pool.join()
+                #multiThreadedTopKDetection((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, sessionDictCurThread,sessionStreamDict))
+                argList.append((i, queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
+                #subThreads[i] = multiprocessing.Process(target=multiThreadedTopKDetection, args=(localCosineSimDicts, i, queryPartitions[i], predictedY, curSessID, sessionDictCurThread, sessionStreamDict))
+                #subThreads[i].start()
+            #for i in range(numSubThreads):
+                #subThreads[i].join()
+            pool.map(multiThreadedTopKDetection, argList)
+            pool.close()
+            pool.join()
+            for threadID in range(len(queryPartitions)):
+                localCosineSimDicts[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_OUTPUT_TEMP_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle")
             cosineSimDict = concatenateLocalDicts(localCosineSimDicts, cosineSimDict)
         else:
             cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, sessionDictCurThread, sessionStreamDict)
