@@ -640,8 +640,11 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    executeRNN(configDict)
-    #runFromExistingOutput(configDict)
+    assert configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True' or configDict['RUN_FROM_EXISTING_OUTPUT'] =='False'
+    if configDict['RUN_FROM_EXISTING_OUTPUT'] == 'False':
+        executeRNN(configDict)
+    elif configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True':
+        runFromExistingOutput(configDict)
 
 '''
     for key in keyOrder:
