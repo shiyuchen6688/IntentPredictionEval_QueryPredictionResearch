@@ -141,12 +141,13 @@ def deleteIfExists(fileName):
         pass
     return
 
-def updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime):
+def updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime):
     episodeResponseTime[numEpisodes] = float(time.time()-startEpisode) - elapsedAppendTime # we exclude the time consumed by appending predicted intents to the output intent file
     print "Episode Response Time: "+str(episodeResponseTime[numEpisodes])
     elapsedAppendTime = 0.0
+    writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     startEpisode = time.time()
-    return (episodeResponseTime, startEpisode, elapsedAppendTime)
+    return (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime)
 
 def createQueryExecIntentCreationTimes(configDict):
     assert configDict['DATASET'] == 'NYCTaxitrips' or configDict['DATASET'] == 'MINC'

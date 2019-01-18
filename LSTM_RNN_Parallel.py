@@ -490,11 +490,10 @@ def clear(resultDict):
         del resultDict[resKey]
     return resultDict
 
-def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
+def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
     batchSize = int(configDict['EPISODE_IN_QUERIES'])
     lo = 0
     hi = -1
-    resultDict = {}
     while hi<len(keyOrder)-1:
         lo = hi+1
         if len(keyOrder) - lo < batchSize:
@@ -524,15 +523,8 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
         numEpisodes += 1
         if len(resultDict)> 0:
             elapsedAppendTime = appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict)
-            (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+            (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = clear(resultDict)
-    # update results to excel sheet
-    print "Starting Excel Write after all Episodes: " + str(numEpisodes)
-    episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
-        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + \
-                                  configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                                      'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
-    QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
 
@@ -541,9 +533,13 @@ def initRNNSingularity(configDict):
     numEpisodes = 0
     queryKeysSetAside = []
     episodeResponseTime = {}
-    resultDict = None
+    resultDict = {}
     sessionDictGlobal = {} # one global session dictionary updated after all the threads have finished execution
     sessionDictsThreads = {} # one session dictionary per thread
+    episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + \
+                                  configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                      'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + \
                            configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + \
                            configDict['INTENT_REP'] + "_" + \
@@ -566,14 +562,14 @@ def initRNNSingularity(configDict):
     startEpisode = time.time()
     predictedY = None
     modelRNN = None
-    return (queryKeysSetAside, numEpisodes, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
+    return (queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
 
 
 def runRNNSingularityExp(configDict):
-    (queryKeysSetAside, numEpisodes, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict,
+    (queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict,
      sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY) = initRNNSingularity(configDict)
     max_lookback = 0
-    trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
+    trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
 
