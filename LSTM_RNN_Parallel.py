@@ -124,7 +124,13 @@ def appendTrainingXY(sessionStreamDict, sessID, queryID, configDict, dataX, data
         sessIntentList.append(sessionStreamDict[str(sessID)+","+str(qid)])
     numQueries = len(sessIntentList)
     xList = []
-    for i in range(numQueries-1):
+
+    sessionMaxLastK = int(configDict['RNN_SESS_VEC_MAX_LAST_K'])
+    assert sessionMaxLastK > 0
+    if numQueries < sessionMaxLastK:
+        sessionMaxLastK = numQueries
+    queryStartIndex = numQueries - 1 - sessionMaxLastK
+    for i in range(queryStartIndex, numQueries-1):
         prevIntent = sessIntentList[i]
         intentStrList = createCharListFromIntent(prevIntent, configDict)
         xList.append(intentStrList)
@@ -182,7 +188,11 @@ def predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_l
     # predicts the next query to the query indexed by queryID in the sessID session
     numQueries = queryID + 1
     testX = []
-    for i in range(numQueries):
+    sessionMaxLastK = int(configDict['RNN_SESS_VEC_MAX_LAST_K'])
+    assert sessionMaxLastK > 0
+
+    startQueryIndex = numQueries - sessionMaxLastK
+    for i in range(startQueryIndex, numQueries):
         curSessQueryID = str(sessID) + "," + str(queryID)
         curSessIntent = sessionStreamDict[curSessQueryID]
         intentStrList = createCharListFromIntent(curSessIntent, configDict)
@@ -458,15 +468,12 @@ def appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntent
 
 def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
     accThres = float(configDict['ACCURACY_THRESHOLD'])
-    '''
     
     QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
                                   configDict['ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU'])
     print "--Completed Quality Evaluation for accThres:" + str(accThres)
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
                                configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"])
-  
-    '''
 
     outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + configDict[
         'ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
@@ -478,7 +485,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
                              'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + "_" + configDict[
                              'RNN_INCREMENTAL_OR_FULL_TRAIN'] + ".xlsx"
     ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
-    '''
+
     outputEvalTimeFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalTimeShortTermIntent_" + configDict[
         'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
                                  'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
@@ -488,8 +495,6 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
                               'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                           configDict['EPISODE_IN_QUERIES'] + "_" + configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] + ".xlsx"
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
-
-    '''
 
     print "--Completed Quality and Time Evaluation--"
     return
