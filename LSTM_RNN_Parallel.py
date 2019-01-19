@@ -71,7 +71,7 @@ def perform_input_padding(x_train):
     x_train = pad_sequences(x_train, maxlen = max_lookback, padding='pre')
     return (x_train, max_lookback)
 
-def updateRNNIncrementalTrain(modelRNN, max_lookback, x_train, y_train, configDict):
+def updateRNNIncrementalTrain_Backup(modelRNN, max_lookback, x_train, y_train, configDict):
     (x_train, max_lookback_this) = perform_input_padding(x_train)
     for i in range(len(x_train)):
         sample_input = np.array(x_train[i])
@@ -82,7 +82,7 @@ def updateRNNIncrementalTrain(modelRNN, max_lookback, x_train, y_train, configDi
         max_lookback = max_lookback_this
     return (modelRNN,max_lookback)
 
-def updateRNNIncrementalTrain_Backup(modelRNN, max_lookback, x_train, y_train, configDict):
+def updateRNNIncrementalTrain(modelRNN, max_lookback, x_train, y_train, configDict):
     (x_train, max_lookback_this) = perform_input_padding(x_train)
     y_train = np.array(y_train)
     modelRNN.fit(x_train, y_train, epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']), batch_size=len(x_train))
