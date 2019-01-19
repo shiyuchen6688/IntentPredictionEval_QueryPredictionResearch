@@ -312,6 +312,9 @@ def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
             cosineSimDict[sessQueryID] = localCosineSimDicts[threadID][sessQueryID]
     return cosineSimDict
 
+### -- define computePredictedIntentsRNNSample() -- ###
+#def computePredictedIntentsRNNSample(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
+
 
 def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
     cosineSimDict = {}
