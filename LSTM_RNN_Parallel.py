@@ -283,7 +283,7 @@ def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID
                 expToCheck = (sessID != curSessID and queryID != curQueryID)
             if expToCheck:
                 queryIntent = sessionStreamDict[str(sessID)+","+str(queryID)]
-                cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
+                cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
                 cosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
     return cosineSimDict
 
@@ -300,7 +300,7 @@ def multiThreadedTopKDetection((threadID, queryPartition, predictedY, curSessID,
         #if len(sessionDictCurThread) == 1 or sessID != curSessID:
         if expToCheck:
             queryIntent = sessionStreamDict[sessQueryID]
-            cosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, queryIntent, configDict)
+            cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
             localCosineSimDict[sessQueryID] = cosineSim
     #print localCosineSimDict
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
