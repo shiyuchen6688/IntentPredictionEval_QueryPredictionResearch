@@ -98,18 +98,17 @@ def computeBitCosineSimilarity(curSessionSummary, oldSessionSummary):
     return cosineSim
 
 def computeListBitCosineSimilarityPredictOnlyOptimized(predSessSummary, oldSessionSummary, configDict):
-    if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
-        assert(len(predSessSummary))==oldSessionSummary.size()
-    idealSize = min(len(predSessSummary), oldSessionSummary.size())
+    #if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
+        #assert(len(predSessSummary))==oldSessionSummary.size()
+    #idealSize = min(len(predSessSummary), oldSessionSummary.size())
     numerator = 0.0
     #No need to compute L2-norm for predSess because it is the same for all vectors being compared
     for i in oldSessionSummary.nonzero():
-        assert oldSessionSummary.test(i)
-        predSessDim = predSessSummary[i]
-        numerator += float(predSessDim)
-    if oldSessionSummary.count() == 0:
-        print "L2NormSquares cannot be zero !!"
-        sys.exit(0)
+        #assert oldSessionSummary.test(i)
+        numerator += float(predSessSummary[i])
+    #if oldSessionSummary.count() == 0:
+        #print "L2NormSquares cannot be zero !!"
+        #sys.exit(0)
     cosineSim = numerator / math.sqrt(oldSessionSummary.count())
     return cosineSim
 
