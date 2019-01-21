@@ -102,8 +102,9 @@ def computeListBitCosineSimilarityPredictOnlyOptimized(predSessSummary, oldSessi
         #assert(len(predSessSummary))==oldSessionSummary.size()
     #idealSize = min(len(predSessSummary), oldSessionSummary.size())
     numerator = 0.0
+    setDims = oldSessionSummary.nonzero()
     #No need to compute L2-norm for predSess because it is the same for all vectors being compared
-    for i in oldSessionSummary.nonzero():
+    for i in setDims:
         #assert oldSessionSummary.test(i)
         numerator += float(predSessSummary[i])
     #if oldSessionSummary.count() == 0:
