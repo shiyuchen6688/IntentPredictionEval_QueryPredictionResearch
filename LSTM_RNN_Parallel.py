@@ -321,26 +321,26 @@ def singleThreadedTopKDetectionFull(predictedY, cosineSimDict, curSessID, curQue
     return cosineSimDict
 
 
-def multiThreadedTopKDetection((threadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)):
+def multiThreadedTopKDetection((threadID, subThreadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)):
     assert configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'SAMPLE' or configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL'
     if configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL':
-        return multiThreadedTopKDetectionFull((threadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
+        return multiThreadedTopKDetectionFull((threadID, subThreadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
     else:
-        return multiThreadedTopKDetectionSample((threadID, queryPartition, predictedY, sessionStreamDict, configDict))
+        return multiThreadedTopKDetectionSample((threadID, subThreadID, queryPartition, predictedY, sessionStreamDict, configDict))
 
 
-def multiThreadedTopKDetectionSample((threadID, queryPartition, predictedY, sessionStreamDict, configDict)):
+def multiThreadedTopKDetectionSample((threadID, subThreadID, queryPartition, predictedY, sessionStreamDict, configDict)):
     localCosineSimDict = {}
     for sessQueryID in queryPartition:
         queryIntent = sessionStreamDict[sessQueryID]
         cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
         localCosineSimDict[sessQueryID] = cosineSim
     #print localCosineSimDict
-    QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
+    QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+"_"+str(subThreadID)+".pickle",localCosineSimDict)
     return localCosineSimDict
 
 
-def multiThreadedTopKDetectionFull((threadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)):
+def multiThreadedTopKDetectionFull((threadID, subThreadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)):
     localCosineSimDict = {}
     for sessQueryID in queryPartition:
         sessID = sessQueryID.split(",")[0]
@@ -356,17 +356,17 @@ def multiThreadedTopKDetectionFull((threadID, queryPartition, predictedY, curSes
             cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
             localCosineSimDict[sessQueryID] = cosineSim
     #print localCosineSimDict
-    QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
+    QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+"_"+str(subThreadID)+".pickle",localCosineSimDict)
     return localCosineSimDict
 
 def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
-    for threadID in localCosineSimDicts:
-        for sessQueryID in localCosineSimDicts[threadID]:
-            cosineSimDict[sessQueryID] = localCosineSimDicts[threadID][sessQueryID]
+    for subThreadID in localCosineSimDicts:
+        for sessQueryID in localCosineSimDicts[subThreadID]:
+            cosineSimDict[sessQueryID] = localCosineSimDicts[subThreadID][sessQueryID]
     return cosineSimDict
 
 
-def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
+def computePredictedIntentsRNN(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
     cosineSimDict = {}
     numSubThreads = int(configDict['RNN_SUB_THREADS'])
     if numSubThreads == 1:
@@ -384,7 +384,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
             localCosineSimDicts = {}
             for i in range(len(queryPartitions)):
                 #multiThreadedTopKDetection((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread,sessionStreamDict, configDict))
-                argList.append((i, queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
+                argList.append((threadID, i, queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
                 #subThreads[i] = multiprocessing.Process(target=multiThreadedTopKDetection, args=(localCosineSimDicts, i, queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
                 #subThreads[i].start()
             #for i in range(numSubThreads):
@@ -392,8 +392,8 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
             pool.map(multiThreadedTopKDetection, argList)
             pool.close()
             pool.join()
-            for threadID in range(len(queryPartitions)):
-                localCosineSimDicts[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle")
+            for subThreadID in range(len(queryPartitions)):
+                localCosineSimDicts[subThreadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+"_"+str(subThreadID)+".pickle")
             cosineSimDict = concatenateLocalDicts(localCosineSimDicts, cosineSimDict)
         else:
             cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, configDict)
@@ -414,7 +414,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
     return topKPredictedIntents
 
 
-def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, sessionLengthDict, max_lookback, configDict):
+def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, modelRNNThread, resList, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, sessionLengthDict, max_lookback, configDict):
     #resList  = list()
     #with graph.as_default():
         #modelRNNThread = keras.models.load_model(modelRNNFileName)
@@ -429,7 +429,7 @@ def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, s
             #print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
             actual_vector = np.array(nextIntentList).astype(np.int)
             if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict, sessID, queryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
+                topKPredictedIntents = computePredictedIntentsRNN(threadID, predictedY, configDict, sessID, queryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             resList.append((sessID, queryID, topKPredictedIntents, nextQueryIntent))
@@ -467,8 +467,8 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sampledQue
         resultDict[i] = list()
     #print "Updated Session Dictionaries for Threads"
     if numThreads == 1:
-        predictTopKIntentsPerThread(lo, hi, keyOrder, modelRNN, resultDict[0], sessionDictsThreads[0], sampledQueryHistory, sessionStreamDict,
-                                    sessionLengthDict, max_lookback, configDict)
+        predictTopKIntentsPerThread(0, lo, hi, keyOrder, modelRNN, resultDict[0], sessionDictsThreads[0], sampledQueryHistory, sessionStreamDict,
+                                    sessionLengthDict, max_lookback, configDict) # 0 is the threadID
     else:
         #pool = ThreadPool()
         #argsList = []
@@ -479,7 +479,7 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sampledQue
             resList = resultDict[i]
             #argsList.append((t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
             modelRNN._make_predict_function()
-            threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
+            threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
             threads[i].start()
         for i in range(numThreads):
             threads[i].join()
@@ -557,8 +557,8 @@ def clear(resultDict):
         del resultDict[resKey]
     return resultDict
 
-def findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, queryKeysSetAside):
-    for oldSessQueryID in queryKeysSetAside:
+def findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, distinctQueries):
+    for oldSessQueryID in distinctQueries:
         if sessionStreamDict[oldSessQueryID].tostring() == sessionStreamDict[sessQueryID].tostring():
             return "True"
     for oldSessQueryID in sampledQueryHistory:
@@ -569,9 +569,9 @@ def findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, query
 def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside, sessionStreamDict):
     distinctQueries = []
     for sessQueryID in queryKeysSetAside:
-        if findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, queryKeysSetAside) == "False":
+        if findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, distinctQueries) == "False":
             distinctQueries.append(sessQueryID)
-    # employ unfiorm sampling for repeatability on the same dataset
+    # employ uniform sampling for repeatability on the same dataset
     sampleFrac = float(configDict['RNN_SAMPLING_FRACTION'])
     count = int(len(distinctQueries) * sampleFrac)
     if count == 0:
@@ -580,6 +580,7 @@ def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside
     while curIndex < len(distinctQueries):
         sampledQueryHistory.add(distinctQueries[curIndex])
         curIndex += count
+    print "len(distinctQueries): "+str(len(distinctQueries))+", len(sampledQueryHistory): "+str(len(sampledQueryHistory))
     return sampledQueryHistory
 
 
@@ -646,7 +647,8 @@ def initRNNSingularity(configDict):
     except OSError:
         pass
     numQueries = 0
-    sessionStreamDict = multiprocessing.Manager().dict()
+    manager = multiprocessing.Manager()
+    sessionStreamDict = manager.dict()
     keyOrder = []
     with open(intentSessionFile) as f:
         for line in f:
