@@ -263,12 +263,12 @@ def partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, 
     else:
         return partitionPrevQueriesAmongThreadsSample(sampledQueryHistory, numSubThreads)
 
-def partitionPrevQueriesAmongThreadsSample(sammpledQueryHistory, numSubThreads):
+def partitionPrevQueriesAmongThreadsSample(sampledQueryHistory, numSubThreads):
     queryPartitions = {}
     for i in range(numSubThreads):
         queryPartitions[i] = []
     queryCount = 0
-    for sessQueryID in sammpledQueryHistory:
+    for sessQueryID in sampledQueryHistory:
         queryCount += 1
         threadID = queryCount % numSubThreads
         queryPartitions[threadID].append(sessQueryID)
