@@ -255,7 +255,27 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
-def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries, numSubThreads):
+def partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, numQueries, numSubThreads):
+    assert configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'SAMPLE' or configDict[
+                                                                             'RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL'
+    if configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL':
+        return partitionPrevQueriesAmongThreadsFull(sessionDictCurThread, numQueries, numSubThreads)
+    else:
+        return partitionPrevQueriesAmongThreadsSample(sampledQueryHistory, numSubThreads)
+
+def partitionPrevQueriesAmongThreadsSample(sammpledQueryHistory, numSubThreads):
+    queryPartitions = {}
+    for i in range(numSubThreads):
+        queryPartitions[i] = []
+    queryCount = 0
+    for sessQueryID in sammpledQueryHistory:
+        queryCount += 1
+        threadID = queryCount % numSubThreads
+        queryPartitions[threadID].append(sessQueryID)
+    return queryPartitions
+
+
+def partitionPrevQueriesAmongThreadsFull(sessionDictCurThread, numQueries, numSubThreads):
     numQueriesPerThread = int(numQueries/numSubThreads)
     #round robin assignment of queries to threads
     queryPartitions = {}
@@ -270,8 +290,21 @@ def partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries, numSubThr
     return queryPartitions
 
 
+def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, configDict):
+    assert configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'SAMPLE' or configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL'
+    if configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] =='FULL':
+        return singleThreadedTopKDetectionFull(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread,
+                                            sessionStreamDict, configDict)
+    else:
+        for sessQueryID in sampledQueryHistory:
+            queryIntent = sessionStreamDict[sessQueryID]
+            cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent,
+                                                                                       configDict)
+            cosineSimDict[sessQueryID] = cosineSim
+        return cosineSimDict
 
-def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict):
+
+def singleThreadedTopKDetectionFull(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict):
     for sessID in sessionDictCurThread:
         #if len(sessionDictCurThread) == 1 or sessID != curSessID: # we are not going to suggest query intents from the same session unless it is the only session in the dictionary
         numQueries = sessionDictCurThread[sessID]+1
@@ -287,7 +320,27 @@ def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID
                 cosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
     return cosineSimDict
 
+
 def multiThreadedTopKDetection((threadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)):
+    assert configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'SAMPLE' or configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL'
+    if configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL':
+        return multiThreadedTopKDetectionFull((threadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
+    else:
+        return multiThreadedTopKDetectionSample((threadID, queryPartition, predictedY, sessionStreamDict, configDict))
+
+
+def multiThreadedTopKDetectionSample((threadID, queryPartition, predictedY, sessionStreamDict, configDict)):
+    localCosineSimDict = {}
+    for sessQueryID in queryPartition:
+        queryIntent = sessionStreamDict[sessQueryID]
+        cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
+        localCosineSimDict[sessQueryID] = cosineSim
+    #print localCosineSimDict
+    QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
+    return localCosineSimDict
+
+
+def multiThreadedTopKDetectionFull((threadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)):
     localCosineSimDict = {}
     for sessQueryID in queryPartition:
         sessID = sessQueryID.split(",")[0]
@@ -312,16 +365,12 @@ def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
             cosineSimDict[sessQueryID] = localCosineSimDicts[threadID][sessQueryID]
     return cosineSimDict
 
-### -- define computePredictedIntentsRNNSample() -- ###
-#def computePredictedIntentsRNNSample(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
 
-
-def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
+def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
     cosineSimDict = {}
     numSubThreads = int(configDict['RNN_SUB_THREADS'])
     if numSubThreads == 1:
-        cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread,
-                                                    sessionStreamDict, configDict)
+        cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, configDict)
     else:
         numQueries = sum(sessionDictCurThread.values())+len(sessionDictCurThread) # sum of all latest query Ids + 1 per query session to turn it into count
         numSubThreads = min(numSubThreads, numQueries)
@@ -329,7 +378,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
         pool = multiprocessing.Pool()
         argList = []
         if numQueries >= numSubThreads:
-            queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, numQueries, numSubThreads)
+            queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, numQueries, numSubThreads)
             assert len(queryPartitions) == int(numSubThreads)
             subThreads = {}
             localCosineSimDicts = {}
@@ -347,7 +396,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
                 localCosineSimDicts[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle")
             cosineSimDict = concatenateLocalDicts(localCosineSimDicts, cosineSimDict)
         else:
-            cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)
+            cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, configDict)
     # sorted_d is a list of lists, not a dictionary. Each list entry has key as 0th entry and value as 1st entry, we need the key
     sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKPredictedIntents = []
@@ -365,7 +414,7 @@ def computePredictedIntentsRNN(predictedY, configDict, curSessID, curQueryID, se
     return topKPredictedIntents
 
 
-def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict):
+def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, sessionLengthDict, max_lookback, configDict):
     #resList  = list()
     #with graph.as_default():
         #modelRNNThread = keras.models.load_model(modelRNNFileName)
@@ -380,7 +429,7 @@ def predictTopKIntentsPerThread(t_lo, t_hi, keyOrder, modelRNNThread, resList, s
             #print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
             actual_vector = np.array(nextIntentList).astype(np.int)
             if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict, sessID, queryID, sessionDictCurThread, sessionStreamDict)
+                topKPredictedIntents = computePredictedIntentsRNN(predictedY, configDict, sessID, queryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             resList.append((sessID, queryID, topKPredictedIntents, nextQueryIntent))
@@ -401,7 +450,7 @@ def updateSessionDictsThreads(threadID, sessionDictsThreads, t_lo, t_hi, keyOrde
         sessionDictsThreads[i].update(sessionDictCurThread)
     return sessionDictsThreads
 
-def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
+def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
     numThreads = int(configDict['RNN_THREADS'])
     numKeysPerThread = int(float(hi-lo+1)/float(numThreads))
     threads = {}
@@ -418,7 +467,7 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
         resultDict[i] = list()
     #print "Updated Session Dictionaries for Threads"
     if numThreads == 1:
-        predictTopKIntentsPerThread(lo, hi, keyOrder, modelRNN, resultDict[0], sessionDictsThreads[0], sessionStreamDict,
+        predictTopKIntentsPerThread(lo, hi, keyOrder, modelRNN, resultDict[0], sessionDictsThreads[0], sampledQueryHistory, sessionStreamDict,
                                     sessionLengthDict, max_lookback, configDict)
     else:
         #pool = ThreadPool()
@@ -430,7 +479,7 @@ def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStr
             resList = resultDict[i]
             #argsList.append((t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
             modelRNN._make_predict_function()
-            threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
+            threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
             threads[i].start()
         for i in range(numThreads):
             threads[i].join()
@@ -508,7 +557,33 @@ def clear(resultDict):
         del resultDict[resKey]
     return resultDict
 
-def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
+def findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, queryKeysSetAside):
+    for oldSessQueryID in queryKeysSetAside:
+        if sessionStreamDict[oldSessQueryID].tostring() == sessionStreamDict[sessQueryID].tostring():
+            return "True"
+    for oldSessQueryID in sampledQueryHistory:
+        if sessionStreamDict[oldSessQueryID].tostring() == sessionStreamDict[sessQueryID].tostring():
+            return "True"
+    return "False"
+
+def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside, sessionStreamDict):
+    distinctQueries = []
+    for sessQueryID in queryKeysSetAside:
+        if findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, queryKeysSetAside) == "False":
+            distinctQueries.append(sessQueryID)
+    # employ unfiorm sampling for repeatability on the same dataset
+    sampleFrac = float(configDict['RNN_SAMPLING_FRACTION'])
+    count = int(len(distinctQueries) * sampleFrac)
+    if count == 0:
+        count = len(distinctQueries)
+    curIndex = 0
+    while curIndex < len(distinctQueries):
+        sampledQueryHistory.add(distinctQueries[curIndex])
+        curIndex += count
+    return sampledQueryHistory
+
+
+def trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
     batchSize = int(configDict['EPISODE_IN_QUERIES'])
     lo = 0
     hi = -1
@@ -523,11 +598,12 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
         print "Starting prediction in Episode "+str(numEpisodes)+", lo: "+str(lo)+", hi: "+str(hi)+", len(keyOrder): "+str(len(keyOrder))
         if modelRNN is not None:
             sessionDictsThreads = copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict)
-            resultDict = predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
+            resultDict = predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
 
         print "Starting training in Episode " + str(numEpisodes)
         # update SessionDictGlobal and train with the new batch
         (sessionDictGlobal, queryKeysSetAside) = updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal)
+        sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside, sessionStreamDict)
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal,
                                                                         modelRNN, sessionStreamDict)
         assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
@@ -548,6 +624,7 @@ def trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, e
 
 def initRNNSingularity(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
+    sampledQueryHistory = set() # it is a set
     numEpisodes = 0
     queryKeysSetAside = []
     episodeResponseTime = {}
@@ -580,14 +657,14 @@ def initRNNSingularity(configDict):
     startEpisode = time.time()
     predictedY = None
     modelRNN = None
-    return (queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
+    return (sampledQueryHistory, queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
 
 
 def runRNNSingularityExp(configDict):
-    (queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict,
+    (sampledQueryHistory, queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict,
      sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY) = initRNNSingularity(configDict)
     max_lookback = 0
-    trainTestBatchWise(keyOrder, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
+    trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
 
