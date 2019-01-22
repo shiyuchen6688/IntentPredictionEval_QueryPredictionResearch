@@ -646,7 +646,7 @@ def initRNNSingularity(configDict):
     except OSError:
         pass
     numQueries = 0
-    sessionStreamDict = {}
+    sessionStreamDict = multiprocessing.Manager().dict()
     keyOrder = []
     with open(intentSessionFile) as f:
         for line in f:
