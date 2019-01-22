@@ -382,9 +382,9 @@ def computePredictedIntentsRNN(threadID, predictedY, configDict, curSessID, curQ
             assert len(queryPartitions) == int(numSubThreads)
             subThreads = {}
             localCosineSimDicts = {}
-            for i in range(len(queryPartitions)):
+            for subThreadID in range(len(queryPartitions)):
                 #multiThreadedTopKDetection((localCosineSimDicts[i], queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread,sessionStreamDict, configDict))
-                argList.append((threadID, i, queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
+                argList.append((threadID, subThreadID, queryPartitions[subThreadID], predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
                 #subThreads[i] = multiprocessing.Process(target=multiThreadedTopKDetection, args=(localCosineSimDicts, i, queryPartitions[i], predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
                 #subThreads[i].start()
             #for i in range(numSubThreads):
