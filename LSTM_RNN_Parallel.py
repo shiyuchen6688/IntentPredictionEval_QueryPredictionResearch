@@ -577,8 +577,10 @@ def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside
     # employ uniform sampling for repeatability on the same dataset
     sampleFrac = float(configDict['RNN_SAMPLING_FRACTION'])
     count = int(float(configDict['EPISODE_IN_QUERIES']) * sampleFrac)
-    if len(distinctQueries) < count or count == 0:
+    if len(distinctQueries) < count:
         count = len(distinctQueries)
+    if count == 0:
+        count = 1
     if count > 0:
         batchSize = int(len(distinctQueries) / count)
         if batchSize == 0:
