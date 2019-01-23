@@ -579,10 +579,16 @@ def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside
     count = int(float(configDict['EPISODE_IN_QUERIES']) * sampleFrac)
     if len(distinctQueries) < count or count == 0:
         count = len(distinctQueries)
-    curIndex = 0
-    while curIndex < len(distinctQueries):
-        sampledQueryHistory.add(distinctQueries[curIndex])
-        curIndex += count
+    if count > 0:
+        batchSize = int(len(distinctQueries) / count)
+        if batchSize == 0:
+            batchSize = 1
+        curIndex = 0
+        covered = 0
+        while covered < count and curIndex < len(distinctQueries):
+            sampledQueryHistory.add(distinctQueries[curIndex])
+            curIndex += batchSize
+            covered += 1
     print "len(distinctQueries): "+str(len(distinctQueries))+", len(sampledQueryHistory): "+str(len(sampledQueryHistory))
     return sampledQueryHistory
 
