@@ -164,14 +164,6 @@ def countCols(fileName):
             count += len(line.split(":")[1].split(","))
     return count
 
-def countJoinPreds(fileName):
-    count = 0
-    with open(fileName) as f:
-        for line in f:
-            if ", " in line:
-                count += len(line.split(":")[1].split(", "))
-    return count
-
 def countJoinPredsFromBitPos(fileName):
     count = 0
     with open(fileName) as f:
@@ -183,11 +175,8 @@ def countJoinPredsFromBitPos(fileName):
 def printStats(configDict):
     print "# Tables: "+str(countTables(getConfig(configDict['MINC_TABLES'])))
     print "# Columns: "+str(countCols(getConfig(configDict['MINC_COLS'])))
-    joinPredCount = countJoinPreds(getConfig(configDict['MINC_JOIN_PREDS']))
-    print "# JoinPreds: "+str(joinPredCount)
     joinPredCountFromBitPos = countJoinPredsFromBitPos(getConfig(configDict['MINC_JOIN_PRED_BIT_POS']))
     print "# JoinPreds from bit positions: "+str(joinPredCountFromBitPos)
-    assert joinPredCount == joinPredCountFromBitPos
 
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
