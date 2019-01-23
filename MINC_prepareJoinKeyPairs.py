@@ -168,7 +168,8 @@ def countJoinPreds(fileName):
     count = 0
     with open(fileName) as f:
         for line in f:
-            count += len(line.split(":")[1].split(", "))
+            if ", " in line:
+                count += len(line.split(":")[1].split(", "))
     return count
 
 def countJoinPredsFromBitPos(fileName):
