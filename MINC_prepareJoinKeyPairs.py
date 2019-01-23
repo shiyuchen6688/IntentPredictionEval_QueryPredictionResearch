@@ -150,6 +150,45 @@ def fetchSchema(configDict):
     writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict, configDict)
     return (tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict)
 
+def countTables(fileName):
+    count = 0
+    with open(fileName) as f:
+        for line in f:
+            count+=1
+    return count
+
+def countCols(fileName):
+    count = 0
+    with open(fileName) as f:
+        for line in f:
+            count += len(line.split(":")[1].split(","))
+    return count
+
+def countJoinPreds(fileName):
+    count = 0
+    with open(fileName) as f:
+        for line in f:
+            count += len(line.split(":")[1].split(", "))
+    return count
+
+def countJoinPredsFromBitPos(fileName):
+    count = 0
+    with open(fileName) as f:
+        for line in f:
+            startEndPos = line.split(":")[1].split(",")
+            count += int(startEndPos[1]) - int(startEndPos[0]) + 1
+    return count
+
+def printStats(configDict):
+    print "# Tables: "+str(countTables(getConfig(configDict['MINC_TABLES'])))
+    print "# Columns: "+str(countCols(getConfig(configDict['MINC_COLS'])))
+    joinPredCount = countJoinPreds(getConfig(configDict['MINC_JOIN_PREDS']))
+    print "# JoinPreds: "+str(joinPredCount)
+    joinPredCountFromBitPos = countJoinPredsFromBitPos(getConfig(configDict['MINC_JOIN_PRED_BIT_POS']))
+    print "# JoinPreds from bit positions: "+str(joinPredCountFromBitPos)
+    assert joinPredCount == joinPredCountFromBitPos
+
 if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
-    (tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict) = fetchSchema(configDict)
+    #(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict) = fetchSchema(configDict)
+    printStats(configDict)
