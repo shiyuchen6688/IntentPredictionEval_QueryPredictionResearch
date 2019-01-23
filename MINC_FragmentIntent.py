@@ -36,7 +36,7 @@ def concatenateSeqIntentVectorFiles(configDict):
                     sessionQueryDict[sessID] = []
                 sessionQueryDict[sessID].append(line)
                 queryCount +=1
-                if queryCount >10000:
+                if queryCount >30000:
                     break
                 if queryCount % 10000 == 0:
                     print ("Query count so far: "+str(queryCount))
