@@ -763,7 +763,7 @@ def runFromExistingOutput(configDict):
                                configDict['INTENT_REP'] + "_" + \
                                configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                    'TOP_K'] + "_EPISODE_IN_QUERIES_" + \
-                               configDict['EPISODE_IN_QUERIES']
+                               configDict['EPISODE_IN_QUERIES']+"_copy"
         episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
             'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + \
                                       configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
