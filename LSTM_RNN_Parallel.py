@@ -808,7 +808,7 @@ if __name__ == "__main__":
     if configDict['RUN_FROM_EXISTING_OUTPUT'] == 'False':
         executeRNN(configDict)
     elif configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True':
-        runFromExistingOutput(configDict)
+        runFromExistingOutputInBetween(configDict)
 
 '''
     for key in keyOrder:
