@@ -33,6 +33,7 @@ import copy
 import multiprocessing
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
+import ReverseEnggQueries
 
 
 class ThreadSafeDict(dict) :
@@ -365,8 +366,17 @@ def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
             cosineSimDict[sessQueryID] = localCosineSimDicts[subThreadID][sessQueryID]
     return cosineSimDict
 
-
 def computePredictedIntentsRNN(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
+    assert configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True' or configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False'
+    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        return computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID,
+                                              sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
+    elif configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True':
+        return ReverseEnggQueries.regenerateQuery(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
+
+
+def computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
+    predictedY = ReverseEnggQueries.pruneUnImportantDimensions(predictedY, configDict)
     cosineSimDict = {}
     numSubThreads = int(configDict['RNN_SUB_THREADS'])
     if numSubThreads == 1:
