@@ -14,6 +14,14 @@ import ParseResultsToExcel
 import random
 import argparse
 
+def compareForSanity(newSessionLengthDict, sessionLengthDict):
+    assert len(sessionLengthDict) == len(newSessionLengthDict)
+    for key in sessionLengthDict:
+        assert key in newSessionLengthDict
+        if sessionLengthDict[key] != newSessionLengthDict[key]:
+            print "newSessionLengthDict["+str(key)+"]: "+str(newSessionLengthDict[key])+", sessionLengthDict["+str(key)+"]: "+str(sessionLengthDict[key])
+
+
 def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intentSessionFile, sessionLengthDict):
     fileNameWithoutDir = intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]
     outputIntentTrainSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir+"_TRAIN_FOLD_"+str(foldID)
@@ -24,10 +32,12 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
     except OSError:
         pass
     sessionLineDict = {}
+    newSessionLengthDict = {}
     with open(intentSessionFile) as f:
         for line in f:
-            sessionLineDict = QR.updateSessionLineDict(line, configDict, sessionLineDict)
+            (sessionLineDict, newSessionLengthDict) = QR.updateSessionLineDict(line, configDict, sessionLineDict, newSessionLengthDict)
     f.close()
+    compareForSanity(newSessionLengthDict, sessionLengthDict)
     for sessName in sessNames:
         sessID = int(sessName.split(" ")[1])
         numSessQueries = sessionLengthDict[sessID]

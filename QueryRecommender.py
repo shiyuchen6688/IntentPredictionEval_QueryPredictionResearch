@@ -33,7 +33,7 @@ def updateSessionDict(line, configDict, sessionStreamDict):
     sessionStreamDict[str(sessID)+","+str(queryID)] = curQueryIntent
     return (sessID, queryID, curQueryIntent, sessionStreamDict)
 
-def updateSessionLineDict(line, configDict, sessionLineDict):
+def updateSessionLineDict(line, configDict, sessionLineDict, newSessionLengthDict):
     (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
     if (sessID == 36 or sessID == 30) and queryID > 212:
         print "hi: in QR"
@@ -41,7 +41,11 @@ def updateSessionLineDict(line, configDict, sessionLineDict):
         print str(sessID)+","+str(queryID)+ " already exists !!"
         sys.exit(0)
     sessionLineDict[str(sessID)+","+str(queryID)] = line.strip()
-    return sessionLineDict
+    if sessID not in newSessionLengthDict:
+        newSessionLengthDict[sessID] = 1
+    elif sessID in newSessionLengthDict:
+        newSessionLengthDict[sessID] = newSessionLengthDict[sessID]+1
+    return (sessionLineDict, newSessionLengthDict)
 
 def findNextQueryIntent(intentSessionFile, sessID, queryID, configDict, lines):
     #with open(intentSessionFile) as f:
