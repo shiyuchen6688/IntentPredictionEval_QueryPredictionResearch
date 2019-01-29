@@ -35,6 +35,75 @@ def pruneUnImportantDimensions(predictedY, configDict):
         newPredictedY.append(newY)
     return newPredictedY
 
+def readTableDict(fn):
+    tableDict = {}
+    with open(fn) as f:
+        for line in f:
+            tokens = line.strip().split(":")
+            tableDict[tokens[0]] = int(tokens[1])
+    return tableDict
+
+def readColDict(fn):
+    colDict = {}
+    with open(fn) as f:
+        for line in f:
+            tokens = line.strip().split(":")
+            key = tokens[0]
+            val = tokens[1].replace("[","").replace("]","").replace("'","")
+            columns = val.split(",")
+            colDict[key] = columns
+    return colDict
+
+def readJoinPredDict(fn):
+    joinPredDict = {}
+    with open(fn) as f:
+        for line in f:
+            tokens = line.strip().split(":")
+            key = tokens[0]
+            val = tokens[1].replace("[", "").replace("]", "").replace("'", "")
+            columns = val.split(", ")
+            joinPredDict[key] = columns
+    return joinPredDict
+
+def readJoinPredBitPosDict(fn):
+    joinPredBitPosDict = {}
+    with open(fn) as f:
+        for line in f:
+            tokens = line.strip().split(":")
+            key = tokens[0]
+            startEndBitPos = [int(x) for x in tokens[1].split(",")]
+            joinPredBitPosDict[key]=startEndBitPos
+    return joinPredBitPosDict
+
+def checkSanity(joinPredDict, joinPredBitPosDict):
+    joinPredCount = 0
+    for key in joinPredDict:
+        joinPredCount += len(joinPredDict[key])
+    joinPredBitPosCount = 0
+    for key in joinPredBitPosDict:
+        joinPredBitPosCount += joinPredBitPosDict[key][1] - joinPredBitPosDict[key][0]
+    assert joinPredCount == joinPredBitPosCount
+
+def readJoinColDicts(joinPredFile, joinPredBitPosFile):
+    joinPredDict = readJoinPredDict(joinPredFile)
+    joinPredBitPosDict = readJoinPredBitPosDict(joinPredBitPosFile)
+    checkSanity(joinPredDict, joinPredBitPosDict)
+    return (joinPredDict, joinPredBitPosDict)
+
+def readSchemaDicts(configDict):
+    tableDict = readTableDict(configDict['MINC_TABLES'])
+    colDict = readColDict(configDict['MINC_COLS'])
+    (joinPredDict, joinPredBitPosDict) = readJoinColDicts(configDict['MINC_JOIN_PREDS'], configDict['MINC_JOIN_PRED_BIT_POS'])
+
 def regenerateQuery(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
     topKPredictedIntents = []
+    readSchemaDicts(configDict)
     return topKPredictedIntents
+
+if __name__ == "__main__":
+    #configDict = parseConfig.parseConfigFile("configFile.txt")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-config", help="Config parameters file", type=str, required=True)
+    args = parser.parse_args()
+    configDict = parseConfig.parseConfigFile(args.config)
+    readSchemaDicts(configDict)
