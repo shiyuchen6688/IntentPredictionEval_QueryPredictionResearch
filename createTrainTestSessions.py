@@ -12,6 +12,7 @@ from ParseConfigFile import getConfig
 import ConcurrentSessions
 import ParseResultsToExcel
 import random
+import argparse
 
 def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intentSessionFile, sessionLengthDict):
     fileNameWithoutDir = intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]
@@ -67,7 +68,11 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
         createIntentVectors(testSessNames[i], i, configDict, sessNames, intentSessionFile, sessionLengthDict)
 
 if __name__ == "__main__":
-    configDict = parseConfig.parseConfigFile("configFile.txt")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-config", help="Config parameters file", type=str, required=True)
+    args = parser.parse_args()
+    configDict = parseConfig.parseConfigFile(args.config)
+    #configDict = parseConfig.parseConfigFile("configFile.txt")
     if configDict['INTENT_REP']=='TUPLE':
         intentSessionFile = getConfig(configDict['TUPLEINTENTSESSIONS'])
     elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='BIT':
