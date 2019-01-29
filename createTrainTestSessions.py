@@ -32,7 +32,7 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
         sessID = int(sessName.split(" ")[1])
         numSessQueries = sessionLengthDict[sessID]
         if sessID == 30:
-            print "hi"
+            print "hi in createTrainTest"
         for queryID in range(numSessQueries):
             lineToOutput = sessionLineDict[str(sessID)+","+str(queryID)]
             if sessName in testSessNamesFold:

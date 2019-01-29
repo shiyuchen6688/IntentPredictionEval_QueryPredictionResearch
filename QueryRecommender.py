@@ -35,6 +35,8 @@ def updateSessionDict(line, configDict, sessionStreamDict):
 
 def updateSessionLineDict(line, configDict, sessionLineDict):
     (sessID, queryID, curQueryIntent) = retrieveSessIDQueryIDIntent(line, configDict)
+    if sessID == 30 and queryID > 212:
+        print "hi: in QR"
     if str(sessID)+","+str(queryID) in sessionLineDict:
         print str(sessID)+","+str(queryID)+ " already exists !!"
         sys.exit(0)
