@@ -725,6 +725,32 @@ def runRNNSingularityExp(configDict):
     trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
+def initRNNOneFoldTest(testIntentSessionFile, configDict):
+    episodeResponseTime = {}
+    sessionStreamDict = {}
+    keyOrder = []
+    with open(testIntentSessionFile) as f:
+        for line in f:
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
+                                                                                        sessionStreamDict)
+            keyOrder.append(str(sessID) + "," + str(queryID))
+    f.close()
+    return (sessionStreamDict, keyOrder, episodeResponseTime)
+
+def initRNNOneFoldTrain(trainIntentSessionFile, configDict):
+    sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
+    sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
+    sessionStreamDict = {}
+    keyOrder = []
+    with open(trainIntentSessionFile) as f:
+        for line in f:
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
+                                                                                        sessionStreamDict)
+            keyOrder.append(str(sessID) + "," + str(queryID))
+    f.close()
+    modelRNN = None
+    return (sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN)
+
 
 def runRNNKFoldExp(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
@@ -742,12 +768,12 @@ def runRNNKFoldExp(configDict):
                                       configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
         trainIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
-        (sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN) = LSTM_RNN.initRNNOneFoldTrain(trainIntentSessionFile, configDict)
+        (sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN) = initRNNOneFoldTrain(trainIntentSessionFile, configDict)
         startTrain = time.time()
-        (modelRNN, sessionDict, max_lookback) = LSTM_RNN.refineTemporalPredictor(keyOrder, configDict, sessionDict, modelRNN, sessionStreamDict)
+        (modelRNN, sessionDict, max_lookback) = refineTemporalPredictor(keyOrder, configDict, sessionDict, modelRNN, sessionStreamDict)
         trainTime = float(time.time() - startTrain)
         avgTrainTime.append(trainTime)
-        (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = LSTM_RNN.initRNNOneFoldTest(testIntentSessionFile, configDict)
+        (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
         startTest = time.time()
         (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
