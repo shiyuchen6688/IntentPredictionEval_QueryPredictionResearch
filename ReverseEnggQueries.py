@@ -91,9 +91,9 @@ def readJoinColDicts(joinPredFile, joinPredBitPosFile):
     return (joinPredDict, joinPredBitPosDict)
 
 def readSchemaDicts(configDict):
-    tableDict = readTableDict(configDict['MINC_TABLES'])
-    colDict = readColDict(configDict['MINC_COLS'])
-    (joinPredDict, joinPredBitPosDict) = readJoinColDicts(configDict['MINC_JOIN_PREDS'], configDict['MINC_JOIN_PRED_BIT_POS'])
+    tableDict = readTableDict(getConfig(configDict['MINC_TABLES']))
+    colDict = readColDict(getConfig(configDict['MINC_COLS']))
+    (joinPredDict, joinPredBitPosDict) = readJoinColDicts(getConfig(configDict['MINC_JOIN_PREDS']), getConfig(configDict['MINC_JOIN_PRED_BIT_POS']))
 
 def regenerateQuery(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
     topKPredictedIntents = []
