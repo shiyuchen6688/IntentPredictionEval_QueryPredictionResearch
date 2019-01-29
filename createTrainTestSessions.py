@@ -64,7 +64,6 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
         for index in range(testStartIndex, testEndIndex+1):
             testSessNames[i].append(sessNames[index])
         print "Fold "+str(i)+", StartIndex="+str(testStartIndex)+", EndIndex="+str(testEndIndex)
-
         createIntentVectors(testSessNames[i], i, configDict, sessNames, intentSessionFile, sessionLengthDict)
 
 if __name__ == "__main__":
