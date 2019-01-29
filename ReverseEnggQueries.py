@@ -77,12 +77,13 @@ def readJoinPredBitPosDict(fn):
 
 def checkSanity(joinPredDict, joinPredBitPosDict):
     joinPredCount = 0
+    joinPredBitPosCount = 0
     for key in joinPredDict:
         joinPredCount += len(joinPredDict[key])
-    joinPredBitPosCount = 0
-    for key in joinPredBitPosDict:
         joinPredBitPosCount += joinPredBitPosDict[key][1] - joinPredBitPosDict[key][0]
+    assert len(joinPredDict) == len(joinPredBitPosDict)
     assert joinPredCount == joinPredBitPosCount
+    print "joinPredCount: "+str(joinPredCount)+", joinPredBitPosCount: "+str(joinPredBitPosCount)
 
 def readJoinColDicts(joinPredFile, joinPredBitPosFile):
     joinPredDict = readJoinPredDict(joinPredFile)
