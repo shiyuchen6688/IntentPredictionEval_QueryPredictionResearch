@@ -45,10 +45,12 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
     inputSessionFile = getConfig(configDict['QUERYSESSIONS'])
     #sessID and queryID should start from 0
     sessNames = []
+    sessDict = {}
     with open(inputSessionFile) as f:
         for line in f:
             sessName = line.split(";")[0]
             sessNames.append(sessName)
+            sessDict[sessName] = line.split(";")
     f.close()
     random.shuffle(sessNames)
     kFold = int(configDict['KFOLD'])
