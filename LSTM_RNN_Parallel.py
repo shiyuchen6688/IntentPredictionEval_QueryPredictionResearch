@@ -210,7 +210,7 @@ def predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_l
     print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
     return predictedY
 
-def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
+def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
     try:
         os.remove(outputIntentFileName)
     except OSError:
@@ -224,17 +224,14 @@ def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN
         queryID = int(key.split(",")[1])
         curQueryIntent = sessionStreamDict[key]
         if prevSessID != sessID:
-            if prevSessID in sessionDict:
-                del sessionDict[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
-                (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
-                                                                                               numEpisodes,
-                                                                                               startEpisode,
-                                                                                               elapsedAppendTime)
-                numEpisodes += 1  # episodes start from 1
+            if prevSessID in sessionDictGlobal:
+                del sessionDictGlobal[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
+                (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+                numEpisodes += 1  # episodes start from 1, numEpisodes = numTestSessions
             prevSessID = sessID
 
-        #update sessionDict with this new query
-        updateSessionDictWithCurrentIntent(sessionDict, sessID, curQueryIntent)
+        #update sessionDictGlobal with this new query
+        sessionDictGlobal = updateSessionDictWithCurrentIntent(sessionDictGlobal, sessID, queryID)
 
         if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
             predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict)
@@ -731,25 +728,23 @@ def initRNNOneFoldTest(testIntentSessionFile, configDict):
     keyOrder = []
     with open(testIntentSessionFile) as f:
         for line in f:
-            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
-                                                                                        sessionStreamDict)
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict, sessionStreamDict)
             keyOrder.append(str(sessID) + "," + str(queryID))
     f.close()
     return (sessionStreamDict, keyOrder, episodeResponseTime)
 
 def initRNNOneFoldTrain(trainIntentSessionFile, configDict):
-    sessionDict = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
+    sessionDictGlobal = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
     sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
     sessionStreamDict = {}
     keyOrder = []
     with open(trainIntentSessionFile) as f:
         for line in f:
-            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
-                                                                                        sessionStreamDict)
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict, sessionStreamDict)
             keyOrder.append(str(sessID) + "," + str(queryID))
     f.close()
     modelRNN = None
-    return (sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN)
+    return (sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN)
 
 
 def runRNNKFoldExp(configDict):
@@ -768,14 +763,14 @@ def runRNNKFoldExp(configDict):
                                       configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
         trainIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
-        (sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN) = initRNNOneFoldTrain(trainIntentSessionFile, configDict)
+        (sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN) = initRNNOneFoldTrain(trainIntentSessionFile, configDict)
         startTrain = time.time()
-        (modelRNN, sessionDict, max_lookback) = refineTemporalPredictor(keyOrder, configDict, sessionDict, modelRNN, sessionStreamDict)
+        (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(keyOrder, configDict, sessionDictGlobal, modelRNN, sessionStreamDict)
         trainTime = float(time.time() - startTrain)
         avgTrainTime.append(trainTime)
         (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
         startTest = time.time()
-        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
+        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
