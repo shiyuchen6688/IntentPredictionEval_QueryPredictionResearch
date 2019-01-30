@@ -36,7 +36,7 @@ def concatenateSeqIntentVectorFiles(configDict):
                     sessionQueryDict[sessID] = []
                 sessionQueryDict[sessID].append(line)
                 queryCount +=1
-                if queryCount >30000:
+                if queryCount >10000:
                     break
                 if queryCount % 10000 == 0:
                     print ("Query count so far: "+str(queryCount))
@@ -110,7 +110,9 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
                 queryCount = 0
             if absCount % 10000 == 0:
                 print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", absQueryCount: " + str(absCount))
-    #ti.appendToFile(intentFile, output_str)
+    if queryCount > 0:
+        ti.appendToFile(intentFile, output_str)
+        ti.appendToFile(concurrentFile, conc_str)
     print ("Created intent vectors for # Sessions: "+str(numSessions)+" and # Queries: "+str(absCount))
 
 
