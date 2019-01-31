@@ -672,7 +672,7 @@ def trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEp
             resultDict = clear(resultDict)
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
-def testOneFold(foldID, keyOrder, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
+def testOneFold(foldID, keyOrder, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, resultDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
     try:
         os.remove(outputIntentFileName)
     except OSError:
@@ -759,6 +759,7 @@ def runRNNSingularityExp(configDict):
 
 def initRNNOneFoldTest(multiProcessingManager, testIntentSessionFile, configDict):
     episodeResponseTime = {}
+    resultDict = {}
     sessionStreamDict = multiProcessingManager.dict()
     keyOrder = []
     with open(testIntentSessionFile) as f:
@@ -766,7 +767,7 @@ def initRNNOneFoldTest(multiProcessingManager, testIntentSessionFile, configDict
             (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict, sessionStreamDict)
             keyOrder.append(str(sessID) + "," + str(queryID))
     f.close()
-    return (sessionStreamDict, keyOrder, episodeResponseTime)
+    return (sessionStreamDict, keyOrder, resultDict, episodeResponseTime)
 
 def initRNNOneFoldTrain(trainIntentSessionFile, configDict):
     sessionDictGlobal = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
@@ -807,9 +808,9 @@ def runRNNKFoldExp(configDict):
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(keyOrder, configDict, sessionDictGlobal, modelRNN, sessionStreamDict)
         trainTime = float(time.time() - startTrain)
         avgTrainTime.append(trainTime)
-        (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(multiProcessingManager, testIntentSessionFile, configDict)
+        (testSessionStreamDict, testKeyOrder, resultDict, testEpisodeResponseTime) = initRNNOneFoldTest(multiProcessingManager, testIntentSessionFile, configDict)
         startTest = time.time()
-        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, sampledQueryHistory, testSessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
+        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, sampledQueryHistory, testSessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, resultDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
