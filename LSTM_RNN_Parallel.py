@@ -210,48 +210,6 @@ def predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_l
     print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
     return predictedY
 
-def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
-    try:
-        os.remove(outputIntentFileName)
-    except OSError:
-        pass
-    numEpisodes = 1
-    startEpisode = time.time()
-    prevSessID = -1
-    elapsedAppendTime = 0.0
-    for key in keyOrder:
-        sessID = int(key.split(",")[0])
-        queryID = int(key.split(",")[1])
-        curQueryIntent = sessionStreamDict[key]
-        if prevSessID != sessID:
-            if prevSessID in sessionDictGlobal:
-                del sessionDictGlobal[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
-                (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
-                numEpisodes += 1  # episodes start from 1, numEpisodes = numTestSessions
-            prevSessID = sessID
-
-        #update sessionDictGlobal with this new query
-        sessionDictGlobal = updateSessionDictWithCurrentIntent(sessionDictGlobal, sessID, queryID)
-
-        if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
-            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict)
-            nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
-            nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
-            actual_vector = np.array(nextIntentList).astype(np.int)
-            # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
-            #cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
-            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
-                topKPredictedIntents = computePredictedIntentsRNN(predictedY, sessionDict, configDict, sessID)
-            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
-                topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
-            elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
-                                                                   outputIntentFileName, configDict, foldID)
-    (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
-                                                                                   numEpisodes,
-                                                                                   startEpisode,
-                                                                                   elapsedAppendTime) # last session
-    QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
-    return (outputIntentFileName, episodeResponseTimeDictName)
 
 def partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, numQueries, numSubThreads):
     assert configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'SAMPLE' or configDict[
@@ -307,12 +265,12 @@ def singleThreadedTopKDetectionFull(predictedY, cosineSimDict, curSessID, curQue
         #if len(sessionDictCurThread) == 1 or sessID != curSessID: # we are not going to suggest query intents from the same session unless it is the only session in the dictionary
         numQueries = sessionDictCurThread[sessID]+1
         for queryID in range(numQueries):
-            assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
-            if configDict['INCLUDE_CUR_SESS'] == 'False':
-                expToCheck = (len(sessionDictCurThread) == 1 or sessID != curSessID)
-            elif configDict['INCLUDE_CUR_SESS'] == 'True':
-                expToCheck = (sessID != curSessID and queryID != curQueryID)
-            if expToCheck:
+            #assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
+            #if configDict['INCLUDE_CUR_SESS'] == 'False':
+                #expToCheck = (len(sessionDictCurThread) == 1 or sessID != curSessID)
+            #elif configDict['INCLUDE_CUR_SESS'] == 'True':
+                #expToCheck = (sessID != curSessID and queryID != curQueryID)
+            if (sessID != curSessID and queryID != curQueryID):
                 queryIntent = sessionStreamDict[str(sessID)+","+str(queryID)]
                 cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
                 cosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
@@ -343,13 +301,13 @@ def multiThreadedTopKDetectionFull((threadID, subThreadID, queryPartition, predi
     for sessQueryID in queryPartition:
         sessID = sessQueryID.split(",")[0]
         queryID = sessQueryID.split(",")[1]
-        assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
-        if configDict['INCLUDE_CUR_SESS'] == 'False':
-            expToCheck = (len(sessionDictCurThread) == 1 or sessID != curSessID)
-        elif configDict['INCLUDE_CUR_SESS'] == 'True':
-            expToCheck = (sessID != curSessID and queryID != curQueryID)
+        #assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
+        #if configDict['INCLUDE_CUR_SESS'] == 'False':
+            #expToCheck = (len(sessionDictCurThread) == 1 or sessID != curSessID)
+        #elif configDict['INCLUDE_CUR_SESS'] == 'True':
+            #expToCheck = (sessID != curSessID and queryID != curQueryID)
         #if len(sessionDictCurThread) == 1 or sessID != curSessID:
-        if expToCheck:
+        if (sessID != curSessID and queryID != curQueryID):
             queryIntent = sessionStreamDict[sessQueryID]
             cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
             localCosineSimDict[sessQueryID] = cosineSim
@@ -457,7 +415,43 @@ def updateSessionDictsThreads(threadID, sessionDictsThreads, t_lo, t_hi, keyOrde
         sessionDictsThreads[i].update(sessionDictCurThread)
     return sessionDictsThreads
 
-def predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
+def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionDictGlobal, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
+    numThreads = int(configDict['RNN_THREADS'])
+    numKeysPerThread = int(float(hi-lo+1)/float(numThreads))
+    threads = {}
+    t_loHiDict = {}
+    t_hi = lo-1
+    for i in range(numThreads):
+        t_lo = t_hi + 1
+        if i == numThreads -1:
+            t_hi = hi
+        else:
+            t_hi = t_lo + numKeysPerThread - 1
+        t_loHiDict[i] = (t_lo, t_hi)
+        resultDict[i] = list()
+    #print "Set tuple boundaries for Threads"
+    if numThreads == 1:
+        predictTopKIntentsPerThread(0, lo, hi, keyOrder, modelRNN, resultDict[0], sessionDictGlobal, sampledQueryHistory, sessionStreamDict,
+                                    sessionLengthDict, max_lookback, configDict) # 0 is the threadID
+    else:
+        #pool = ThreadPool()
+        #argsList = []
+        for i in range(numThreads):
+            (t_lo, t_hi) = t_loHiDict[i]
+            resList = resultDict[i]
+            #argsList.append((t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictCurThread, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
+            modelRNN._make_predict_function()
+            threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, modelRNN, resList, sessionDictGlobal, sampledQueryHistory, sessionStreamDict, sessionLengthDict, max_lookback, configDict))
+            threads[i].start()
+        for i in range(numThreads):
+            threads[i].join()
+        #pool.map(predictTopKIntentsPerThread, argsList)
+        #pool.close()
+        #pool.join()
+    return resultDict
+
+def predictIntentsIncludeCurrentBatch(lo, hi, keyOrder, resultDict, sessionDictGlobal, sessionDictsThreads, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
+    sessionDictsThreads = copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict)
     numThreads = int(configDict['RNN_THREADS'])
     numKeysPerThread = int(float(hi-lo+1)/float(numThreads))
     threads = {}
@@ -516,13 +510,13 @@ def copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict):
     #print "Copied Thread Session Dicts from Global Session Dict"
     return sessionDictsThreads
 
-def appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict):
+def appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, foldID):
     for threadID in resultDict:
         for i in range(len(resultDict[threadID])):
             (sessID, queryID, topKPredictedIntents, nextQueryIntent) = resultDict[threadID][i]
             elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents,
                                                                    nextQueryIntent, numEpisodes,
-                                                                   outputIntentFileName, configDict, -1)
+                                                                   outputIntentFileName, configDict, foldID)
     return elapsedAppendTime
 
 def updateQualityResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
@@ -651,8 +645,11 @@ def trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEp
         # test first for each query in the batch if the classifier is not None
         print "Starting prediction in Episode "+str(numEpisodes)+", lo: "+str(lo)+", hi: "+str(hi)+", len(keyOrder): "+str(len(keyOrder))
         if modelRNN is not None:
-            sessionDictsThreads = copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict)
-            resultDict = predictIntents(lo, hi, keyOrder, resultDict, sessionDictsThreads, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
+            assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
+            if configDict['INCLUDE_CUR_SESS'] == 'True':
+                resultDict = predictIntentsIncludeCurrentBatch(lo, hi, keyOrder, resultDict, sessionDictGlobal, sessionDictsThreads, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
+            else:
+                resultDict = predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionDictGlobal, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
 
         print "Starting training in Episode " + str(numEpisodes)
         # update SessionDictGlobal and train with the new batch
@@ -670,10 +667,48 @@ def trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEp
         # we record the times including train and test
         numEpisodes += 1
         if len(resultDict)> 0:
-            elapsedAppendTime = appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict)
+            elapsedAppendTime = appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, -1)
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = clear(resultDict)
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+
+def testOneFold(foldID, keyOrder, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
+    try:
+        os.remove(outputIntentFileName)
+    except OSError:
+        pass
+    numEpisodes = 0
+    startEpisode = time.time()
+    prevSessID = -1
+    elapsedAppendTime = 0.0
+
+    episodeWiseKeys = []
+
+    for key in keyOrder:
+        sessID = int(key.split(",")[0])
+        if prevSessID != sessID:
+            assert prevSessID not in sessionDictGlobal # because we never add any batch of test queries to the sessionDictGlobal in the kFold Experiments
+            if len(episodeWiseKeys) > 0:
+                lo = 0
+                hi = len(episodeWiseKeys) -1
+                resultDict = predictIntentsWithoutCurrentBatch(lo, hi, episodeWiseKeys, resultDict, sessionDictGlobal,
+                                                               sampledQueryHistory, sessionStreamDict,
+                                                               sessionLengthDict,
+                                                               modelRNN, max_lookback, configDict)
+            numEpisodes += 1  # episodes start from 1, numEpisodes = numTestSessions
+            episodeWiseKeys = []
+            prevSessID = sessID
+            if len(resultDict) > 0:
+                elapsedAppendTime = appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes,
+                                                        outputIntentFileName, configDict, foldID)
+                (episodeResponseTimeDictName, episodeResponseTime, startEpisode,
+                 elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime,
+                                                            numEpisodes, startEpisode, elapsedAppendTime)
+                resultDict = clear(resultDict)
+        episodeWiseKeys.append(key)
+    updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+    return (outputIntentFileName, episodeResponseTimeDictName)
+
 
 
 def initRNNSingularity(configDict):
@@ -722,9 +757,9 @@ def runRNNSingularityExp(configDict):
     trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
-def initRNNOneFoldTest(testIntentSessionFile, configDict):
+def initRNNOneFoldTest(multiProcessingManager, testIntentSessionFile, configDict):
     episodeResponseTime = {}
-    sessionStreamDict = {}
+    sessionStreamDict = multiProcessingManager.dict()
     keyOrder = []
     with open(testIntentSessionFile) as f:
         for line in f:
@@ -736,15 +771,19 @@ def initRNNOneFoldTest(testIntentSessionFile, configDict):
 def initRNNOneFoldTrain(trainIntentSessionFile, configDict):
     sessionDictGlobal = {}  # key is session ID and value is a list of query intent vectors; no need to store the query itself
     sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
-    sessionStreamDict = {}
+    multiProcessingManager = multiprocessing.Manager()
+    sessionStreamDict = multiProcessingManager.dict()
+    sampledQueryHistory = set()  # it is a set
     keyOrder = []
     with open(trainIntentSessionFile) as f:
         for line in f:
             (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict, sessionStreamDict)
             keyOrder.append(str(sessID) + "," + str(queryID))
+    sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, keyOrder,
+                                                    sessionStreamDict)
     f.close()
     modelRNN = None
-    return (sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN)
+    return (multiProcessingManager, sampledQueryHistory, sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN)
 
 
 def runRNNKFoldExp(configDict):
@@ -754,7 +793,7 @@ def runRNNKFoldExp(configDict):
     avgTrainTime = []
     avgTestTime = []
     algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
-    for foldID in range(int(configDict['KFOLD'])):
+    for foldID in range(int(configDict['NUM_FOLDS_TO_RUN'])):
         outputIntentFileName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + algoName + "_" + \
                                configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
                                configDict['TOP_K'] + "_FOLD_" + str(foldID)
@@ -763,14 +802,14 @@ def runRNNKFoldExp(configDict):
                                       configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
         trainIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
-        (sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN) = initRNNOneFoldTrain(trainIntentSessionFile, configDict)
+        (multiProcessingManager, sampledQueryHistory, sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN) = initRNNOneFoldTrain(trainIntentSessionFile, configDict)
         startTrain = time.time()
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(keyOrder, configDict, sessionDictGlobal, modelRNN, sessionStreamDict)
         trainTime = float(time.time() - startTrain)
         avgTrainTime.append(trainTime)
-        (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(testIntentSessionFile, configDict)
+        (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldTest(multiProcessingManager, testIntentSessionFile, configDict)
         startTest = time.time()
-        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, testSessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
+        (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, sampledQueryHistory, testSessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
         testTime = float(time.time() - startTest)
         avgTestTime.append(testTime)
         kFoldOutputIntentFiles.append(outputIntentFileName)
@@ -942,5 +981,49 @@ def multiThreadedTopKDetection_Deprecated((localCosineSimDict, threadID, queryPa
                 break
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+".pickle",localCosineSimDict)
     return localCosineSimDict
+
+def testOneFold(foldID, keyOrder, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
+    try:
+        os.remove(outputIntentFileName)
+    except OSError:
+        pass
+    numEpisodes = 1
+    startEpisode = time.time()
+    prevSessID = -1
+    elapsedAppendTime = 0.0
+
+    for key in keyOrder:
+        sessID = int(key.split(",")[0])
+        queryID = int(key.split(",")[1])
+        curQueryIntent = sessionStreamDict[key]
+        if prevSessID != sessID:
+            if prevSessID in sessionDictGlobal:
+                del sessionDictGlobal[prevSessID] # bcoz none of the test session queries should be used for test phase prediction for a different session, so delete a test session-info once it is done with
+                (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+                numEpisodes += 1  # episodes start from 1, numEpisodes = numTestSessions
+            prevSessID = sessID
+
+        #update sessionDictGlobal with this new query
+        sessionDictGlobal = updateSessionDictWithCurrentIntent(sessionDictGlobal, sessID, queryID)
+
+        if modelRNN is not None and queryID < sessionLengthDict[sessID] - 1:
+            predictedY = predictTopKIntents(modelRNN, sessionDict, sessID, max_lookback, configDict)
+            nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
+            nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
+            actual_vector = np.array(nextIntentList).astype(np.int)
+            # actual_vector = np.array(actual_vector[actual_vector.shape[0] - 1]).astype(np.int)
+            #cosineSim = dot(predictedY, actual_vector) / (norm(predictedY) * norm(actual_vector))
+            if configDict['BIT_OR_WEIGHTED'] == 'BIT':
+                topKPredictedIntents = computePredictedIntentsRNN(predictedY, sessionDict, configDict, sessID)
+            elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+                topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
+            elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents, nextQueryIntent, numEpisodes,
+                                                                   outputIntentFileName, configDict, foldID)
+    (episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTime,
+                                                                                   numEpisodes,
+                                                                                   startEpisode,
+                                                                                   elapsedAppendTime) # last session
+    QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
+    return (outputIntentFileName, episodeResponseTimeDictName)
 
 '''
