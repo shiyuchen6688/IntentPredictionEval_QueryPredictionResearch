@@ -185,7 +185,7 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal, mo
         (modelRNN, max_lookback) = trainRNN(dataX, dataY, modelRNN, max_lookback, configDict)
     return (modelRNN, sessionDictGlobal, max_lookback)
 
-def predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict):
+def predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict):
     # predicts the next query to the query indexed by queryID in the sessID session
     numQueries = queryID + 1
     testX = []
@@ -388,7 +388,7 @@ def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, modelRNNThread, 
         sessID = int(sessQueryID.split(",")[0])
         queryID = int(sessQueryID.split(",")[1])
         if queryID < sessionLengthDict[sessID]-1:
-            predictedY = predictTopKIntents(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
+            predictedY = predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
             #print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
