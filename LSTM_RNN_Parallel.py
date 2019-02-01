@@ -706,7 +706,8 @@ def testOneFold(foldID, keyOrder, sampledQueryHistory, sessionStreamDict, sessio
                                                             numEpisodes, startEpisode, elapsedAppendTime)
                 resultDict = clear(resultDict)
         episodeWiseKeys.append(key)
-    updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+    if len(episodeResponseTime) > 0:
+        updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
 
