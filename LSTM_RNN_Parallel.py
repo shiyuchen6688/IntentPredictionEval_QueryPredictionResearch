@@ -672,6 +672,12 @@ def trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEp
             resultDict = clear(resultDict)
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
+def checkResultDictNotEmpty(resultDict):
+    for threadID in resultDict:
+        if len(resultDict[threadID]) > 0:
+            return 'False'
+    return 'True'
+
 def testOneFold(foldID, keyOrder, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, resultDict, episodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict):
     try:
         os.remove(outputIntentFileName)
@@ -698,7 +704,9 @@ def testOneFold(foldID, keyOrder, sampledQueryHistory, sessionStreamDict, sessio
             numEpisodes += 1  # episodes start from 1, numEpisodes = numTestSessions
             episodeWiseKeys = []
             prevSessID = sessID
-            if len(resultDict) > 0:
+            isEmpty = checkResultDictNotEmpty(resultDict)
+            assert isEmpty == 'True' or isEmpty == 'False'
+            if isEmpty == 'True':
                 elapsedAppendTime = appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes,
                                                         outputIntentFileName, configDict, foldID)
                 (episodeResponseTimeDictName, episodeResponseTime, startEpisode,
