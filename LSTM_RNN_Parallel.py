@@ -178,9 +178,8 @@ def createTemporalPairs(queryKeysSetAside, configDict, sessionDictGlobal, sessio
     return (dataX, dataY)
 
 
-def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal, modelRNN, sessionStreamDict):
+def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal, modelRNN, max_lookback, sessionStreamDict):
     (dataX, dataY) = createTemporalPairs(queryKeysSetAside, configDict, sessionDictGlobal, sessionStreamDict)
-    max_lookback = -1
     if len(dataX) > 0:
         (modelRNN, max_lookback) = trainRNN(dataX, dataY, modelRNN, max_lookback, configDict)
     return (modelRNN, sessionDictGlobal, max_lookback)
@@ -656,7 +655,7 @@ def trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEp
         (sessionDictGlobal, queryKeysSetAside) = updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal)
         sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside, sessionStreamDict)
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal,
-                                                                        modelRNN, sessionStreamDict)
+                                                                        modelRNN, max_lookback, sessionStreamDict)
         assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
                                                                                    'RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the RNN at the end of each episode
@@ -724,6 +723,7 @@ def initRNNSingularity(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     sampledQueryHistory = set() # it is a set
     numEpisodes = 0
+    max_lookback = 0
     queryKeysSetAside = []
     episodeResponseTime = {}
     resultDict = {}
@@ -756,20 +756,18 @@ def initRNNSingularity(configDict):
     startEpisode = time.time()
     predictedY = None
     modelRNN = None
-    return (sampledQueryHistory, queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY)
+    return (sampledQueryHistory, queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict, sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, max_lookback, predictedY)
 
 
 def runRNNSingularityExp(configDict):
     (sampledQueryHistory, queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict,
-     sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, predictedY) = initRNNSingularity(configDict)
-    max_lookback = 0
+     sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, max_lookback, predictedY) = initRNNSingularity(configDict)
     trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
-def initRNNOneFoldTest(multiProcessingManager, testIntentSessionFile, configDict):
+def initRNNOneFoldTest(sessionStreamDict, testIntentSessionFile, configDict):
     episodeResponseTime = {}
     resultDict = {}
-    sessionStreamDict = multiProcessingManager.dict()
     keyOrder = []
     with open(testIntentSessionFile) as f:
         for line in f:
@@ -793,7 +791,8 @@ def initRNNOneFoldTrain(trainIntentSessionFile, configDict):
                                                     sessionStreamDict)
     f.close()
     modelRNN = None
-    return (multiProcessingManager, sampledQueryHistory, sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN)
+    max_lookback = 0
+    return (sampledQueryHistory, sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN, max_lookback)
 
 
 def runRNNKFoldExp(configDict):
@@ -812,12 +811,12 @@ def runRNNKFoldExp(configDict):
                                       configDict['TOP_K'] + "_FOLD_" + str(foldID) + ".pickle"
         trainIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
-        (multiProcessingManager, sampledQueryHistory, sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN) = initRNNOneFoldTrain(trainIntentSessionFile, configDict)
+        (sampledQueryHistory, sessionDictGlobal, sessionLengthDict, sessionStreamDict, keyOrder, modelRNN, max_lookback) = initRNNOneFoldTrain(trainIntentSessionFile, configDict)
         startTrain = time.time()
-        (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(keyOrder, configDict, sessionDictGlobal, modelRNN, sessionStreamDict)
+        (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(keyOrder, configDict, sessionDictGlobal, modelRNN, max_lookback, sessionStreamDict)
         trainTime = float(time.time() - startTrain)
         avgTrainTime.append(trainTime)
-        (testSessionStreamDict, testKeyOrder, resultDict, testEpisodeResponseTime) = initRNNOneFoldTest(multiProcessingManager, testIntentSessionFile, configDict)
+        (testSessionStreamDict, testKeyOrder, resultDict, testEpisodeResponseTime) = initRNNOneFoldTest(sessionStreamDict, testIntentSessionFile, configDict)
         if modelRNN is not None:
             startTest = time.time()
             (outputIntentFileName, episodeResponseTimeDictName) = testOneFold(foldID, testKeyOrder, sampledQueryHistory, testSessionStreamDict, sessionLengthDict, modelRNN, max_lookback, sessionDictGlobal, resultDict, testEpisodeResponseTime, outputIntentFileName, episodeResponseTimeDictName, configDict)
