@@ -51,19 +51,23 @@ def exampleSelectionRandom(foldID, activeIter, availTrainDictX, availTrainDictY,
         print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) +", Added "+str(len(chosenKeys))+"th example, sessIDQueryID: "+str(sessIDQueryID)+" to the data"
     return (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
 
-def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict):
+def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, trainKeyOrder, availTrainDictGlobal, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, sessionStreamDict):
     assert configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'MINIMAX'
-    assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+    assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
+                                                                               'RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
     # get rid of the data that you trained on so far for incremental train
     if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+        del availTrainDictGlobal
         del availTrainDictX
         del availTrainDictY
+        availTrainDictGlobal = {}
         availTrainDictX = {}
         availTrainDictY = {}
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
     minimaxCosineSimDict = {}
-    i=0
-    print "foldID: "+str(foldID)+", activeIter: "+str(activeIter)+", #Hold-out-Pairs: "+str(len(holdOutTrainDictX))
+    i = 0
+    print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", #Avail-Dict-Pairs: " + str(
+        len(availTrainDictX))
     for sessIDQueryID in holdOutTrainDictX:
         leftX = np.array(holdOutTrainDictX[sessIDQueryID])
         leftX = leftX.reshape(1, leftX.shape[0], leftX.shape[1])
@@ -77,10 +81,11 @@ def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTra
         topKPredictedIntents = LSTM_RNN.computePredictedIntentsRNN(predictedY, trainSessionDict, configDict, sessID)
         maxCosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, topKPredictedIntents[0], configDict)
         minimaxCosineSimDict[sessIDQueryID] = maxCosineSim
-        if i% 50 ==0:
-            print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", #Hold-out-Pairs: " + str(len(holdOutTrainDictX))+" #elemSoFar: "+ str(i+1)
-        i+=1
-    sorted_minimaxCSD = sorted(minimaxCosineSimDict.items(), key=operator.itemgetter(1)) # we sort in ASC order
+        if i % 50 == 0:
+            print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", #Hold-out-Pairs: " + str(
+                len(holdOutTrainDictX)) + " #elemSoFar: " + str(i + 1)
+        i += 1
+    sorted_minimaxCSD = sorted(minimaxCosineSimDict.items(), key=operator.itemgetter(1))  # we sort in ASC order
     resCount = 0
     for cosSimEntry in sorted_minimaxCSD:
         sessIDQueryID = cosSimEntry[0]
@@ -88,14 +93,33 @@ def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTra
         availTrainDictY[sessIDQueryID] = holdOutTrainDictY[sessIDQueryID]
         del holdOutTrainDictX[sessIDQueryID]
         del holdOutTrainDictY[sessIDQueryID]
-        resCount+=1
+        resCount += 1
         if resCount >= exampleBatchSize:
             break
-        print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) +", Added "+str(resCount)+"th example, sessIDQueryID: "+str(sessIDQueryID)+" with cosineSim: "+str(cosSimEntry[1])+" to the data"
+        print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", Added " + str(
+            resCount) + "th example, sessIDQueryID: " + str(sessIDQueryID) + " with cosineSim: " + str(
+            cosSimEntry[1]) + " to the data"
     return (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
 
 
-def createAvailHoldOutDicts(trainSessionDictGlobal, trainKeyOrder):
+
+
+def createAvailDict(availTrainDictGlobal, trainKeyOrder):
+    prevSessID = None
+    trainKeyIndex = 0
+    activeSeedSize = int(configDict['ACTIVE_SEED_TRAINING_SIZE'])
+    assert len(trainKeyOrder) > activeSeedSize
+    while trainKeyIndex+1 < activeSeedSize:
+        sessQueryID = trainKeyOrder[trainKeyIndex]
+        sessID = int(sessQueryID.split(",")[0])
+        queryID = int(sessQueryID.split(",")[1])
+        availTrainDictGlobal[sessID] = queryID
+        if sessID != prevSessID:
+            prevSessID = sessID
+        trainKeyIndex +=1
+    return availTrainDictGlobal
+
+def createAvailHoldOutDicts(trainX, trainY, trainKeyOrder):
     availTrainDictX = {}
     availTrainDictY = {}  # we can have key from keyOrder paired with dataX and dataY
     holdOutTrainDictX = {}
@@ -120,18 +144,19 @@ def createAvailHoldOutDicts(trainSessionDictGlobal, trainKeyOrder):
     assert len(holdOutTrainDictX) == totalSize-int(configDict['ACTIVE_SEED_TRAINING_SIZE']) and len(availTrainDictX) == int(configDict['ACTIVE_SEED_TRAINING_SIZE']) and len(availTrainDictX) == len(availTrainDictY)
     return (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
 
+
 def initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict):
     # the purpose of this method is to create two training sets - one available and another hold-out
-    (sampledQueryHistory, trainSessionDictGlobal, sessionLengthDict, sessionStreamDict, trainKeyOrder,
+    (trainSampledQueryHistory, availTrainDictGlobal, trainSessionLengthDict, trainSessionStreamDict, trainKeyOrder,
      modelRNN, max_lookback) = LSTM_RNN_Parallel.initRNNOneFoldTrain(trainIntentSessionFile, configDict)
     # we got sessionLengthDict, sessionStreamDict and keyOrder non null, remaining are just initialized
-    #(trainX, trainY) = LSTM_RNN_Parallel.createTemporalPairs(trainKeyOrder, configDict, trainSessionDictGlobal, sessionStreamDict)
+    (trainX, trainY) = LSTM_RNN_Parallel.createTemporalPairs(trainKeyOrder, configDict, None, trainSessionStreamDict)
     # keep ACTIVE_SEED_TRAINING_SIZE pairs in available and remaining in hold-out
-
-    (availTrainDictGlobal, holdOutTrainDictGlobal) = createAvailHoldOutDicts(trainSessionDictGlobal, trainKeyOrder)
-    (testSessionStreamDict, testKeyOrder, testEpisodeResponseTime) = LSTM_RNN_Parallel.initRNNOneFoldTest(sessionStreamDict, testIntentSessionFile,
+    (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = createAvailHoldOutDicts(trainX, trainY, trainKeyOrder)
+    availTrainDictGlobal = createAvailDict(availTrainDictGlobal, trainKeyOrder)
+    (sessionStreamDict, testKeyOrder, testEpisodeResponseTime) = LSTM_RNN_Parallel.initRNNOneFoldTest(trainSessionStreamDict, testIntentSessionFile,
                                                                                         configDict)
-    return (sessionLengthDict, trainSessionDictGlobal, trainKeyOrder, modelRNN, max_lookback, sessionStreamDict, testKeyOrder, testEpisodeResponseTime, availTrainKeyX, availTrainKeyY, holdOutTrainX, holdOutTrainY)
+    return (trainSessionLengthDict, availTrainDictGlobal, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainKeyOrder, modelRNN, max_lookback, sessionStreamDict, testKeyOrder, testEpisodeResponseTime)
 
 
 def testActiveRNN(sessionLengthDict, trainSessionDict, testKeyOrder, testSessionStreamDict, modelRNN, max_lookback):
@@ -203,22 +228,23 @@ def runActiveRNNKFoldExp(configDict):
     for foldID in range(int(configDict['KFOLD'])):
         trainIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
-        (sessionLengthDict, trainSessionDictGlobal, trainKeyOrder, modelRNN, max_lookback, sessionStreamDict, testKeyOrder,
-         testEpisodeResponseTime, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict)
+        (trainSessionLengthDict, availTrainDictGlobal, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainKeyOrder, modelRNN, max_lookback, sessionStreamDict,
+         testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict)
         activeIter = 0
-        while len(holdOutTrainDictX) > 0:
+        while len(trainKeyOrder) - len(availTrainDictGlobal) > 0:
             startTime = time.time()
             assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
             #reinitialize model to None before training it if it is a full train
             if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL':
                 modelRNN=None
-            (modelRNN, max_lookback) = LSTM_RNN_Parallel.trainRNN(availTrainDictX.values(), availTrainDictY.values(), modelRNN, max_lookback, configDict)
+            (modelRNN, availTrainDictGlobal, max_lookback) = LSTM_RNN_Parallel.refineTemporalPredictor(availTrainDictGlobal.keys(), configDict, availTrainDictGlobal, modelRNN, max_lookback,
+                                    sessionStreamDict)
             trainTime = float(time.time() - startTime)
             startTime = time.time()
             # example selection phase
             assert configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'MINIMAX' or configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'RANDOM'
             if configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'MINIMAX':
-                (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, trainSessionDict)
+                (availTrainDictGlobal, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, trainKeyOrder, availTrainDictGlobal, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY, sessionStreamDict)
             else:
                 (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY) = exampleSelectionRandom(foldID, activeIter, availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
             exSelTime = float(time.time() - startTime)
@@ -334,29 +360,4 @@ def computeAvgPerDict(avgDict, expectedIterLength):
             prevLen = len(avgDict[key])
             avgDict[key] = float(sum(avgDict[key])) / float(len(avgDict[key]))
     return avgDict
-
-def DeprecatedcreateAvailHoldOutDicts(trainX, trainY, trainKeyOrder):
-    availTrainDictX = {}
-    availTrainDictY = {}  # we can have key from keyOrder paired with dataX and dataY
-    holdOutTrainDictX = {}
-    holdOutTrainDictY = {}
-    assert len(trainX) == len(trainY) and len(trainX) > int(configDict['ACTIVE_SEED_TRAINING_SIZE'])
-    totalSize = len(trainX)
-    i=0
-    # traverse trainKeyOrder
-    while i< totalSize:
-        curElemX = trainX[0]
-        curElemY = trainY[0]
-        sessIDQueryID = trainKeyOrder[i]
-        if i < int(configDict['ACTIVE_SEED_TRAINING_SIZE']):
-            availTrainDictX[sessIDQueryID] = curElemX
-            availTrainDictY[sessIDQueryID] = curElemY
-        else:
-            holdOutTrainDictX[sessIDQueryID] = curElemX
-            holdOutTrainDictY[sessIDQueryID] = curElemY
-        trainX.pop(0)
-        trainY.pop(0)
-        i+=1
-    assert len(holdOutTrainDictX) == totalSize-int(configDict['ACTIVE_SEED_TRAINING_SIZE']) and len(availTrainDictX) == int(configDict['ACTIVE_SEED_TRAINING_SIZE']) and len(availTrainDictX) == len(availTrainDictY)
-    return (availTrainDictX, availTrainDictY, holdOutTrainDictX, holdOutTrainDictY)
 '''

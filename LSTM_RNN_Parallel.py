@@ -167,11 +167,12 @@ def trainRNN(dataX, dataY, modelRNN, max_lookback, configDict):
 def createTemporalPairs(queryKeysSetAside, configDict, sessionDictGlobal, sessionStreamDict):
     dataX = []
     dataY = []
+    assert configDict['SUPERVISED_OR_ACTIVE_LEARN'] == 'SUPERVISED' or configDict['SUPERVISED_OR_ACTIVE_LEARN'] == 'ACTIVE'
     for key in queryKeysSetAside:
         sessID = int(key.split(",")[0])
         queryID = int(key.split(",")[1])
-        #because for Kfold this is training phase but for singularity it would already have been added
-        if configDict['SINGULARITY_OR_KFOLD']=='KFOLD':
+        #because for supervised Kfold this is training phase but for singularity it would already have been added
+        if configDict['SINGULARITY_OR_KFOLD']=='KFOLD' and configDict['SUPERVISED_OR_ACTIVE_LEARN'] == 'SUPERVISED':
             updateSessionDictWithCurrentIntent(sessionDictGlobal, sessID, queryID)
         if int(queryID) > 0:
             (dataX, dataY) = appendTrainingXY(sessionStreamDict, sessID, queryID, configDict, dataX, dataY)
