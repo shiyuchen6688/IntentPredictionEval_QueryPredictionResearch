@@ -396,7 +396,7 @@ def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, modelRNNThread, 
                 topKPredictedIntents = computePredictedIntentsRNN(threadID, predictedY, configDict, sessID, queryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
-            resList.append((sessID, queryID, topKPredictedIntents, nextQueryIntent))
+            resList.append((sessID, queryID, predictedY, topKPredictedIntents, nextQueryIntent))
             print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
     #QR.deleteIfExists(modelRNNFileName)
     return resList
@@ -512,7 +512,7 @@ def copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict):
 def appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, foldID):
     for threadID in resultDict:
         for i in range(len(resultDict[threadID])):
-            (sessID, queryID, topKPredictedIntents, nextQueryIntent) = resultDict[threadID][i]
+            (sessID, queryID, predictedY, topKPredictedIntents, nextQueryIntent) = resultDict[threadID][i]
             elapsedAppendTime += QR.appendPredictedRNNIntentToFile(sessID, queryID, topKPredictedIntents,
                                                                    nextQueryIntent, numEpisodes,
                                                                    outputIntentFileName, configDict, foldID)
