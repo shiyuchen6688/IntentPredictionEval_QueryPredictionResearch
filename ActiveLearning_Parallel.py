@@ -222,10 +222,10 @@ def runActiveRNNKFoldExp(configDict):
     avgKFoldPrecision = {}
     avgKFoldRecall = {}
     algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
-    outputDir = configDict['KFOLD_OUTPUT_DIR']
+    outputDir = getConfig(configDict['KFOLD_OUTPUT_DIR'])
     for foldID in range(int(configDict['NUM_FOLDS_TO_RUN'])):
-        trainIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
-        testIntentSessionFile = configDict['KFOLD_INPUT_DIR'] + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
+        trainIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
+        testIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
         (resultDict, availTrainSampledQueryHistory, sessionLengthDict, availTrainDictGlobal, availTrainKeyOrder, holdOutTrainKeyOrder, modelRNN, max_lookback, sessionStreamDict,
          testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict)
         activeIter = 0
@@ -291,13 +291,13 @@ def runActiveRNNKFoldExp(configDict):
 
 def saveDictsBeforeAverage(avgTrainTime, avgExSelTime, avgTestTime, avgKFoldFMeasure, avgKFoldAccuracy, avgKFoldPrecision, avgKFoldRecall, configDict):
     suffix = "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_"+configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM']
-    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgTrainTimeAL"+suffix+".pickle", avgTrainTime)
-    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgTestTimeAL"+suffix+".pickle", avgTestTime)
-    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgExSelTime"+suffix+".pickle", avgExSelTime)
-    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgKFoldFMeasure"+suffix+".pickle", avgKFoldFMeasure)
-    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgKFoldAccuracy"+suffix+".pickle", avgKFoldAccuracy)
-    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgKFoldPrecision"+suffix+".pickle", avgKFoldPrecision)
-    QR.writeToPickleFile(configDict['KFOLD_OUTPUT_DIR']+"avgKFoldRecall"+suffix+".pickle", avgKFoldRecall)
+    QR.writeToPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgTrainTimeAL"+suffix+".pickle", avgTrainTime)
+    QR.writeToPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgTestTimeAL"+suffix+".pickle", avgTestTime)
+    QR.writeToPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgExSelTime"+suffix+".pickle", avgExSelTime)
+    QR.writeToPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldFMeasure"+suffix+".pickle", avgKFoldFMeasure)
+    QR.writeToPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldAccuracy"+suffix+".pickle", avgKFoldAccuracy)
+    QR.writeToPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldPrecision"+suffix+".pickle", avgKFoldPrecision)
+    QR.writeToPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldRecall"+suffix+".pickle", avgKFoldRecall)
     return
 
 def computeAvgIterTime(avgTrainTime, avgExSelTime, avgTestTime):
