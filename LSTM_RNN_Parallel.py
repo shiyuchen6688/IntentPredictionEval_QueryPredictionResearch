@@ -386,7 +386,8 @@ def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, modelRNNThread, 
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
         queryID = int(sessQueryID.split(",")[1])
-        if queryID < sessionLengthDict[sessID]-1:
+        #if queryID < sessionLengthDict[sessID]-1:
+        if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
             predictedY = predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)

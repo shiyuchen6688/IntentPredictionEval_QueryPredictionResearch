@@ -221,8 +221,6 @@ def runActiveRNNKFoldExp(configDict):
     avgKFoldAccuracy = {}
     avgKFoldPrecision = {}
     avgKFoldRecall = {}
-    algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
-    outputDir = getConfig(configDict['KFOLD_OUTPUT_DIR'])
     for foldID in range(int(configDict['NUM_FOLDS_TO_RUN'])):
         trainIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
@@ -275,6 +273,21 @@ def runActiveRNNKFoldExp(configDict):
             avgKFoldRecall[activeIter][foldID] = avgRecall
             activeIter+=1
     saveDictsBeforeAverage(avgTrainTime, avgExSelTime, avgTestTime, avgKFoldFMeasure, avgKFoldAccuracy, avgKFoldPrecision, avgKFoldRecall, configDict)
+    processSavedDicts(configDict)
+    return
+
+def processSavedDicts(configDict):
+    algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
+    outputDir = getConfig(configDict['KFOLD_OUTPUT_DIR'])
+    suffix = "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_" + configDict[
+        'ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM']
+    avgTrainTime = QR.readFromPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgTrainTimeAL"+suffix+".pickle")
+    avgExSelTime = QR.readFromPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgExSelTime"+suffix+".pickle")
+    avgTestTime = QR.readFromPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgTestTimeAL"+suffix+".pickle")
+    avgKFoldFMeasure = QR.readFromPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldFMeasure"+suffix+".pickle")
+    avgKFoldPrecision = QR.readFromPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldPrecision"+suffix+".pickle")
+    avgKFoldRecall = QR.readFromPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldRecall"+suffix+".pickle")
+    avgKFoldAccuracy = QR.readFromPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldAccuracy"+suffix+".pickle")
     # Now take the average
     expectedIterLength = int(configDict['KFOLD'])
     avgTrainTime = computeAvgPerDict(avgTrainTime, expectedIterLength)
@@ -285,9 +298,12 @@ def runActiveRNNKFoldExp(configDict):
     avgKFoldAccuracy = computeAvgPerDict(avgKFoldAccuracy, expectedIterLength)
     avgKFoldPrecision = computeAvgPerDict(avgKFoldPrecision, expectedIterLength)
     avgKFoldRecall = computeAvgPerDict(avgKFoldRecall, expectedIterLength)
-    #Now plot the avg Dicts using new methods in ParseResultsToExcel
-    ParseResultsToExcel.parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime, avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall, algoName, outputDir, configDict)
+    # Now plot the avg Dicts using new methods in ParseResultsToExcel
+    ParseResultsToExcel.parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime,
+                                                  avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall,
+                                                  algoName, outputDir, configDict)
     return
+
 
 def saveDictsBeforeAverage(avgTrainTime, avgExSelTime, avgTestTime, avgKFoldFMeasure, avgKFoldAccuracy, avgKFoldPrecision, avgKFoldRecall, configDict):
     suffix = "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_"+configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM']
@@ -340,7 +356,11 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    executeAL(configDict)
+    assert configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True' or configDict['RUN_FROM_EXISTING_OUTPUT'] == 'False'
+    if configDict['RUN_FROM_EXISTING_OUTPUT'] == 'False':
+        executeAL(configDict)
+    elif configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True':
+        processSavedDicts(configDict)
 
 '''
 def computeAvgPerDict(avgDict, expectedIterLength):
