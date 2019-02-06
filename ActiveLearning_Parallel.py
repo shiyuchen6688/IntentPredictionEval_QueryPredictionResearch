@@ -289,7 +289,7 @@ def processSavedDicts(configDict):
     avgKFoldRecall = QR.readFromPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldRecall"+suffix+".pickle")
     avgKFoldAccuracy = QR.readFromPickleFile(getConfig(configDict['KFOLD_OUTPUT_DIR'])+"avgKFoldAccuracy"+suffix+".pickle")
     # Now take the average
-    expectedIterLength = int(configDict['KFOLD'])
+    expectedIterLength = int(configDict['NUM_FOLDS_TO_RUN'])
     avgTrainTime = computeAvgPerDict(avgTrainTime, expectedIterLength)
     avgExSelTime = computeAvgPerDict(avgExSelTime, expectedIterLength)
     avgTestTime = computeAvgPerDict(avgTestTime, expectedIterLength)
