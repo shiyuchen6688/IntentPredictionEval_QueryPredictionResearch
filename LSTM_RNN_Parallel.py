@@ -210,7 +210,7 @@ def predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_
     return predictedY
 
 
-def partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, numQueries, numSubThreads):
+def partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, numQueries, numSubThreads, configDict):
     assert configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'SAMPLE' or configDict[
                                                                              'RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL'
     if configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL':
@@ -342,7 +342,7 @@ def computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curS
         pool = multiprocessing.Pool()
         argList = []
         if numQueries >= numSubThreads:
-            queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, numQueries, numSubThreads)
+            queryPartitions = partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, numQueries, numSubThreads, configDict)
             assert len(queryPartitions) == int(numSubThreads)
             subThreads = {}
             localCosineSimDicts = {}
