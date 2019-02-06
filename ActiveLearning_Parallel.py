@@ -70,7 +70,7 @@ def createSortedMiniMaxCSD(minimaxCosineSimDict, modelRNN, max_lookback, holdOut
         for i in range(len(holdOutResultDict[threadID])):
             (sessID, queryID, predictedY, topKPredictedIntents, nextQueryIntent) = holdOutResultDict[threadID][i]
             maxCosineSim = CFCosineSim.computeListBitCosineSimilarity(predictedY, topKPredictedIntents[0], configDict)
-            minimaxCosineSimDict[str(sessID+","+str(queryID))] = maxCosineSim
+            minimaxCosineSimDict[str(sessID)+","+str(queryID)] = maxCosineSim
     sorted_minimaxCSD = sorted(minimaxCosineSimDict.items(), key=operator.itemgetter(1))  # we sort in ASC order
     return sorted_minimaxCSD
 
