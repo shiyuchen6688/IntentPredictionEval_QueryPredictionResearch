@@ -85,7 +85,7 @@ def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTra
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
     minimaxCosineSimDict = {}
     i = 0
-    print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", #Avail-Dict-Pairs: " + str(len(availTrainKeyOrder))
+    print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", #Avail-Dict-Pairs: " + str(len(availTrainKeyOrder))  + ", #Hold-Out-Dict-Pairs: " + str(len(holdOutTrainKeyOrder))
     sorted_minimaxCSD = createSortedMiniMaxCSD(minimaxCosineSimDict, modelRNN, max_lookback, holdOutTrainKeyOrder, availTrainDictGlobal, availTrainSampledQueryHistory, sessionLengthDict, sessionStreamDict, configDict)
     resCount = 0
     for cosSimEntry in sorted_minimaxCSD:
@@ -227,7 +227,8 @@ def runActiveRNNKFoldExp(configDict):
         (resultDict, availTrainSampledQueryHistory, sessionLengthDict, availTrainDictGlobal, availTrainKeyOrder, holdOutTrainKeyOrder, modelRNN, max_lookback, sessionStreamDict,
          testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict)
         activeIter = 0
-        while len(holdOutTrainKeyOrder) > 0:
+        resCount = 1 # randomly intiialized
+        while len(holdOutTrainKeyOrder) > 0 and resCount > 0:
             startTime = time.time()
             assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
             #reinitialize model to None before training it if it is a full train
@@ -252,7 +253,7 @@ def runActiveRNNKFoldExp(configDict):
             else:
                 (availTrainSampledQueryHistory, availTrainKeyOrder, holdOutTrainKeyOrder, resCount) = exampleSelectionRandom(foldID, activeIter, availTrainKeyOrder, holdOutTrainKeyOrder, availTrainSampledQueryHistory, sessionStreamDict)
             exSelTime = float(time.time() - startTime)
-            print "FoldID: "+str(foldID)+", activeIter: "+str(activeIter)+", Added " + str(resCount) + " examples to the training data"
+            print "FoldID: "+str(foldID)+", activeIter: "+str(activeIter)+", Added " + str(resCount) + " examples to the training data, #Hold-Out Key Pairs: "+str(len(holdOutTrainKeyOrder))
 
             # update quality measures
             assert len(avgTrainTime) == len(avgTestTime) and len(avgExSelTime) == len(avgTrainTime) and len(avgTrainTime) == len(avgKFoldAccuracy) and len(avgTrainTime) == len(avgKFoldFMeasure) and len(avgTrainTime) == len(avgKFoldPrecision) and len(avgTrainTime) == len(avgKFoldRecall)
