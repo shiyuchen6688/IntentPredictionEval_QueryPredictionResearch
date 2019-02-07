@@ -1,5 +1,5 @@
 #!/bin/sh
-python ActiveLearning_Parallel.py -config configDir/MINC_configFile_1Fold_Random_Sample_0.1_Full_Weight_0.6_Top_3_Last_3.txt
+#python ActiveLearning_Parallel.py -config configDir/MINC_configFile_1Fold_Random_Sample_0.1_Full_Weight_0.6_Top_3_Last_3.txt
 python ActiveLearning_Parallel.py -config configDir/MINC_configFile_1Fold_Minimax_Sample_0.1_Full_Weight_0.6_Top_3_Last_3.txt
 python ActiveLearning_Parallel.py -config configDir/MINC_configFile_1Fold_Random_Sample_0.1_Incremental_Weight_0.6_Top_3_Last_3.txt
 python ActiveLearning_Parallel.py -config configDir/MINC_configFile_1Fold_Minimax_Sample_0.1_Incremental_Weight_0.6_Top_3_Last_3.txt
