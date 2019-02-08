@@ -300,7 +300,7 @@ def processSavedDicts(configDict):
     avgKFoldPrecision = computeAvgPerDict(avgKFoldPrecision, expectedIterLength)
     avgKFoldRecall = computeAvgPerDict(avgKFoldRecall, expectedIterLength)
     # Now plot the avg Dicts using new methods in ParseResultsToExcel
-    ParseResultsToExcel.parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime,
+    ParseResultsToExcel.parseMincQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime,
                                                   avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall,
                                                   algoName, outputDir, configDict)
     return

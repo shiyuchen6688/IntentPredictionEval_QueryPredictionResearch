@@ -5,6 +5,24 @@ from pandas import DataFrame
 import ParseConfigFile as parseConfig
 from ParseConfigFile import getConfig
 
+def parseMincQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime, avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall, algoName, outputDir, configDict):
+    assert configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
+    outputExcelQualityTime = outputDir + "/OutputExcelQualityTimeActiveLearn_" + algoName + "_" + configDict['INTENT_REP'] + "_" + \
+                         configDict['BIT_OR_WEIGHTED'] + "_"+configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM']+\
+                         "_WEIGHT_" + configDict['RNN_WEIGHT_VECTOR_THRESHOLD']+ "_SAMPLE_" + configDict['RNN_SAMPLING_FRACTION'] + \
+                         "_TOP_K_" + configDict['TOP_K'] + "_LAST_K_" + configDict['RNN_SESS_VEC_MAX_LAST_K'] + \
+                         "_"+configDict['RNN_INCREMENTAL_OR_FULL_TRAIN']+ ".xlsx"
+    assert len(avgTrainTime) == len(avgTestTime) and len(avgExSelTime) == len(avgTrainTime) and len(
+        avgTrainTime) == len(avgKFoldAccuracy) and len(avgTrainTime) == len(avgKFoldFMeasure) and len(
+        avgTrainTime) == len(avgKFoldPrecision) and len(avgTrainTime) == len(avgKFoldRecall) and len(avgTrainTime) == len(avgIterTime)
+    print "Lengths of iterations: " + str(len(avgIterTime))
+    df = DataFrame(
+        {'iterations': avgIterTime.keys(), 'precision': avgKFoldPrecision.values(),
+         'recall': avgKFoldRecall.values(), 'FMeasure': avgKFoldFMeasure.values(), 'accuracy': avgKFoldAccuracy.values(),
+         'trainTime': avgTrainTime.values(), 'exSelTime': avgExSelTime.values(), 'testTime': avgTestTime.values(),
+         'iterTime': avgIterTime.values()})
+    df.to_excel(outputExcelQualityTime, sheet_name='sheet1', index=False)
+
 def parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTime, avgKFoldAccuracy, avgKFoldFMeasure, avgKFoldPrecision, avgKFoldRecall, algoName, outputDir, configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
     outputExcelQualityTime = outputDir + "/OutputExcelQualityTimeActiveLearn_" + algoName + "_" + configDict['INTENT_REP'] + "_" + \
