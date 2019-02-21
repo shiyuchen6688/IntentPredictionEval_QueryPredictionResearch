@@ -23,6 +23,15 @@ import copy
 import multiprocessing
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
+import CreateSQLFromIntentVec
+
+class SchemaDicts:
+    def __init__(self, tableDict, tableOrderDict, colDict, joinPredDict, joinPredBitPosDict):
+        self.tableDict = tableDict
+        self.tableOrderDict = tableOrderDict
+        self.colDict = colDict
+        self.joinPredDict = joinPredDict
+        self.joinPredBitPosDict = joinPredBitPosDict
 
 def pruneUnImportantDimensions(predictedY, configDict):
     newPredictedY = []
@@ -37,11 +46,13 @@ def pruneUnImportantDimensions(predictedY, configDict):
 
 def readTableDict(fn):
     tableDict = {}
+    tableOrderDict = {}
     with open(fn) as f:
         for line in f:
             tokens = line.strip().split(":")
             tableDict[tokens[0]] = int(tokens[1])
-    return tableDict
+            tableOrderDict[int(tokens[1])] = tokens[0]
+    return (tableDict, tableOrderDict)
 
 def readColDict(fn):
     colDict = {}
@@ -92,13 +103,15 @@ def readJoinColDicts(joinPredFile, joinPredBitPosFile):
     return (joinPredDict, joinPredBitPosDict)
 
 def readSchemaDicts(configDict):
-    tableDict = readTableDict(getConfig(configDict['MINC_TABLES']))
+    (tableDict, tableOrderDict) = readTableDict(getConfig(configDict['MINC_TABLES']))
     colDict = readColDict(getConfig(configDict['MINC_COLS']))
     (joinPredDict, joinPredBitPosDict) = readJoinColDicts(getConfig(configDict['MINC_JOIN_PREDS']), getConfig(configDict['MINC_JOIN_PRED_BIT_POS']))
+    schemaDicts = SchemaDicts(tableDict, tableOrderDict, colDict, joinPredDict, joinPredBitPosDict)
+    return schemaDicts
 
 def regenerateQuery(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
     topKPredictedIntents = []
-    readSchemaDicts(configDict)
+    schemaDicts = readSchemaDicts(configDict)
     return topKPredictedIntents
 
 if __name__ == "__main__":
@@ -107,4 +120,4 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    readSchemaDicts(configDict)
+    schemaDicts = readSchemaDicts(configDict)
