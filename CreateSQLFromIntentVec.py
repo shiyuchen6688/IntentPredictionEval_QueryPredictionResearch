@@ -25,46 +25,25 @@ from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 import ReverseEnggQueries
 
-class SQLForIntent:
+class SQLForIntentStr:
     def __init__(self, schemaDicts, intentVec):
         self.schemaDicts = schemaDicts
         self.intentVec = intentVec
-        self.queryTypeBitMapSize = 4  # select, insert, update, delete
-        self.limitBitMapSize = 1
-        self.tableBitMapSize = estimateTableBitMapSize(schemaDicts)
-        self.allColumnsSize = estimateAllColumnCount(schemaDicts)
-        self.joinPredicatesBitMapSize = estimateJoinPredicatesBitMapSize(schemaDicts)
-
-        # the following requires careful order mapping
-        self.queryTypeStartBitIndex = 0
-        self.tableStartBitIndex = self.queryTypeStartBitIndex + self.queryTypeBitMapSize
-        self.projectionStartBitIndex = self.tableStartBitIndex + self.tableBitMapSize
-        self.avgStartBitIndex = self.projectionStartBitIndex + self.allColumnsSize
-        self.minStartBitIndex = self.avgStartBitIndex + self.allColumnsSize
-        self.maxStartBitIndex = self.minStartBitIndex + self.allColumnsSize
-        self.sumStartBitIndex = self.maxStartBitIndex + self.allColumnsSize
-        self.countStartBitIndex = self.sumStartBitIndex + self.allColumnsSize
-        self.selectionStartBitIndex = self.countStartBitIndex + self.allColumnsSize
-        self.groupByStartBitIndex = self.selectionStartBitIndex + self.allColumnsSize
-        self.orderByStartBitIndex = self.groupByStartBitIndex + self.allColumnsSize
-        self.havingStartBitIndex = self.orderByStartBitIndex + self.allColumnsSize
-        self.limitStartBitIndex = self.havingStartBitIndex + self.allColumnsSize
-        self.joinPredicatesStartBitIndex = self.limitStartBitIndex + self.limitBitMapSize
-
-        self.queryTypeBitMap = self.intentVec[self.queryTypeStartBitIndex:self.queryTypeStartBitIndex + self.queryTypeBitMapSize]
-        self.tableBitMap = self.intentVec[self.tableStartBitIndex:self.tableStartBitIndex + self.tableBitMapSize]
-        self.projectionBitMap = self.intentVec[self.projectionStartBitIndex:self.projectionStartBitIndex + self.allColumnsSize]
-        self.avgBitMap = self.intentVec[self.avgStartBitIndex:self.avgStartBitIndex + self.allColumnsSize]
-        self.minBitMap = self.intentVec[self.minStartBitIndex:self.minStartBitIndex + self.allColumnsSize]
-        self.maxBitMap = self.intentVec[self.maxStartBitIndex:self.maxStartBitIndex + self.allColumnsSize]
-        self.sumBitMap = self.intentVec[self.sumStartBitIndex:self.sumStartBitIndex + self.allColumnsSize]
-        self.countBitMap = self.intentVec[self.countStartBitIndex:self.countStartBitIndex + self.allColumnsSize]
-        self.selectionBitMap = self.intentVec[self.selectionStartBitIndex:self.selectionStartBitIndex + self.allColumnsSize]
-        self.groupByBitMap = self.intentVec[self.groupByStartBitIndex:self.groupByStartBitIndex + self.allColumnsSize]
-        self.orderByBitMap = self.intentVec[self.orderByStartBitIndex:self.orderByStartBitIndex + self.allColumnsSize]
-        self.havingBitMap = self.intentVec[self.havingStartBitIndex:self.havingStartBitIndex + self.allColumnsSize]
-        self.limitBitMap = self.intentVec[self.limitStartBitIndex:self.limitStartBitIndex + self.limitBitMapSize]
-        self.joinPredicatesBitMap = self.intentVec[self.joinPredicatesStartBitIndex:self.joinPredicatesStartBitIndex + self.joinPredicatesBitMapSize]
+        # following populates the required sub-bitmaps
+        self.queryTypeBitMap = self.intentVec[schemaDicts.queryTypeStartBitIndex:schemaDicts.queryTypeStartBitIndex + schemaDicts.queryTypeBitMapSize]
+        self.tableBitMap = self.intentVec[schemaDicts.tableStartBitIndex:schemaDicts.tableStartBitIndex + schemaDicts.tableBitMapSize]
+        self.projectionBitMap = self.intentVec[schemaDicts.projectionStartBitIndex:schemaDicts.projectionStartBitIndex + schemaDicts.allColumnsSize]
+        self.avgBitMap = self.intentVec[schemaDicts.avgStartBitIndex:schemaDicts.avgStartBitIndex + schemaDicts.allColumnsSize]
+        self.minBitMap = self.intentVec[schemaDicts.minStartBitIndex:schemaDicts.minStartBitIndex + schemaDicts.allColumnsSize]
+        self.maxBitMap = self.intentVec[schemaDicts.maxStartBitIndex:schemaDicts.maxStartBitIndex + schemaDicts.allColumnsSize]
+        self.sumBitMap = self.intentVec[schemaDicts.sumStartBitIndex:schemaDicts.sumStartBitIndex + schemaDicts.allColumnsSize]
+        self.countBitMap = self.intentVec[schemaDicts.countStartBitIndex:schemaDicts.countStartBitIndex + schemaDicts.allColumnsSize]
+        self.selectionBitMap = self.intentVec[schemaDicts.selectionStartBitIndex:schemaDicts.selectionStartBitIndex + schemaDicts.allColumnsSize]
+        self.groupByBitMap = self.intentVec[schemaDicts.groupByStartBitIndex:schemaDicts.groupByStartBitIndex + schemaDicts.allColumnsSize]
+        self.orderByBitMap = self.intentVec[schemaDicts.orderByStartBitIndex:schemaDicts.orderByStartBitIndex + schemaDicts.allColumnsSize]
+        self.havingBitMap = self.intentVec[schemaDicts.havingStartBitIndex:schemaDicts.havingStartBitIndex + schemaDicts.allColumnsSize]
+        self.limitBitMap = self.intentVec[schemaDicts.limitStartBitIndex:schemaDicts.limitStartBitIndex + schemaDicts.limitBitMapSize]
+        self.joinPredicatesBitMap = self.intentVec[schemaDicts.joinPredicatesStartBitIndex:schemaDicts.joinPredicatesStartBitIndex + schemaDicts.joinPredicatesBitMapSize]
 
         self.queryType = None
         self.tables = []
@@ -91,32 +70,14 @@ def readIntentObjectsFromFile(intentFileName):
             intentObjDict[tokens[0]] =tokens[1]
     return intentObjDict
 
-def initIntentObj(schemaDicts, intentVec):
-    intentObj = SQLForIntent(schemaDicts, intentVec)
+def initIntentStrObj(schemaDicts, intentVec):
+    intentObj = SQLForIntentStr(schemaDicts, intentVec)
     return intentObj
-
-def estimateTableBitMapSize(schemaDicts):
-    tableDict = schemaDicts.tableDict
-    return len(tableDict)
-
-def estimateAllColumnCount(schemaDicts):
-    colCount = 0
-    for tableName in schemaDicts.tableDict:
-        colCount += len(schemaDicts.colDict[tableName])
-    return colCount
-
-def estimateJoinPredicatesBitMapSize(schemaDicts):
-    joinPredDict = schemaDicts.joinPredDict
-    joinPredCount = 0
-    for tabPair in joinPredDict:
-        joinPredCount += len(joinPredDict[tabPair])+1 # accounting for the one extra bit
-    return joinPredCount
 
 def assertSize(intentObj):
     # estAllColumnsSize = estGroupByBitMapSize = estOrderByBitMapSize = estProjectionBitMapSize = estHavingBitMapSize =
     # estMinBitMapSize = estMaxBitMapSize = estAvgBitMapSize = estSumBitMapSize = estCountBitMapSize
-    allOpSize = intentObj.queryTypeBitMapSize + intentObj.tableBitMapSize + intentObj.allColumnsSize * 9 + intentObj.limitBitMapSize + intentObj.joinPredicatesBitMapSize
-    print "estAllOpSize: "+str(allOpSize)+", len(intentVec): "+str(len(intentObj.intentVec))
+    print "estAllOpSize: "+str(intentObj.schemaDicts.allOpSize)+", len(intentVec): "+str(len(intentObj.intentVec))
     return
 
 def assertIntentOpObjects(intentObj, intentObjDict):
@@ -133,7 +94,7 @@ def assertIntentOpObjects(intentObj, intentObjDict):
     print "Assertion outcome: "+str(sameObjs)
     return sameObjs
 
-def populateQueryType(intentObj):
+def populateQueryTypeStr(intentObj):
     assert len(intentObj.queryTypeBitMap) == 4 # select, update, insert, delete
     if int(intentObj.queryTypeBitMap[0]) == 1:
         intentObj.queryType = "select"
@@ -152,7 +113,7 @@ def searchForTable(tableDict, index):
             return table
     return None
 
-def populateTables(intentObj):
+def populateTablesStr(intentObj):
     assert len(intentObj.tables) == 0
     for i in range(len(intentObj.tableBitMap)):
         if int(intentObj.tableBitMap[i]) == 1:
@@ -161,13 +122,13 @@ def populateTables(intentObj):
             intentObj.tables.append(tableName)
     return intentObj
 
-def populateLimit(intentObj):
+def populateLimitStr(intentObj):
     assert len(intentObj.limitBitMap)==1
     if int(intentObj.limitBitMap[0])==1:
         intentObj.limit = "Limit"
     return intentObj
 
-def populateColsForOp(opCols, opBitMap, intentObj):
+def populateColsForOpStr(opCols, opBitMap, intentObj):
     assert len(opCols) == 0
     bitMapIndex=0
     for tableIndex in range(len(intentObj.schemaDicts.tableOrderDict)):
@@ -179,7 +140,7 @@ def populateColsForOp(opCols, opBitMap, intentObj):
             bitMapIndex+=1
     return opCols
 
-def populateJoinPreds(intentObj):
+def populateJoinPredsStr(intentObj):
     assert len(intentObj.joinPreds) == 0
     for tablePairIndex in intentObj.schemaDicts.joinPredBitPosDict:
         startEndBitPos = intentObj.schemaDicts.joinPredBitPosDict[tablePairIndex]
@@ -192,21 +153,21 @@ def populateJoinPreds(intentObj):
                 intentObj.joinPreds.append(joinStrToAppend)
     return intentObj
 
-def createSQLFromIntent(intentObj):
-    intentObj = populateQueryType(intentObj)
-    intentObj = populateTables(intentObj)
-    intentObj.projCols = populateColsForOp(intentObj.projCols, intentObj.projectionBitMap, intentObj)
-    intentObj.avgCols = populateColsForOp(intentObj.avgCols, intentObj.projectionBitMap, intentObj)
-    intentObj.minCols = populateColsForOp(intentObj.minCols, intentObj.minBitMap, intentObj)
-    intentObj.maxCols = populateColsForOp(intentObj.maxCols, intentObj.maxBitMap, intentObj)
-    intentObj.sumCols = populateColsForOp(intentObj.sumCols, intentObj.sumBitMap, intentObj)
-    intentObj.countCols = populateColsForOp(intentObj.countCols, intentObj.countBitMap, intentObj)
-    intentObj.selCols = populateColsForOp(intentObj.selCols, intentObj.selectionBitMap, intentObj)
-    intentObj.groupByCols = populateColsForOp(intentObj.groupByCols, intentObj.groupByBitMap, intentObj)
-    intentObj.orderByCols = populateColsForOp(intentObj.orderByCols, intentObj.orderByBitMap, intentObj)
-    intentObj.havingCols = populateColsForOp(intentObj.havingCols, intentObj.havingBitMap, intentObj)
-    intentObj = populateLimit(intentObj)
-    intentObj = populateJoinPreds(intentObj)
+def createSQLFromIntentString(intentObj):
+    intentObj = populateQueryTypeStr(intentObj)
+    intentObj = populateTablesStr(intentObj)
+    intentObj.projCols = populateColsForOpStr(intentObj.projCols, intentObj.projectionBitMap, intentObj)
+    intentObj.avgCols = populateColsForOpStr(intentObj.avgCols, intentObj.projectionBitMap, intentObj)
+    intentObj.minCols = populateColsForOpStr(intentObj.minCols, intentObj.minBitMap, intentObj)
+    intentObj.maxCols = populateColsForOpStr(intentObj.maxCols, intentObj.maxBitMap, intentObj)
+    intentObj.sumCols = populateColsForOpStr(intentObj.sumCols, intentObj.sumBitMap, intentObj)
+    intentObj.countCols = populateColsForOpStr(intentObj.countCols, intentObj.countBitMap, intentObj)
+    intentObj.selCols = populateColsForOpStr(intentObj.selCols, intentObj.selectionBitMap, intentObj)
+    intentObj.groupByCols = populateColsForOpStr(intentObj.groupByCols, intentObj.groupByBitMap, intentObj)
+    intentObj.orderByCols = populateColsForOpStr(intentObj.orderByCols, intentObj.orderByBitMap, intentObj)
+    intentObj.havingCols = populateColsForOpStr(intentObj.havingCols, intentObj.havingBitMap, intentObj)
+    intentObj = populateLimitStr(intentObj)
+    intentObj = populateJoinPredsStr(intentObj)
     return intentObj
 
 def printSQLOps(intentObj):
@@ -225,12 +186,114 @@ def printSQLOps(intentObj):
     print "Limit: " + str(intentObj.limit)
     print "JOIN PRED ColPairs: "+ str(intentObj.joinPreds)
 
-def createSQLFromIntentSanityCheck(schemaDicts, intentObjDict):
-    intentObj = initIntentObj(schemaDicts, intentObjDict['intentVector'])
-    assertSize(intentObj)
+def checkBitMapWorking(intentObjDict):
+    bitStr = "0100000001110001000"
+    b = BitMap.fromstring(bitStr)
+    if(b.size()>len(bitStr)):
+        startPos = b.size() % 8
+        bitStr = b.tostring()[startPos:b.size()]
+    print bitStr
+    print b.nonzero()
+    print b.size()
+    print len(bitStr)
+    print "Length of intentObjDict['intentVector']: " + str(len(intentObjDict['intentVector']))
+    bitmap = BitMap.fromstring(intentObjDict['intentVector'])
+    print "Length of bitmap.tostring(): " + str(len(bitmap.tostring()))
+
+def createSQLFromIntentStrSanityCheck(schemaDicts, intentObjDict):
+    intentObj = initIntentStrObj(schemaDicts, intentObjDict['intentVector'])
     assertIntentOpObjects(intentObj, intentObjDict)
-    createSQLFromIntent(intentObj)
+    createSQLFromIntentString(intentObj)
     printSQLOps(intentObj)
+
+def checkOpToPopulate(newSetBitPos, intentObj):
+    if newSetBitPos >= intentObj.schemaDicts.joinPredicatesStartBitIndex:
+        return "join"
+    elif newSetBitPos >= intentObj.schemaDicts.limitStartBitIndex:
+        return "limit"
+    elif newSetBitPos >= intentObj.schemaDicts.havingStartBitIndex:
+        return "having"
+    elif newSetBitPos >= intentObj.schemaDicts.orderByStartBitIndex:
+        return "orderby"
+    elif newSetBitPos >= intentObj.schemaDicts.groupByStartBitIndex:
+        return "groupby"
+    elif newSetBitPos >= intentObj.schemaDicts.selectionStartBitIndex:
+        return "select"
+    elif newSetBitPos >= intentObj.schemaDicts.countStartBitIndex:
+        return "count"
+    elif newSetBitPos >= intentObj.schemaDicts.sumStartBitIndex:
+        return "sum"
+    elif newSetBitPos >= intentObj.schemaDicts.maxStartBitIndex:
+        return "max"
+    elif newSetBitPos >= intentObj.schemaDicts.minStartBitIndex:
+        return "min"
+    elif newSetBitPos >= intentObj.schemaDicts.avgStartBitIndex:
+        return "avg"
+    elif newSetBitPos >= intentObj.schemaDicts.projectionStartBitIndex:
+        return "project"
+    elif newSetBitPos >= intentObj.schemaDicts.tableStartBitIndex:
+        return "table"
+    elif newSetBitPos >= intentObj.schemaDicts.queryTypeStartBitIndex:
+        return "querytype"
+    else:
+        print "not possible !!"
+
+def populateOps(intentObj, opsToPopulate):
+    for opToPopulate in opsToPopulate:
+        if opToPopulate == "querytype":
+            intentObj = populateQueryTypeStr(intentObj)
+        elif opToPopulate == "table":
+            intentObj = populateTablesStr(intentObj)
+        elif opToPopulate == "project":
+            intentObj.projCols = populateColsForOpStr(intentObj.projCols, intentObj.projectionBitMap, intentObj)
+        elif opToPopulate == "avg":
+            intentObj.avgCols = populateColsForOpStr(intentObj.avgCols, intentObj.projectionBitMap, intentObj)
+        elif opToPopulate == "min":
+            intentObj.minCols = populateColsForOpStr(intentObj.minCols, intentObj.minBitMap, intentObj)
+        elif opToPopulate == "max":
+            intentObj.maxCols = populateColsForOpStr(intentObj.maxCols, intentObj.maxBitMap, intentObj)
+        elif opToPopulate == "sum":
+            intentObj.sumCols = populateColsForOpStr(intentObj.sumCols, intentObj.sumBitMap, intentObj)
+        elif opToPopulate == "count":
+            intentObj.countCols = populateColsForOpStr(intentObj.countCols, intentObj.countBitMap, intentObj)
+        elif opToPopulate == "select":
+            intentObj.selCols = populateColsForOpStr(intentObj.selCols, intentObj.selectionBitMap, intentObj)
+        elif opToPopulate == "groupby":
+            intentObj.groupByCols = populateColsForOpStr(intentObj.groupByCols, intentObj.groupByBitMap, intentObj)
+        elif opToPopulate == "orderby":
+            intentObj.orderByCols = populateColsForOpStr(intentObj.orderByCols, intentObj.orderByBitMap, intentObj)
+        elif opToPopulate == "having":
+            intentObj.havingCols = populateColsForOpStr(intentObj.havingCols, intentObj.havingBitMap, intentObj)
+        elif opToPopulate == "limit":
+            intentObj = populateLimitStr(intentObj)
+        elif opToPopulate == "join":
+            intentObj = populateJoinPredsStr(intentObj)
+    return intentObj
+
+def createSQLFromIntentStringBitPos(intentObj, newSetBitPosList):
+    opsToPopulate = set()
+    for newSetBitPos in newSetBitPosList:
+        opToPopulate = checkOpToPopulate(newSetBitPos, intentObj)
+        opsToPopulate.add(opToPopulate)
+    populateOps(intentObj, opsToPopulate)
+    printSQLOps(intentObj)
+
+def createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict):
+    checkBitMapWorking(intentObjDict)
+    intentBitMap = BitMap.fromstring(intentObjDict['intentVector'])
+    intentStr = intentBitMap.tostring()
+    if intentBitMap.size() > schemaDicts.allOpSize:
+        startBit = intentBitMap.size() - schemaDicts.allOpSize
+        intentStr = intentStr[startBit:intentBitMap.size()]
+    assert intentStr == intentObjDict['intentVector']
+    intentObj = initIntentStrObj(schemaDicts, intentStr)
+    assertIntentOpObjects(intentObj, intentObjDict)
+    setBitPosList = intentBitMap.nonzero()
+    newSetBitPosList = []
+    for bitPos in setBitPosList:
+        newBitPos = schemaDicts.allOpSize - 1 - bitPos
+        newSetBitPosList.append(newBitPos)
+    createSQLFromIntentStringBitPos(intentObj, newSetBitPosList)
 
 
 if __name__ == "__main__":
@@ -241,5 +304,6 @@ if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
     intentObjDict = readIntentObjectsFromFile("/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
-    createSQLFromIntentSanityCheck(schemaDicts, intentObjDict)
+    #createSQLFromIntentStrSanityCheck(schemaDicts, intentObjDict)
+    createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict)
     #createSQLFromIntent(schemaDicts, intentObjDict['intentVector'])

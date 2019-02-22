@@ -326,7 +326,7 @@ def computePredictedIntentsRNN(threadID, predictedY, configDict, curSessID, curQ
         return computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID,
                                               sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
     elif configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True':
-        return ReverseEnggQueries.regenerateQuery(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
+        return ReverseEnggQueries.regenerateQuery(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict)
 
 
 def computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
@@ -654,7 +654,8 @@ def trainTestBatchWise(keyOrder, sampledQueryHistory, queryKeysSetAside, startEp
         print "Starting training in Episode " + str(numEpisodes)
         # update SessionDictGlobal and train with the new batch
         (sessionDictGlobal, queryKeysSetAside) = updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal)
-        sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside, sessionStreamDict)
+        if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+            sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside, sessionStreamDict)
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal,
                                                                         modelRNN, max_lookback, sessionStreamDict)
         assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[

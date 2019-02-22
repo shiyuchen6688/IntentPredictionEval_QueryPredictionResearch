@@ -33,6 +33,50 @@ class SchemaDicts:
         self.joinPredDict = joinPredDict
         self.joinPredBitPosDict = joinPredBitPosDict
 
+        self.queryTypeBitMapSize = 4  # select, insert, update, delete
+        self.limitBitMapSize = 1
+        self.tableBitMapSize = estimateTableBitMapSize(self)
+        self.allColumnsSize = estimateAllColumnCount(self)
+        self.joinPredicatesBitMapSize = estimateJoinPredicatesBitMapSize(self)
+
+        # the following requires careful order mapping
+        self.queryTypeStartBitIndex = 0
+        self.tableStartBitIndex = self.queryTypeStartBitIndex + self.queryTypeBitMapSize
+        self.projectionStartBitIndex = self.tableStartBitIndex + self.tableBitMapSize
+        self.avgStartBitIndex = self.projectionStartBitIndex + self.allColumnsSize
+        self.minStartBitIndex = self.avgStartBitIndex + self.allColumnsSize
+        self.maxStartBitIndex = self.minStartBitIndex + self.allColumnsSize
+        self.sumStartBitIndex = self.maxStartBitIndex + self.allColumnsSize
+        self.countStartBitIndex = self.sumStartBitIndex + self.allColumnsSize
+        self.selectionStartBitIndex = self.countStartBitIndex + self.allColumnsSize
+        self.groupByStartBitIndex = self.selectionStartBitIndex + self.allColumnsSize
+        self.orderByStartBitIndex = self.groupByStartBitIndex + self.allColumnsSize
+        self.havingStartBitIndex = self.orderByStartBitIndex + self.allColumnsSize
+        self.limitStartBitIndex = self.havingStartBitIndex + self.allColumnsSize
+        self.joinPredicatesStartBitIndex = self.limitStartBitIndex + self.limitBitMapSize
+        self.allOpSize = self.queryTypeBitMapSize + self.tableBitMapSize + self.allColumnsSize * 10 + self.limitBitMapSize + self.joinPredicatesBitMapSize
+
+
+def estimateTableBitMapSize(schemaDicts):
+    tableDict = schemaDicts.tableDict
+    return len(tableDict)
+
+def estimateAllColumnCount(schemaDicts):
+    colCount = 0
+    for tableName in schemaDicts.tableDict:
+        colCount += len(schemaDicts.colDict[tableName])
+    return colCount
+
+def estimateJoinPredicatesBitMapSize(schemaDicts):
+    #joinPredDict = schemaDicts.joinPredDict
+    joinPredBitPosDict = schemaDicts.joinPredBitPosDict
+    joinPredBitCount = 0
+    #joinPredCount = 0
+    for tabPair in joinPredBitPosDict:
+        #joinPredCount += len(joinPredDict[tabPair]) + 1
+        joinPredBitCount += joinPredBitPosDict[tabPair][1] - joinPredBitPosDict[tabPair][0] + 1
+    return joinPredBitCount
+
 def pruneUnImportantDimensions(predictedY, configDict):
     newPredictedY = []
     minY = min(predictedY)
@@ -61,7 +105,7 @@ def readColDict(fn):
             tokens = line.strip().split(":")
             key = tokens[0]
             val = tokens[1].replace("[","").replace("]","").replace("'","")
-            columns = val.split(",")
+            columns = val.split(", ")
             colDict[key] = columns
     return colDict
 
@@ -109,7 +153,7 @@ def readSchemaDicts(configDict):
     schemaDicts = SchemaDicts(tableDict, tableOrderDict, colDict, joinPredDict, joinPredBitPosDict)
     return schemaDicts
 
-def regenerateQuery(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
+def regenerateQuery(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
     topKPredictedIntents = []
     schemaDicts = readSchemaDicts(configDict)
     return topKPredictedIntents
