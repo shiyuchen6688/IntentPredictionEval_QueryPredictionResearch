@@ -255,9 +255,10 @@ def readSchemaDicts(configDict):
     schemaDicts = SchemaDicts(tableDict, tableOrderDict, colDict, joinPredDict, joinPredBitPosDict)
     return schemaDicts
 
-def regenerateQuery(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
+def regenerateQuery(threadID, predictedY, schemaDicts, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
     topKPredictedIntents = []
-    schemaDicts = readSchemaDicts(configDict)
+    #schemaDicts = readSchemaDicts(configDict)
+
     return topKPredictedIntents
 
 if __name__ == "__main__":

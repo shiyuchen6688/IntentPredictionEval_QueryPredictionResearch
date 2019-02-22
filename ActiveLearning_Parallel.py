@@ -31,6 +31,7 @@ from ParseConfigFile import getConfig
 import threading
 import copy
 import multiprocessing
+import ReverseEnggQueries
 
 
 def exampleSelectionRandom(foldID, activeIter, availTrainKeyOrder, holdOutTrainKeyOrder, availTrainSampledQueryHistory, sessionStreamDict):
@@ -172,7 +173,7 @@ def computeQualityMeasuresPerSession(resultDict, numSessions):
     return (sessAccuracy, sessFMeasure, sessPrecision, sessRecall)
 
 
-def testActiveRNN(resultDict, availTrainSampledQueryHistory, sessionLengthDict, availTrainDictGlobal, testKeyOrder, sessionStreamDict, modelRNN, max_lookback):
+def testActiveRNN(schemaDicts, resultDict, availTrainSampledQueryHistory, sessionLengthDict, availTrainDictGlobal, testKeyOrder, sessionStreamDict, modelRNN, max_lookback):
     prevSessID = -1
     numSessions = 0
     avgAccuracyPerSession = []
@@ -188,7 +189,7 @@ def testActiveRNN(resultDict, availTrainSampledQueryHistory, sessionLengthDict, 
             if len(episodeWiseKeys) > 0:
                 lo = 0
                 hi = len(episodeWiseKeys) - 1
-                resultDict = LSTM_RNN_Parallel.predictIntentsWithoutCurrentBatch(lo, hi, episodeWiseKeys, resultDict, availTrainDictGlobal,
+                resultDict = LSTM_RNN_Parallel.predictIntentsWithoutCurrentBatch(lo, hi, episodeWiseKeys, schemaDicts, resultDict, availTrainDictGlobal,
                                                                availTrainSampledQueryHistory, sessionStreamDict,
                                                                sessionLengthDict,
                                                                modelRNN, max_lookback, configDict)
@@ -221,6 +222,7 @@ def runActiveRNNKFoldExp(configDict):
     avgKFoldAccuracy = {}
     avgKFoldPrecision = {}
     avgKFoldRecall = {}
+    schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
     for foldID in range(int(configDict['NUM_FOLDS_TO_RUN'])):
         trainIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TRAIN_FOLD_" + str(foldID)
         testIntentSessionFile = getConfig(configDict['KFOLD_INPUT_DIR']) + intentSessionFile.split("/")[len(intentSessionFile.split("/")) - 1] + "_TEST_FOLD_" + str(foldID)
@@ -240,7 +242,7 @@ def runActiveRNNKFoldExp(configDict):
 
             # test phase first without updating activeKeyOrder or dictionary
             startTime = time.time()
-            (avgFMeasure, avgAccuracy, avgPrecision, avgRecall) = testActiveRNN(resultDict, availTrainSampledQueryHistory, sessionLengthDict, availTrainDictGlobal,
+            (avgFMeasure, avgAccuracy, avgPrecision, avgRecall) = testActiveRNN(schemaDicts, resultDict, availTrainSampledQueryHistory, sessionLengthDict, availTrainDictGlobal,
                                                                                 testKeyOrder, sessionStreamDict,
                                                                                 modelRNN, max_lookback)
             testTime = float(time.time() - startTime)
