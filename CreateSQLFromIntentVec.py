@@ -66,8 +66,8 @@ def readIntentObjectsFromFile(intentFileName):
     with open(intentFileName) as f:
         for line in f:
             tokens = line.strip().split(":")
-            assert len(tokens) == 2
-            intentObjDict[tokens[0]] =tokens[1]
+            if len(tokens) == 2:
+                intentObjDict[tokens[0]] =tokens[1]
     return intentObjDict
 
 def initIntentStrObj(schemaDicts, intentVec):
