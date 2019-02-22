@@ -278,6 +278,51 @@ def createSQLFromIntentStringBitPos(intentObj, newSetBitPosList):
     populateOps(intentObj, opsToPopulate)
     printSQLOps(intentObj)
 
+def populateSQLOpFromType(intentObj, sqlOp, opType):
+    assert opType == "querytype" or opType == "table" or opType == "project" or opType == "avg" or opType == "min" \
+           or opType == "max" or opType == "sum" or opType == "count" or opType == "select" or opType == "groupby" \
+           or opType == "orderby" or opType == "having" or opType == "limit" or opType == "join"
+    if opType == "querytype":
+        intentObj.queryType = sqlOp
+    elif opType == "table":
+        intentObj.tables.append(sqlOp)
+    elif opType == "project":
+        intentObj.projCols.append(sqlOp)
+    elif opType == "avg":
+        intentObj.avgCols.append(sqlOp)
+    elif opType == "min":
+        intentObj.minCols.append(sqlOp)
+    elif opType == "max":
+        intentObj.maxCols.append(sqlOp)
+    elif opType == "sum":
+        intentObj.sumCols.append(sqlOp)
+    elif opType == "count":
+        intentObj.sumCols.append(sqlOp)
+    elif opType == "select":
+        intentObj.selCols.append(sqlOp)
+    elif opType == "groupby":
+        intentObj.groupByCols.append(sqlOp)
+    elif opType == "orderby":
+        intentObj.orderByCols.append(sqlOp)
+    elif opType == "having":
+        intentObj.havingCols.append(sqlOp)
+    elif opType == "limit":
+        intentObj.limit = "Limit"
+    elif opType == "join":
+        intentObj.joinPreds.append(sqlOp)
+    else:
+        print "OpError !!"
+    return intentObj
+
+def createSQLFromIntentBits(intentObj, newSetBitPosList):
+    for setBitIndex in newSetBitPosList:
+        setSQLOp = intentObj.schemaDicts.forwardMapBitsToOps[setBitIndex]
+        opTokens = setSQLOp.split(";")
+        sqlOp = opTokens[0]
+        opType = opTokens[1]
+        intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
+    printSQLOps(intentObj)
+
 def createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict):
     checkBitMapWorking(intentObjDict)
     intentBitMap = BitMap.fromstring(intentObjDict['intentVector'])
@@ -293,7 +338,8 @@ def createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict):
     for bitPos in setBitPosList:
         newBitPos = schemaDicts.allOpSize - 1 - bitPos
         newSetBitPosList.append(newBitPos)
-    createSQLFromIntentStringBitPos(intentObj, newSetBitPosList)
+    #createSQLFromIntentStringBitPos(intentObj, newSetBitPosList)
+    createSQLFromIntentBits(intentObj, newSetBitPosList)
 
 
 if __name__ == "__main__":

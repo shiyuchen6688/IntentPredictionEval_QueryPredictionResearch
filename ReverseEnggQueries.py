@@ -55,7 +55,109 @@ class SchemaDicts:
         self.limitStartBitIndex = self.havingStartBitIndex + self.allColumnsSize
         self.joinPredicatesStartBitIndex = self.limitStartBitIndex + self.limitBitMapSize
         self.allOpSize = self.queryTypeBitMapSize + self.tableBitMapSize + self.allColumnsSize * 10 + self.limitBitMapSize + self.joinPredicatesBitMapSize
+        # the following populates the map which can look up from bits to maps and from maps to bits
+        self.forwardMapBitsToOps = {}
+        self.backwardMapOpsToBits = {}
+        (self.forwardMapBitsToOps, self.backwardMapOpsToBits) = populateBiDirectionalLookupMap(self)
 
+def populateQueryType(schemaDicts):
+    schemaDicts.forwardMapBitsToOps[0] = "select;querytype"
+    schemaDicts.backwardMapOpsToBits["select;querytype"] = 0
+    schemaDicts.forwardMapBitsToOps[1] = "update;querytype"
+    schemaDicts.backwardMapOpsToBits["update;querytype"] = 1
+    schemaDicts.forwardMapBitsToOps[2] = "insert;querytype"
+    schemaDicts.backwardMapOpsToBits["insert;querytype"] = 2
+    schemaDicts.forwardMapBitsToOps[3] = "delete;querytype"
+    schemaDicts.backwardMapOpsToBits["delete;querytype"] = 3
+    return schemaDicts
+
+def populateTables(schemaDicts):
+    indexToSet = schemaDicts.tableStartBitIndex
+    for i in range(0, len(schemaDicts.tableOrderDict)):
+        schemaDicts.forwardMapBitsToOps[indexToSet] = schemaDicts.tableOrderDict[i]+";table"
+        schemaDicts.backwardMapOpsToBits[schemaDicts.tableOrderDict[i]+";table"] = indexToSet
+        indexToSet += 1
+    assert indexToSet == schemaDicts.tableStartBitIndex + schemaDicts.tableBitMapSize
+    return schemaDicts
+
+def populateColsForOp(opString, schemaDicts):
+    assert opString == "project" or opString == "avg" or opString == "min" or opString == "max" or opString == "sum" \
+           or opString == "count" or opString == "select" or opString == "groupby" \
+           or opString == "orderby" or opString == "having"
+    if opString == "project":
+        startBitIndex = schemaDicts.projectionStartBitIndex
+    elif opString == "avg":
+        startBitIndex = schemaDicts.avgStartBitIndex
+    elif opString == "min":
+        startBitIndex = schemaDicts.minStartBitIndex
+    elif opString == "max":
+        startBitIndex = schemaDicts.maxStartBitIndex
+    elif opString == "sum":
+        startBitIndex = schemaDicts.sumStartBitIndex
+    elif opString == "count":
+        startBitIndex = schemaDicts.countStartBitIndex
+    elif opString == "select":
+        startBitIndex = schemaDicts.selectionStartBitIndex
+    elif opString == "groupby":
+        startBitIndex = schemaDicts.groupByStartBitIndex
+    elif opString == "orderby":
+        startBitIndex = schemaDicts.orderByStartBitIndex
+    elif opString == "having":
+        startBitIndex = schemaDicts.havingStartBitIndex
+    else:
+        print "ColError !!"
+    indexToSet = startBitIndex
+    for tableIndex in range(len(schemaDicts.tableOrderDict)):
+        tableName = schemaDicts.tableOrderDict[tableIndex]
+        colList = schemaDicts.colDict[tableName]
+        for col in colList:
+            schemaDicts.forwardMapBitsToOps[indexToSet] = tableName+"."+col+";"+opString
+            schemaDicts.backwardMapOpsToBits[tableName+"."+col+";"+opString] = indexToSet
+            indexToSet+=1
+    assert indexToSet == startBitIndex + schemaDicts.allColumnsSize
+    return schemaDicts
+
+def populateLimit(schemaDicts):
+    schemaDicts.forwardMapBitsToOps[schemaDicts.limitStartBitIndex] = "limit"
+    schemaDicts.backwardMapOpsToBits["limit"] = schemaDicts.limitStartBitIndex
+    return schemaDicts
+
+def populateJoinPreds(schemaDicts):
+    opString = "join"
+    for tablePairIndex in schemaDicts.joinPredBitPosDict:
+        startEndBitPos = schemaDicts.joinPredBitPosDict[tablePairIndex]
+        startBitPos = startEndBitPos[0]+schemaDicts.joinPredicatesStartBitIndex
+        endBitPos = startEndBitPos[1]+schemaDicts.joinPredicatesStartBitIndex
+        for indexToSet in range(startBitPos, endBitPos):
+            joinColPair = schemaDicts.joinPredDict[tablePairIndex][indexToSet-startBitPos]
+            joinStrToAppend = tablePairIndex.split(",")[0] + "." + joinColPair.split(",")[0]+ "," + tablePairIndex.split(",")[1] + "." + joinColPair.split(",")[1]
+            if indexToSet in schemaDicts.forwardMapBitsToOps:
+                print "Already exists "+str(indexToSet)+" :"+schemaDicts.forwardMapBitsToOps[indexToSet]
+            schemaDicts.forwardMapBitsToOps[indexToSet] = joinStrToAppend + ";" + opString
+            schemaDicts.backwardMapOpsToBits[joinStrToAppend + ";" + opString] = indexToSet
+    return schemaDicts
+
+def populateBiDirectionalLookupMap(schemaDicts):
+    schemaDicts = populateQueryType(schemaDicts)
+    schemaDicts = populateTables(schemaDicts)
+    schemaDicts = populateColsForOp("project", schemaDicts)
+    schemaDicts = populateColsForOp("avg", schemaDicts)
+    schemaDicts = populateColsForOp("min", schemaDicts)
+    schemaDicts = populateColsForOp("max", schemaDicts)
+    schemaDicts = populateColsForOp("sum", schemaDicts)
+    schemaDicts = populateColsForOp("count", schemaDicts)
+    schemaDicts = populateColsForOp("select", schemaDicts)
+    schemaDicts = populateColsForOp("groupby", schemaDicts)
+    schemaDicts = populateColsForOp("orderby", schemaDicts)
+    schemaDicts = populateColsForOp("having", schemaDicts)
+    schemaDicts = populateLimit(schemaDicts)
+    schemaDicts = populateJoinPreds(schemaDicts)
+    print len(schemaDicts.forwardMapBitsToOps)
+    print len(schemaDicts.backwardMapOpsToBits)
+    print schemaDicts.allOpSize - len(schemaDicts.joinPredDict)
+    assert len(schemaDicts.forwardMapBitsToOps) == len(schemaDicts.backwardMapOpsToBits)
+    assert len(schemaDicts.forwardMapBitsToOps) == schemaDicts.allOpSize - len(schemaDicts.joinPredDict)
+    return (schemaDicts.forwardMapBitsToOps, schemaDicts.backwardMapOpsToBits)
 
 def estimateTableBitMapSize(schemaDicts):
     tableDict = schemaDicts.tableDict
