@@ -271,7 +271,7 @@ def refineIntent(threadID, topKCandidateVector, schemaDicts, configDict):
     print "-----------Original SQL----------------"
     intentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
     # Step 2: refine SQL violations
-    intentObj = CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor="recall")
+    intentObj = CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor="precision")
     print "-----------Refined SQL-----------------"
     intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
     return intentObj.intentBitVec

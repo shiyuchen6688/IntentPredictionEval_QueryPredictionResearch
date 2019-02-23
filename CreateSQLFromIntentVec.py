@@ -353,7 +353,7 @@ def setBit(opDimBit, intentObj):
 def unsetBit(opDimBit, intentObj):
     revBitPos = intentObj.schemaDicts.allOpSize - 1 - opDimBit
     assert intentObj.intentBitVec.test(revBitPos) == True
-    intentObj.intentBitvec.flip(revBitPos)
+    intentObj.intentBitVec.flip(revBitPos)
     return intentObj
 
 def fixColumnTableViolations(intentObj, opString, precOrRecallFavor):
@@ -420,8 +420,8 @@ def fixJoinViolations(intentObj, precOrRecallFavor):
 def fixGroupByViolation1(intentObj, precOrRecallFavor):
     # Violation 1: attribute in projection and not in min,max,sum,avg,count(aggr), (while there is at least one diff aggr column) but not in group by
     if len(intentObj.avgCols) == 0 and len(intentObj.minCols) == 0 and len(intentObj.maxCols) == 0 and \
-                    len(intentObj.sumCols) == 0 or len(intentObj.countCols) == 0:
-        return 0
+                    len(intentObj.sumCols) == 0 and len(intentObj.countCols) == 0:
+        return intentObj
     for projCol in intentObj.projCols:
         if projCol not in intentObj.avgCols and projCol not in intentObj.minCols and projCol not in intentObj.maxCols \
                 and projCol not in intentObj.sumCols and projCol not in intentObj.countCols \
