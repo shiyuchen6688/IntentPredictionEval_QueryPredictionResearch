@@ -268,9 +268,13 @@ def topKThres(configDict):
 
 def refineIntent(threadID, topKCandidateVector, schemaDicts, configDict):
     # Step 1: regenerate the query ops from the topKCandidateVector
+    print "-----------Original SQL----------------"
     intentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
     # Step 2: refine SQL violations
-    CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor="recall")
+    intentObj = CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor="recall")
+    print "-----------Refined SQL-----------------"
+    intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
+    return intentObj.intentBitVec
 
 def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
     topKPredictedIntents = []
@@ -289,3 +293,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = readSchemaDicts(configDict)
+    intentObjDict = CreateSQLFromIntentVec.readIntentObjectsFromFile("/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
+    refineIntent(0, BitMap.fromstring(intentObjDict['intentVector']), schemaDicts, configDict)

@@ -347,7 +347,7 @@ def createSQLFromIntentBits(intentObj):
 def setBit(opDimBit, intentObj):
     revBitPos = intentObj.schemaDicts.allOpSize - 1 - opDimBit
     assert intentObj.intentBitVec.test(revBitPos) == False
-    intentObj.intentBitvec.flip(revBitPos)
+    intentObj.intentBitVec.flip(revBitPos)
     return intentObj
 
 def unsetBit(opDimBit, intentObj):
@@ -397,8 +397,8 @@ def fixJoinViolations(intentObj, precOrRecallFavor):
     copyJoinPreds = list(intentObj.joinPreds)
     for joinPred in copyJoinPreds:
         colPair = []
-        leftTabCol = joinPred.split(",")
-        rightTabCol = joinPred.split(",")
+        leftTabCol = joinPred.split(",")[0]
+        rightTabCol = joinPred.split(",")[1]
         colPair.append(leftTabCol)
         colPair.append(rightTabCol)
         for joinCol in colPair:
@@ -484,7 +484,7 @@ def fixHavingViolations(intentObj, precOrRecallFavor):
                 intentObj.avgCols.append(havingCol)
                 opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[havingCol + ";avg"]
                 intentObj = setBit(opDimBit, intentObj)
-    return
+    return intentObj
 
 def fixSQLViolations(intentObj, precOrRecallFavor):
     assert precOrRecallFavor == "precision" or precOrRecallFavor == "recall"
@@ -505,6 +505,7 @@ def fixSQLViolations(intentObj, precOrRecallFavor):
     # out of order by, group by and having -- order by and having can have columns different from projected columns but group by cannot
     fixGroupByViolations(intentObj, precOrRecallFavor)
     fixHavingViolations(intentObj, precOrRecallFavor)
+    return intentObj
 
 
 def regenerateSQL(topKCandidateVector, schemaDicts):
