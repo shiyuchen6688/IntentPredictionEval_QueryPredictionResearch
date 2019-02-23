@@ -326,11 +326,11 @@ def computePredictedIntentsRNN(threadID, predictedY, schemaDicts, configDict, cu
         return computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID,
                                               sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
     elif configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True':
-        return ReverseEnggQueries.regenerateQuery(threadID, predictedY, schemaDicts, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict)
+        return ReverseEnggQueries.predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict)
 
 
 def computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
-    predictedY = ReverseEnggQueries.pruneUnImportantDimensions(predictedY, configDict)
+    predictedY = ReverseEnggQueries.pruneUnImportantDimensions(predictedY, float(configDict['RNN_WEIGHT_VECTOR_THRESHOLD']))
     cosineSimDict = {}
     numSubThreads = int(configDict['RNN_SUB_THREADS'])
     if numSubThreads == 1:

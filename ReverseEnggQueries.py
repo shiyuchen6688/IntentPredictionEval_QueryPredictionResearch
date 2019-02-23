@@ -152,9 +152,9 @@ def populateBiDirectionalLookupMap(schemaDicts):
     schemaDicts = populateColsForOp("having", schemaDicts)
     schemaDicts = populateLimit(schemaDicts)
     schemaDicts = populateJoinPreds(schemaDicts)
-    print len(schemaDicts.forwardMapBitsToOps)
-    print len(schemaDicts.backwardMapOpsToBits)
-    print schemaDicts.allOpSize - len(schemaDicts.joinPredDict)
+    #print len(schemaDicts.forwardMapBitsToOps)
+    #print len(schemaDicts.backwardMapOpsToBits)
+    #print schemaDicts.allOpSize - len(schemaDicts.joinPredDict)
     assert len(schemaDicts.forwardMapBitsToOps) == len(schemaDicts.backwardMapOpsToBits)
     assert len(schemaDicts.forwardMapBitsToOps) == schemaDicts.allOpSize - len(schemaDicts.joinPredDict)
     return (schemaDicts.forwardMapBitsToOps, schemaDicts.backwardMapOpsToBits)
@@ -179,13 +179,13 @@ def estimateJoinPredicatesBitMapSize(schemaDicts):
         joinPredBitCount += joinPredBitPosDict[tabPair][1] - joinPredBitPosDict[tabPair][0] + 1
     return joinPredBitCount
 
-def pruneUnImportantDimensions(predictedY, configDict):
+def pruneUnImportantDimensions(predictedY, weightThreshold):
     newPredictedY = []
     minY = min(predictedY)
     maxY = max(predictedY)
     for y in predictedY:
-        newY = float(y-minY)/float(maxY-minY)
-        if newY < float(configDict['RNN_WEIGHT_VECTOR_THRESHOLD']):
+        newY = float(y-minY)/float(maxY-minY) # normalize each dimension to lie between 0 and 1
+        if newY < float(weightThreshold):
             newY = 0.0
         newPredictedY.append(newY)
     return newPredictedY
@@ -240,7 +240,7 @@ def checkSanity(joinPredDict, joinPredBitPosDict):
         joinPredBitPosCount += joinPredBitPosDict[key][1] - joinPredBitPosDict[key][0]
     assert len(joinPredDict) == len(joinPredBitPosDict)
     assert joinPredCount == joinPredBitPosCount
-    print "joinPredCount: "+str(joinPredCount)+", joinPredBitPosCount: "+str(joinPredBitPosCount)
+    #print "joinPredCount: "+str(joinPredCount)+", joinPredBitPosCount: "+str(joinPredBitPosCount)
 
 def readJoinColDicts(joinPredFile, joinPredBitPosFile):
     joinPredDict = readJoinPredDict(joinPredFile)
@@ -255,10 +255,31 @@ def readSchemaDicts(configDict):
     schemaDicts = SchemaDicts(tableDict, tableOrderDict, colDict, joinPredDict, joinPredBitPosDict)
     return schemaDicts
 
-def regenerateQuery(threadID, predictedY, schemaDicts, configDict, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict):
+def topKThres(configDict):
+    thresholds = []
+    thresList = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+    assert int(configDict['TOP_K']) > 0 and int(configDict['TOP_K']) < 10
+    for i in range(int(configDict['TOP_K'])):
+        thresholds.append(thresList[i])
+    # special case:
+    if int(configDict['TOP_K']) == 3:
+        thresholds = [0.8, 0.6, 0.4]
+    return thresholds
+
+def refineIntent(threadID, topKCandidateVector, schemaDicts, configDict):
+    # Step 1: regenerate the query ops from the topKCandidateVector
+    intentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
+    # Step 2: refine SQL violations
+    CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor="recall")
+
+def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
     topKPredictedIntents = []
     #schemaDicts = readSchemaDicts(configDict)
-
+    thresholds = topKThres(configDict)
+    for threshold in thresholds:
+        topKCandidateVector = pruneUnImportantDimensions(predictedY, threshold)
+        topKNovelIntent = refineIntent(threadID, topKCandidateVector, schemaDicts, configDict)
+        topKPredictedIntents.append(topKNovelIntent)
     return topKPredictedIntents
 
 if __name__ == "__main__":

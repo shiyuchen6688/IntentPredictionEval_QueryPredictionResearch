@@ -25,6 +25,26 @@ from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 import ReverseEnggQueries
 
+class SQLForBitMapIntent:
+    def __init__(self, schemaDicts, intentBitVec, newSetBitPosList):
+        self.schemaDicts = schemaDicts
+        self.intentBitVec = intentBitVec
+        self.newSetBitPosList = newSetBitPosList
+        self.queryType = None
+        self.tables = []
+        self.projCols = []
+        self.avgCols = []
+        self.minCols = []
+        self.maxCols = []
+        self.sumCols = []
+        self.countCols = []
+        self.selCols = []
+        self.groupByCols = []
+        self.orderByCols = []
+        self.havingCols = []
+        self.limit = None
+        self.joinPreds = []
+
 class SQLForIntentStr:
     def __init__(self, schemaDicts, intentVec):
         self.schemaDicts = schemaDicts
@@ -44,7 +64,6 @@ class SQLForIntentStr:
         self.havingBitMap = self.intentVec[schemaDicts.havingStartBitIndex:schemaDicts.havingStartBitIndex + schemaDicts.allColumnsSize]
         self.limitBitMap = self.intentVec[schemaDicts.limitStartBitIndex:schemaDicts.limitStartBitIndex + schemaDicts.limitBitMapSize]
         self.joinPredicatesBitMap = self.intentVec[schemaDicts.joinPredicatesStartBitIndex:schemaDicts.joinPredicatesStartBitIndex + schemaDicts.joinPredicatesBitMapSize]
-
         self.queryType = None
         self.tables = []
         self.projCols = []
@@ -194,6 +213,7 @@ def checkBitMapWorking(intentObjDict):
         bitStr = b.tostring()[startPos:b.size()]
     print bitStr
     print b.nonzero()
+    print b.test(3)
     print b.size()
     print len(bitStr)
     print "Length of intentObjDict['intentVector']: " + str(len(intentObjDict['intentVector']))
@@ -314,14 +334,122 @@ def populateSQLOpFromType(intentObj, sqlOp, opType):
         print "OpError !!"
     return intentObj
 
-def createSQLFromIntentBits(intentObj, newSetBitPosList):
-    for setBitIndex in newSetBitPosList:
+def createSQLFromIntentBits(intentObj):
+    for setBitIndex in intentObj.newSetBitPosList:
         setSQLOp = intentObj.schemaDicts.forwardMapBitsToOps[setBitIndex]
         opTokens = setSQLOp.split(";")
         sqlOp = opTokens[0]
         opType = opTokens[1]
         intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
     printSQLOps(intentObj)
+    return intentObj
+
+def setBit(opDimBit, intentObj):
+    revBitPos = intentObj.schemaDicts.allOpSize - 1 - opDimBit
+    assert intentObj.intentBitVec.test(revBitPos) == False
+    intentObj.intentBitvec.flip(revBitPos)
+    return intentObj
+
+def unsetBit(opDimBit, intentObj):
+    revBitPos = intentObj.schemaDicts.allOpSize - 1 - opDimBit
+    assert intentObj.intentBitVec.test(revBitPos) == True
+    intentObj.intentBitvec.flip(revBitPos)
+    return intentObj
+
+def fixColumnTableViolations(intentObj, opString, precOrRecallFavor):
+    if opString == "project":
+        colsToFix = intentObj.projCols
+    elif opString == "avg":
+        colsToFix = intentObj.avgCols
+    elif opString == "min":
+        colsToFix = intentObj.minCols
+    elif opString == "max":
+        colsToFix = intentObj.maxCols
+    elif opString == "sum":
+        colsToFix = intentObj.sumCols
+    elif opString == "count":
+        colsToFix = intentObj.countCols
+    elif opString == "select": # this refers to the selection predicate or where clause should not be confused with the select keyword for queryType
+        colsToFix = intentObj.selCols
+    elif opString == "groupby":
+        colsToFix = intentObj.groupByCols
+    elif opString == "orderby":
+        colsToFix = intentObj.orderByCols
+    elif opString == "having":
+        colsToFix = intentObj.havingCols
+    copyCols = list(colsToFix)
+    for projAttr in copyCols:
+        tableName = projAttr.split(".")[0]
+        if tableName not in intentObj.tables: #and intentObj.queryType == "select": # fix projections for select queries as inserts, updates and deletes do not project attributes for now
+            if precOrRecallFavor == "precision":
+                # drop the column to preserve precision
+                colsToFix.remove(projAttr)
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[projAttr]
+                intentObj = unsetBit(opDimBit, intentObj)
+            elif precOrRecallFavor == "recall":
+                # add the table name to increase recall
+                intentObj.tables.append(tableName)
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName]
+                intentObj = setBit(opDimBit, intentObj)
+    return intentObj
+
+def fixJoinViolations(intentObj, precOrRecallFavor):
+    copyJoinPreds = list(intentObj.joinPreds)
+    for joinPred in copyJoinPreds:
+        colPair = []
+        leftTabCol = joinPred.split(",")
+        rightTabCol = joinPred.split(",")
+        colPair.append(leftTabCol)
+        colPair.append(rightTabCol)
+        for joinCol in colPair:
+            tableName = joinCol.split(".")[0]
+            if tableName not in intentObj.tables:  # and intentObj.queryType == "select": # fix projections for select queries as inserts, updates and deletes do not project attributes for now
+                if precOrRecallFavor == "precision":
+                    # drop the join predicate to preserve precision
+                    if joinPred in intentObj.joinPreds: # because the same predicate may be dropped twice for the two cols
+                        intentObj.joinPreds.remove(joinPred)
+                        opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[joinPred]
+                        intentObj = unsetBit(opDimBit, intentObj)
+                elif precOrRecallFavor == "recall":
+                    # add the table name to increase recall
+                    intentObj.tables.append(tableName)
+                    opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName]
+                    intentObj = setBit(opDimBit, intentObj)
+    return intentObj
+
+def fixGroupByViolations(intentObj, precOrRecallFavor):
+    
+
+def fixSQLViolations(intentObj, precOrRecallFavor):
+    assert precOrRecallFavor == "precision" or precOrRecallFavor == "recall"
+    # no need to fix query type
+    # no need to fix tables -- they are fixed automatically while fixing other operators
+    fixColumnTableViolations(intentObj, "project", precOrRecallFavor)
+    fixColumnTableViolations(intentObj, "avg", precOrRecallFavor)
+    fixColumnTableViolations(intentObj, "min", precOrRecallFavor)
+    fixColumnTableViolations(intentObj, "max", precOrRecallFavor)
+    fixColumnTableViolations(intentObj, "sum", precOrRecallFavor)
+    fixColumnTableViolations(intentObj, "count", precOrRecallFavor)
+    fixColumnTableViolations(intentObj, "select", precOrRecallFavor) # this is also a column-table violation fix
+    fixColumnTableViolations(intentObj, "groupby", precOrRecallFavor)
+    fixColumnTableViolations(intentObj, "orderby", precOrRecallFavor)
+    fixColumnTableViolations(intentObj, "having", precOrRecallFavor)
+    # no need to fix limit as it is associated with a constant and cannot cause violations
+    fixJoinViolations(intentObj, precOrRecallFavor)
+    # out of order by, group by and having -- order by and having can have columns different from projected columns but group by cannot
+    fixGroupByViolations(intentObj, precOrRecallFavor)
+
+
+def regenerateSQL(topKCandidateVector, schemaDicts):
+    setBitPosList = topKCandidateVector.nonzero()
+    newSetBitPosList = []
+    for bitPos in setBitPosList:
+        newBitPos = schemaDicts.allOpSize - 1 - bitPos # because 1s appear in reverse, no need to prune the extra padded bits
+        newSetBitPosList.append(newBitPos)
+    intentObj = SQLForBitMapIntent(schemaDicts, topKCandidateVector, newSetBitPosList)
+    intentObj = createSQLFromIntentBits(intentObj)
+    return intentObj
+
 
 def createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict):
     checkBitMapWorking(intentObjDict)
@@ -331,15 +459,10 @@ def createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict):
         startBit = intentBitMap.size() - schemaDicts.allOpSize
         intentStr = intentStr[startBit:intentBitMap.size()]
     assert intentStr == intentObjDict['intentVector']
-    intentObj = initIntentStrObj(schemaDicts, intentStr)
-    assertIntentOpObjects(intentObj, intentObjDict)
-    setBitPosList = intentBitMap.nonzero()
-    newSetBitPosList = []
-    for bitPos in setBitPosList:
-        newBitPos = schemaDicts.allOpSize - 1 - bitPos
-        newSetBitPosList.append(newBitPos)
+    #intentObj = initIntentStrObj(schemaDicts, intentStr)
+    #assertIntentOpObjects(intentObj, intentObjDict)
     #createSQLFromIntentStringBitPos(intentObj, newSetBitPosList)
-    createSQLFromIntentBits(intentObj, newSetBitPosList)
+    regenerateSQL(intentBitMap, schemaDicts)
 
 
 if __name__ == "__main__":
