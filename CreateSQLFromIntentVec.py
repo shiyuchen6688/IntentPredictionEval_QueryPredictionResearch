@@ -468,7 +468,7 @@ def fixHavingViolations(intentObj, precOrRecallFavor):
     # and to an aggregate operator picked randomly, to increase recall. For precision, simply drop the having column
     for havingCol in intentObj.havingCols:
         if len(intentObj.avgCols) == 0 and len(intentObj.minCols) == 0 and len(intentObj.maxCols) == 0 and \
-                        len(intentObj.sumCols) == 0 or len(intentObj.countCols) == 0:
+                        len(intentObj.sumCols) == 0 and len(intentObj.countCols) == 0:
             if precOrRecallFavor == "precision":
                 # drop the having column
                 intentObj.havingCols.remove(havingCol)
