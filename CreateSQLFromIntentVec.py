@@ -384,12 +384,12 @@ def fixColumnTableViolations(intentObj, opString, precOrRecallFavor):
             if precOrRecallFavor == "precision":
                 # drop the column to preserve precision
                 colsToFix.remove(projAttr)
-                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[projAttr]
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[projAttr+";"+opString]
                 intentObj = unsetBit(opDimBit, intentObj)
             elif precOrRecallFavor == "recall":
                 # add the table name to increase recall
                 intentObj.tables.append(tableName)
-                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName]
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName+";table"]
                 intentObj = setBit(opDimBit, intentObj)
     return intentObj
 
@@ -408,17 +408,83 @@ def fixJoinViolations(intentObj, precOrRecallFavor):
                     # drop the join predicate to preserve precision
                     if joinPred in intentObj.joinPreds: # because the same predicate may be dropped twice for the two cols
                         intentObj.joinPreds.remove(joinPred)
-                        opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[joinPred]
+                        opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[joinPred+";join"]
                         intentObj = unsetBit(opDimBit, intentObj)
                 elif precOrRecallFavor == "recall":
                     # add the table name to increase recall
                     intentObj.tables.append(tableName)
-                    opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName]
+                    opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName+";table"]
                     intentObj = setBit(opDimBit, intentObj)
     return intentObj
 
+def fixGroupByViolation1(intentObj, precOrRecallFavor):
+    # Violation 1: attribute in projection and not in min,max,sum,avg,count(aggr), (while there is at least one diff aggr column) but not in group by
+    if len(intentObj.avgCols) == 0 and len(intentObj.minCols) == 0 and len(intentObj.maxCols) == 0 and \
+                    len(intentObj.sumCols) == 0 or len(intentObj.countCols) == 0:
+        return 0
+    for projCol in intentObj.projCols:
+        if projCol not in intentObj.avgCols and projCol not in intentObj.minCols and projCol not in intentObj.maxCols \
+                and projCol not in intentObj.sumCols and projCol not in intentObj.countCols \
+                and projCol not in intentObj.groupByCols:
+            if precOrRecallFavor == "precision":
+                # drop the projection column
+                intentObj.projCols.remove(projCol)
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[projCol+";project"]
+                intentObj = unsetBit(opDimBit, intentObj)
+            elif precOrRecallFavor == "recall":
+                # add the projection column to the group by columnList
+                intentObj.groupByCols.append(projCol)
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[projCol+";groupby"]
+                intentObj = setBit(opDimBit, intentObj)
+    return intentObj
+
+def fixGroupByViolation2(intentObj, precOrRecallFavor):
+    # Violation 2: An attribute is in the group by list but not in the projection list - aggr cols are also included in the projection list
+    # since we cannot predict which aggr op a column belongs to or if at all it is just projected and doesnt belong to any aggregate, the fact
+    # that it is in a gorup by list should make it  part of the projection list
+    for grpByCol in intentObj.groupByCols:
+        if grpByCol not in intentObj.projCols:
+            if precOrRecallFavor == "precision":
+                # drop the group by column
+                intentObj.groupByCols.remove(grpByCol)
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[grpByCol+";groupby"]
+                intentObj = unsetBit(opDimBit, intentObj)
+            elif precOrRecallFavor == "recall":
+                # add the group by column to the projection column list
+                intentObj.projCols.append(grpByCol)
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[grpByCol+";project"]
+                intentObj = setBit(opDimBit, intentObj)
+    return intentObj
+
+
 def fixGroupByViolations(intentObj, precOrRecallFavor):
-    
+    # only column column violations are fixed as column table violations are already fixed
+    fixGroupByViolation1(intentObj, precOrRecallFavor)
+    fixGroupByViolation2(intentObj, precOrRecallFavor)
+    return intentObj
+
+def fixHavingViolations(intentObj, precOrRecallFavor):
+    # if the attribute is present in having clause, the aggregate column should not be empty; if it is, add the having column to the projection list
+    # and to an aggregate operator picked randomly, to increase recall. For precision, simply drop the having column
+    for havingCol in intentObj.havingCols:
+        if len(intentObj.avgCols) == 0 and len(intentObj.minCols) == 0 and len(intentObj.maxCols) == 0 and \
+                        len(intentObj.sumCols) == 0 or len(intentObj.countCols) == 0:
+            if precOrRecallFavor == "precision":
+                # drop the having column
+                intentObj.havingCols.remove(havingCol)
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[havingCol+";having"]
+                intentObj = unsetBit(opDimBit, intentObj)
+            elif precOrRecallFavor == "recall":
+                # add the having col to projection list if absent
+                if havingCol not in intentObj.projCols:
+                    intentObj.projCols.append(havingCol)
+                    opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[havingCol + ";project"]
+                    intentObj = setBit(opDimBit, intentObj)
+                # add the having col to the avgCols -- may not be avg, but reqd for valid SQL
+                intentObj.avgCols.append(havingCol)
+                opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[havingCol + ";avg"]
+                intentObj = setBit(opDimBit, intentObj)
+    return
 
 def fixSQLViolations(intentObj, precOrRecallFavor):
     assert precOrRecallFavor == "precision" or precOrRecallFavor == "recall"
@@ -438,6 +504,7 @@ def fixSQLViolations(intentObj, precOrRecallFavor):
     fixJoinViolations(intentObj, precOrRecallFavor)
     # out of order by, group by and having -- order by and having can have columns different from projected columns but group by cannot
     fixGroupByViolations(intentObj, precOrRecallFavor)
+    fixHavingViolations(intentObj, precOrRecallFavor)
 
 
 def regenerateSQL(topKCandidateVector, schemaDicts):
