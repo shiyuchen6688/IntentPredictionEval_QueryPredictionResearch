@@ -118,8 +118,8 @@ def populateColsForOp(opString, schemaDicts):
     return schemaDicts
 
 def populateLimit(schemaDicts):
-    schemaDicts.forwardMapBitsToOps[schemaDicts.limitStartBitIndex] = "limit"
-    schemaDicts.backwardMapOpsToBits["limit"] = schemaDicts.limitStartBitIndex
+    schemaDicts.forwardMapBitsToOps[schemaDicts.limitStartBitIndex] = ";limit"
+    schemaDicts.backwardMapOpsToBits[";limit"] = schemaDicts.limitStartBitIndex
     return schemaDicts
 
 def populateJoinPreds(schemaDicts):
@@ -268,11 +268,11 @@ def topKThres(configDict):
 
 def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict):
     # Step 1: regenerate the query ops from the topKCandidateVector
-    #print "-----------Original SQL----------------"
+    print "-----------Original SQL----------------"
     intentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
     # Step 2: refine SQL violations
     intentObj = CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor)
-    #print "-----------Refined SQL-----------------"
+    print "-----------Refined SQL-----------------"
     intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
     return intentObj.intentBitVec
 
@@ -293,6 +293,65 @@ def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
         topKPredictedIntents.append(topKNovelIntent)
     return topKPredictedIntents
 
+def createAndRefineIntentsForMockQueries(schemaDicts, configDict):
+    intentObj = CreateSQLFromIntentVec.SQLForBitMapIntent(schemaDicts, None, None)
+    intentObj.intentBitVec = BitMap(schemaDicts.allOpSize)
+    intentObj.queryType = "select"
+    bitToSet = schemaDicts.backwardMapOpsToBits["select;querytype"]
+    CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.tables = ['jos_menu', 'jos_components']
+    for tableName in intentObj.tables:
+        bitToSet = schemaDicts.backwardMapOpsToBits[tableName+";table"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.projCols = ['jos_components.option', 'jos_components.id']
+    for projCol in intentObj.projCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[projCol + ";project"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.avgCols = [] # placeholder for future
+    for avgCol in intentObj.avgCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[avgCol + ";avg"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.minCols = ['jos_components.id']  # placeholder for future
+    for minCol in intentObj.minCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[minCol + ";min"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.maxCols = []  # placeholder for future
+    for maxCol in intentObj.maxCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[maxCol + ";max"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.sumCols = []  # placeholder for future
+    for sumCol in intentObj.sumCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[sumCol + ";sum"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.countCols = []  # placeholder for future
+    for countCol in intentObj.countCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[countCol + ";count"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.selCols = ['jos_menu.published']  # placeholder for future
+    for selCol in intentObj.selCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[selCol + ";select"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.groupByCols = ['jos_menu.sublevel']  # placeholder for future
+    for groupByCol in intentObj.groupByCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[groupByCol + ";groupby"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.orderByCols = ['jos_menu.ordering', 'jos_menu.sublevel', 'jos_menu.parent']  # placeholder for future
+    for orderByCol in intentObj.orderByCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[orderByCol + ";orderby"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.havingCols = ['jos_menu.lft']  # placeholder for future
+    for havingCol in intentObj.havingCols:
+        bitToSet = schemaDicts.backwardMapOpsToBits[havingCol + ";having"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.limit = None
+    if intentObj.limit is not None:
+        bitToSet = schemaDicts.backwardMapOpsToBits[";limit"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    intentObj.joinPreds = ['jos_menu.params,jos_components.params', 'jos_menu.ordering,jos_components.ordering', 'jos_menu.componentid,jos_components.id', 'jos_menu.name,jos_components.name']
+    for joinPred in intentObj.joinPreds:
+        bitToSet = schemaDicts.backwardMapOpsToBits[joinPred + ";join"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    refineIntent(0, intentObj.intentBitVec, schemaDicts, "recall", configDict)
 
 
 if __name__ == "__main__":
@@ -302,5 +361,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = readSchemaDicts(configDict)
-    intentObjDict = CreateSQLFromIntentVec.readIntentObjectsFromFile("/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
-    refineIntent(0, BitMap.fromstring(intentObjDict['intentVector']), schemaDicts, configDict['PREC_OR_RECALL_FAVOR'], configDict)
+    #intentObjDict = CreateSQLFromIntentVec.readIntentObjectsFromFile("/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
+    #refineIntent(0, BitMap.fromstring(intentObjDict['intentVector']), schemaDicts, configDict['PREC_OR_RECALL_FAVOR'], configDict)
+    createAndRefineIntentsForMockQueries(schemaDicts, configDict)

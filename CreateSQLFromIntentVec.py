@@ -317,7 +317,7 @@ def populateSQLOpFromType(intentObj, sqlOp, opType):
     elif opType == "sum":
         intentObj.sumCols.append(sqlOp)
     elif opType == "count":
-        intentObj.sumCols.append(sqlOp)
+        intentObj.countCols.append(sqlOp)
     elif opType == "select":
         intentObj.selCols.append(sqlOp)
     elif opType == "groupby":
@@ -341,7 +341,7 @@ def createSQLFromIntentBits(intentObj):
         sqlOp = opTokens[0]
         opType = opTokens[1]
         intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
-    #printSQLOps(intentObj)
+    printSQLOps(intentObj)
     return intentObj
 
 def setBit(opDimBit, intentObj):
