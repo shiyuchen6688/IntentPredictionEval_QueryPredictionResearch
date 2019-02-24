@@ -290,7 +290,7 @@ def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, 
     # Step 2: refine SQL violations
     intentObj = CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor)
     #print "-----------Refined SQL-----------------"
-    intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
+    #intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
     return intentObj.intentBitVec
 
 def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
