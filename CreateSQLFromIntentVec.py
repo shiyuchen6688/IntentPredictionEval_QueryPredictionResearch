@@ -341,7 +341,7 @@ def createSQLFromIntentBits(intentObj):
         sqlOp = opTokens[0]
         opType = opTokens[1]
         intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
-    printSQLOps(intentObj)
+    #printSQLOps(intentObj)
     return intentObj
 
 def setBit(opDimBit, intentObj):

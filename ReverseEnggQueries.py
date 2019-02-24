@@ -268,11 +268,11 @@ def topKThres(configDict):
 
 def refineIntent(threadID, topKCandidateVector, schemaDicts, configDict):
     # Step 1: regenerate the query ops from the topKCandidateVector
-    print "-----------Original SQL----------------"
+    #print "-----------Original SQL----------------"
     intentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
     # Step 2: refine SQL violations
     intentObj = CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor="precision")
-    print "-----------Refined SQL-----------------"
+    #print "-----------Refined SQL-----------------"
     intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
     return intentObj.intentBitVec
 
