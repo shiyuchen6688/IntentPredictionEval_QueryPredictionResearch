@@ -194,7 +194,6 @@ def employWeightThreshold(predictedY, schemaDicts, weightThreshold):
         newPredictedY.append(newY)
     bitMapStr = ''.join(str(e) for e in newPredictedY)
     bitMap = BitMap.fromstring(bitMapStr)
-    assert bitMap.size() == schemaDicts.allOpSize
     return bitMap
 
 def pruneUnImportantDimensions(predictedY, weightThreshold):
