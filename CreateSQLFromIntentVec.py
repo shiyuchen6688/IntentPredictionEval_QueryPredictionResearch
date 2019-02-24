@@ -296,7 +296,7 @@ def createSQLFromIntentStringBitPos(intentObj, newSetBitPosList):
         opToPopulate = checkOpToPopulate(newSetBitPos, intentObj)
         opsToPopulate.add(opToPopulate)
     populateOps(intentObj, opsToPopulate)
-    printSQLOps(intentObj)
+    #printSQLOps(intentObj)
 
 def populateSQLOpFromType(intentObj, sqlOp, opType):
     assert opType == "querytype" or opType == "table" or opType == "project" or opType == "avg" or opType == "min" \
