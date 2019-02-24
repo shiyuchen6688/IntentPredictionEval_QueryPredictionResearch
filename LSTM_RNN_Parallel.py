@@ -188,9 +188,8 @@ def predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_
     # predicts the next query to the query indexed by queryID in the sessID session
     numQueries = queryID + 1
     testX = []
-    sessionMaxLastK = int(configDict['RNN_SESS_VEC_MAX_LAST_K'])
+    sessionMaxLastK = int(configDict['RNN_SESS_VEC_MAX_LAST_K_PREDICT'])
     assert sessionMaxLastK > 0
-
     startQueryIndex = numQueries - sessionMaxLastK
     for i in range(startQueryIndex, numQueries):
         curSessQueryID = str(sessID) + "," + str(queryID)
