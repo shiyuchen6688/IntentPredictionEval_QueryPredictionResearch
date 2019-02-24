@@ -266,12 +266,12 @@ def topKThres(configDict):
         thresholds = [0.8, 0.6, 0.4]
     return thresholds
 
-def refineIntent(threadID, topKCandidateVector, schemaDicts, configDict):
+def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict):
     # Step 1: regenerate the query ops from the topKCandidateVector
     #print "-----------Original SQL----------------"
     intentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
     # Step 2: refine SQL violations
-    intentObj = CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor="precision")
+    intentObj = CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor)
     #print "-----------Refined SQL-----------------"
     intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
     return intentObj.intentBitVec
@@ -280,9 +280,16 @@ def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
     topKPredictedIntents = []
     #schemaDicts = readSchemaDicts(configDict)
     thresholds = topKThres(configDict)
+    precOrRecallFavor = configDict['PREC_OR_RECALL_FAVOR']
     for threshold in thresholds:
         topKCandidateVector = pruneUnImportantDimensions(predictedY, threshold)
-        topKNovelIntent = refineIntent(threadID, topKCandidateVector, schemaDicts, configDict)
+        if int(configDict['TOP_K']) == 3 and threshold == 0.8:
+            precOrRecallFavor = "recall"
+        elif int(configDict['TOP_K']) == 3 and threshold == 0.6:
+            precOrRecallFavor = "recall"
+        elif int(configDict['TOP_K']) == 3 and threshold == 0.4:
+            precOrRecallFavor = "precision"
+        topKNovelIntent = refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict)
         topKPredictedIntents.append(topKNovelIntent)
     return topKPredictedIntents
 
