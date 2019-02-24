@@ -288,7 +288,7 @@ def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
         elif int(configDict['TOP_K']) == 3 and threshold == 0.6:
             precOrRecallFavor = "recall"
         elif int(configDict['TOP_K']) == 3 and threshold == 0.4:
-            precOrRecallFavor = "precision"
+            precOrRecallFavor = "recall"
         topKNovelIntent = refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict)
         topKPredictedIntents.append(topKNovelIntent)
     return topKPredictedIntents
