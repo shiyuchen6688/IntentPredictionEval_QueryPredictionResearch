@@ -179,7 +179,7 @@ def estimateJoinPredicatesBitMapSize(schemaDicts):
         joinPredBitCount += joinPredBitPosDict[tabPair][1] - joinPredBitPosDict[tabPair][0] + 1
     return joinPredBitCount
 
-def employWeightThreshold(predictedY, weightThreshold):
+def employWeightThreshold(predictedY, schemaDicts, weightThreshold):
     startBit = len(predictedY) - schemaDicts.allOpSize
     predictedY = predictedY[startBit:len(predictedY)]
     newPredictedY = []
@@ -300,7 +300,7 @@ def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
     thresholds = topKThres(configDict)
     precOrRecallFavor = configDict['PREC_OR_RECALL_FAVOR']
     for threshold in thresholds:
-        topKCandidateVector = employWeightThreshold(predictedY, threshold)
+        topKCandidateVector = employWeightThreshold(predictedY, schemaDicts, threshold)
         if int(configDict['TOP_K']) == 3 and threshold == 0.8:
             precOrRecallFavor = "recall"
         elif int(configDict['TOP_K']) == 3 and threshold == 0.6:
