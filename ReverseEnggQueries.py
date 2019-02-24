@@ -293,6 +293,8 @@ def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
         topKPredictedIntents.append(topKNovelIntent)
     return topKPredictedIntents
 
+
+
 if __name__ == "__main__":
     #configDict = parseConfig.parseConfigFile("configFile.txt")
     parser = argparse.ArgumentParser()
@@ -301,4 +303,4 @@ if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = readSchemaDicts(configDict)
     intentObjDict = CreateSQLFromIntentVec.readIntentObjectsFromFile("/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
-    refineIntent(0, BitMap.fromstring(intentObjDict['intentVector']), schemaDicts, configDict)
+    refineIntent(0, BitMap.fromstring(intentObjDict['intentVector']), schemaDicts, configDict['PREC_OR_RECALL_FAVOR'], configDict)
