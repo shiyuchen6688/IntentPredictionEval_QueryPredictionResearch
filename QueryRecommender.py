@@ -135,8 +135,8 @@ def appendPredictedIntentsToFile(topKSessQueryIndices, topKPredictedIntents, ses
     if configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
         print "FoldID: "+str(foldID)+" Predicted " + str(len(topKPredictedIntents)) + " query intent vectors for Session " + str(
             sessID) + ", Query " + str(queryID)
-    elif configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
-        print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
+    #elif configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        #print "Predicted "+str(len(topKPredictedIntents))+" query intent vectors for Session "+str(sessID)+", Query "+str(queryID)
     elapsedAppendTime = float(time.time()-startAppendTime)
     return elapsedAppendTime
 
