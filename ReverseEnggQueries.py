@@ -313,14 +313,18 @@ def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
 def createAndRefineIntentsForMockQueries(schemaDicts, configDict):
     intentObj = CreateSQLFromIntentVec.SQLForBitMapIntent(schemaDicts, None, None)
     intentObj.intentBitVec = BitMap(schemaDicts.allOpSize)
-    intentObj.queryType = "select"
-    bitToSet = schemaDicts.backwardMapOpsToBits["select;querytype"]
-    CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    intentObj.tables = ['jos_menu', 'jos_components']
+    #intentObj.queryType = "select"
+    intentObj.queryType = None
+    if intentObj.queryType is not None:
+        bitToSet = schemaDicts.backwardMapOpsToBits["select;querytype"]
+        CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
+    #intentObj.tables = ['jos_menu', 'jos_components']
+    intentObj.tables = []
     for tableName in intentObj.tables:
         bitToSet = schemaDicts.backwardMapOpsToBits[tableName+";table"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    intentObj.projCols = ['jos_components.option', 'jos_components.id']
+    #intentObj.projCols = ['jos_components.option', 'jos_components.id']
+    intentObj.projCols = []
     for projCol in intentObj.projCols:
         bitToSet = schemaDicts.backwardMapOpsToBits[projCol + ";project"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
@@ -328,7 +332,8 @@ def createAndRefineIntentsForMockQueries(schemaDicts, configDict):
     for avgCol in intentObj.avgCols:
         bitToSet = schemaDicts.backwardMapOpsToBits[avgCol + ";avg"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    intentObj.minCols = ['jos_components.id']  # placeholder for future
+    #intentObj.minCols = ['jos_components.id']  # placeholder for future
+    intentObj.minCols = []
     for minCol in intentObj.minCols:
         bitToSet = schemaDicts.backwardMapOpsToBits[minCol + ";min"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
@@ -344,19 +349,23 @@ def createAndRefineIntentsForMockQueries(schemaDicts, configDict):
     for countCol in intentObj.countCols:
         bitToSet = schemaDicts.backwardMapOpsToBits[countCol + ";count"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    intentObj.selCols = ['jos_menu.published']  # placeholder for future
+    #intentObj.selCols = ['jos_menu.published']  # placeholder for future
+    intentObj.selCols =[]
     for selCol in intentObj.selCols:
         bitToSet = schemaDicts.backwardMapOpsToBits[selCol + ";select"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    intentObj.groupByCols = ['jos_menu.sublevel']  # placeholder for future
+    #intentObj.groupByCols = ['jos_menu.sublevel']  # placeholder for future
+    intentObj.groupByCols = []
     for groupByCol in intentObj.groupByCols:
         bitToSet = schemaDicts.backwardMapOpsToBits[groupByCol + ";groupby"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    intentObj.orderByCols = ['jos_menu.ordering', 'jos_menu.sublevel', 'jos_menu.parent']  # placeholder for future
+    #intentObj.orderByCols = ['jos_menu.ordering', 'jos_menu.sublevel', 'jos_menu.parent']  # placeholder for future
+    intentObj.orderByCols = []
     for orderByCol in intentObj.orderByCols:
         bitToSet = schemaDicts.backwardMapOpsToBits[orderByCol + ";orderby"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    intentObj.havingCols = ['jos_menu.lft']  # placeholder for future
+    #intentObj.havingCols = ['jos_menu.lft']  # placeholder for future
+    intentObj.havingCols = []
     for havingCol in intentObj.havingCols:
         bitToSet = schemaDicts.backwardMapOpsToBits[havingCol + ";having"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
@@ -364,7 +373,8 @@ def createAndRefineIntentsForMockQueries(schemaDicts, configDict):
     if intentObj.limit is not None:
         bitToSet = schemaDicts.backwardMapOpsToBits[";limit"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    intentObj.joinPreds = ['jos_menu.params,jos_components.params', 'jos_menu.ordering,jos_components.ordering', 'jos_menu.componentid,jos_components.id', 'jos_menu.name,jos_components.name']
+    #intentObj.joinPreds = ['jos_menu.params,jos_components.params', 'jos_menu.ordering,jos_components.ordering', 'jos_menu.componentid,jos_components.id', 'jos_menu.name,jos_components.name']
+    intentObj.joinPreds = []
     for joinPred in intentObj.joinPreds:
         bitToSet = schemaDicts.backwardMapOpsToBits[joinPred + ";join"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)

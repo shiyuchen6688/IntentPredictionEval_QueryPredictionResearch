@@ -190,7 +190,7 @@ def createSQLFromIntentString(intentObj):
     return intentObj
 
 def printSQLOps(intentObj):
-    print "Query Type: "+intentObj.queryType
+    print "Query Type: "+str(intentObj.queryType)
     print "Tables: "+str(intentObj.tables)
     print "Projected Columns: "+str(intentObj.projCols)
     print "AVG Columns: "+str(intentObj.avgCols)
@@ -224,7 +224,7 @@ def createSQLFromIntentStrSanityCheck(schemaDicts, intentObjDict):
     intentObj = initIntentStrObj(schemaDicts, intentObjDict['intentVector'])
     assertIntentOpObjects(intentObj, intentObjDict)
     createSQLFromIntentString(intentObj)
-    printSQLOps(intentObj)
+    #printSQLOps(intentObj)
 
 def checkOpToPopulate(newSetBitPos, intentObj):
     if newSetBitPos >= intentObj.schemaDicts.joinPredicatesStartBitIndex:
@@ -486,9 +486,35 @@ def fixHavingViolations(intentObj, precOrRecallFavor):
                 intentObj = setBit(opDimBit, intentObj)
     return intentObj
 
+def fixNullQueryType(intentObj):
+    if intentObj.queryType is None:
+        #select by default
+        intentObj.queryType = "select"
+        opDimBit = 0 # 0 for select
+        intentObj = setBit(opDimBit, intentObj)
+    return intentObj
+
+def fixNullTableViolations(intentObj):
+    if len(intentObj.tables) == 0:
+        tableStartBit = intentObj.schemaDicts.tableStartBitIndex
+        intentObj = setBit(tableStartBit, intentObj)
+        tableName = intentObj.schemaDicts.forwardMapBitsToOps[tableStartBit].split(";")[0] # coz the value has ;table in the end
+        intentObj.tables.append(tableName)
+    return intentObj
+
+def fixNullProjColViolations(intentObj):
+    if intentObj.queryType == "select" and len(intentObj.projCols) == 0:
+        if len(intentObj.tables) > 0:
+            tableName = intentObj.tables[0]
+            colName = intentObj.schemaDicts.colDict[tableName][0]
+            opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName+"."+colName+";project"]
+            intentObj = setBit(opDimBit, intentObj)
+    return intentObj
+
+
 def fixSQLViolations(intentObj, precOrRecallFavor):
     assert precOrRecallFavor == "precision" or precOrRecallFavor == "recall"
-    # no need to fix query type
+    fixNullQueryType(intentObj)
     # no need to fix tables -- they are fixed automatically while fixing other operators
     fixColumnTableViolations(intentObj, "project", precOrRecallFavor)
     fixColumnTableViolations(intentObj, "avg", precOrRecallFavor)
@@ -505,6 +531,8 @@ def fixSQLViolations(intentObj, precOrRecallFavor):
     # out of order by, group by and having -- order by and having can have columns different from projected columns but group by cannot
     fixGroupByViolations(intentObj, precOrRecallFavor)
     fixHavingViolations(intentObj, precOrRecallFavor)
+    fixNullTableViolations(intentObj)
+    fixNullProjColViolations(intentObj)
     return intentObj
 
 
