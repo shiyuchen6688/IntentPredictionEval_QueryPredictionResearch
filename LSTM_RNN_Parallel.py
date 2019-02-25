@@ -205,7 +205,7 @@ def predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_
     #print "Padded sequences sessID: " + str(sessID) + ", queryID: " + str(queryID)
     predictedY = modelRNNThread.predict(testX)
     predictedY = predictedY[0][predictedY.shape[1] - 1]
-    #print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
+    print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
     return predictedY
 
 
@@ -397,7 +397,7 @@ def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, schemaDicts, mod
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             resList.append((sessID, queryID, predictedY, topKPredictedIntents, nextQueryIntent))
-            #print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
     #QR.deleteIfExists(modelRNNFileName)
     return resList
 
