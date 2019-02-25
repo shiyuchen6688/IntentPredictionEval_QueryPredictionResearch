@@ -319,7 +319,7 @@ def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
     if int(configDict['RNN_SUB_THREADS']) == 0:
         return predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, configDict)
     else:
-        pool = multiprocessing.Pool
+        pool = multiprocessing.Pool()
         argList = []
         argList.append((threadID, predictedY, schemaDicts, configDict))
         pool.map(predictTopKNovelIntentsProcess, argList)
