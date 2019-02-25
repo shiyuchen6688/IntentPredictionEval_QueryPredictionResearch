@@ -389,9 +389,9 @@ def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, schemaDicts, mod
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
             predictedY = predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
-            nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
+            #nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
             #print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
-            actual_vector = np.array(nextIntentList).astype(np.int)
+            #actual_vector = np.array(nextIntentList).astype(np.int)
             if configDict['BIT_OR_WEIGHTED'] == 'BIT':
                 topKPredictedIntents = computePredictedIntentsRNN(threadID, predictedY, schemaDicts, configDict, sessID, queryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
