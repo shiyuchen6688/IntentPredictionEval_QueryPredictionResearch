@@ -121,6 +121,7 @@ def initializeRNN(n_features, n_memUnits, configDict):
     elif int(configDict['RNN_HIDDEN_LAYERS'])==2:
         modelRNN.add(Dropout(0.5))
         modelRNN.add(Dense(256, activation='relu'))  # However this size of weight matrix 256 * 100,000 could potentially blow up
+        #print "Inside MultiLayer RNN"
         modelRNN.add(Dropout(0.25))
         modelRNN.add(Dense(n_features, activation="sigmoid"))
         modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
