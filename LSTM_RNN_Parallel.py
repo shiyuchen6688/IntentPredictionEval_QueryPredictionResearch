@@ -104,19 +104,26 @@ def updateRNNFullTrain(modelRNN, x_train, y_train, configDict):
         return modelRNN
     '''
 
-
 def initializeRNN(n_features, n_memUnits, configDict):
     modelRNN = Sequential()
     assert configDict['RNN_BACKPROP_LSTM_GRU'] == 'LSTM' or configDict['RNN_BACKPROP_LSTM_GRU'] == 'BACKPROP' or configDict['RNN_BACKPROP_LSTM_GRU'] == 'GRU'
+    assert int(configDict['RNN_HIDDEN_LAYERS'])==1 or int(configDict['RNN_HIDDEN_LAYERS'])==2
     if configDict['RNN_BACKPROP_LSTM_GRU'] == 'LSTM':
         modelRNN.add(LSTM(n_memUnits, input_shape=(None, n_features), return_sequences=True))
     elif configDict['RNN_BACKPROP_LSTM_GRU'] == 'BACKPROP':
         modelRNN.add(SimpleRNN(n_memUnits, input_shape=(None, n_features), return_sequences=True))
     elif configDict['RNN_BACKPROP_LSTM_GRU'] == 'GRU':
         modelRNN.add(GRU(n_memUnits, input_shape=(None, n_features), return_sequences=True))
-    # model.add(Dropout(0.1))
-    modelRNN.add(Dense(n_features, activation="sigmoid"))
-    modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
+    if int(configDict['RNN_HIDDEN_LAYERS'])==1:
+        # model.add(Dropout(0.1))
+        modelRNN.add(Dense(n_features, activation="sigmoid"))
+        modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
+    elif int(configDict['RNN_HIDDEN_LAYERS'])==2:
+        modelRNN.add(Dropout(0.5))
+        modelRNN.add(Dense(256, activation='relu'))  # However this size of weight matrix 256 * 100,000 could potentially blow up
+        modelRNN.add(Dropout(0.25))
+        modelRNN.add(Dense(n_features, activation="sigmoid"))
+        modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
     return modelRNN
 
 def appendTrainingXY(sessionStreamDict, sessID, queryID, configDict, dataX, dataY):
