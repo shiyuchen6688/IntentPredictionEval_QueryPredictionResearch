@@ -182,6 +182,12 @@ def createQueryExecIntentCreationTimes(configDict):
                 episodeIntentCreationTime[numEpisodes] = tempIntentTimeEpisode
                 tempExecTimeEpisode = 0.0
                 tempIntentTimeEpisode = 0.0
+        if (tempExecTimeEpisode > 0 or tempIntentTimeEpisode > 0):
+            numEpisodes += 1
+            episodeQueryExecutionTime[numEpisodes] = tempExecTimeEpisode
+            episodeIntentCreationTime[numEpisodes] = tempIntentTimeEpisode
+            tempExecTimeEpisode = 0.0
+            tempIntentTimeEpisode = 0.0
     return (episodeQueryExecutionTime, episodeIntentCreationTime)
 
 def writeKFoldTrainTestTimesToPickleFiles(avgTrainTime, avgTestTime, algoName, configDict):
@@ -481,6 +487,7 @@ def evaluateTimePredictions(episodeResponseTimeDictName, configDict, algoName):
     queryExecutionTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/QueryExecutionTimeDict_" + configDict[
         'INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_EPISODE_IN_QUERIES_" + configDict[
                                      'EPISODE_IN_QUERIES'] + ".pickle"
+
     if os.path.exists(intentCreationTimeDictName) and os.path.exists(queryExecutionTimeDictName):
         episodeQueryExecutionTime = readFromPickleFile(queryExecutionTimeDictName)
         episodeIntentCreationTime = readFromPickleFile(intentCreationTimeDictName)
