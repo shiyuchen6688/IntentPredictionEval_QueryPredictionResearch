@@ -283,17 +283,20 @@ def topKThres(configDict):
         thresholds = [0.8, 0.6, 0.4]
     return thresholds
 
-def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict):
+def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
     # Step 1: regenerate the query ops from the topKCandidateVector
     #print "-----------Original SQL----------------"
-    intentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
+    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
+    curIntentObj = None
+    if curIntentBitVec is not None:
+        curIntentObj = CreateSQLFromIntentVec.regenerateSQL(curIntentBitVec, schemaDicts)
     # Step 2: refine SQL violations
-    intentObj = CreateSQLFromIntentVec.fixSQLViolations(intentObj, precOrRecallFavor)
+    intentObj = CreateSQLFromIntentVec.fixSQLViolations(predictedIntentObj, precOrRecallFavor, curIntentObj)
     #print "-----------Refined SQL-----------------"
     #intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
     return intentObj.intentBitVec
 
-def predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, configDict):
+def predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, configDict, curIntentBitVec):
     topKPredictedIntents = []
     #schemaDicts = readSchemaDicts(configDict)
     thresholds = topKThres(configDict)
@@ -306,22 +309,22 @@ def predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, confi
             precOrRecallFavor = "recall"
         elif int(configDict['TOP_K']) == 3 and threshold == 0.4:
             precOrRecallFavor = "recall"
-        topKNovelIntent = refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict)
+        topKNovelIntent = refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec)
         topKPredictedIntents.append(topKNovelIntent)
     return topKPredictedIntents
 
-def predictTopKNovelIntentsProcess((threadID, predictedY, schemaDicts, configDict)):
-    topKPredictedIntents = predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, configDict)
+def predictTopKNovelIntentsProcess((threadID, predictedY, schemaDicts, configDict, curIntentBitVec)):
+    topKPredictedIntents = predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, configDict, curIntentBitVec)
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "localTopKDict_" + str(threadID) + ".pickle", topKPredictedIntents)
     return
 
-def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict):
+def predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict, curIntentBitVec):
     if int(configDict['RNN_SUB_THREADS']) == 0:
-        return predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, configDict)
+        return predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, configDict, curIntentBitVec)
     else:
         pool = multiprocessing.Pool()
         argList = []
-        argList.append((threadID, predictedY, schemaDicts, configDict))
+        argList.append((threadID, predictedY, schemaDicts, configDict, curIntentBitVec))
         pool.map(predictTopKNovelIntentsProcess, argList)
         pool.close()
         pool.join()
@@ -396,7 +399,7 @@ def createAndRefineIntentsForMockQueries(schemaDicts, configDict):
     for joinPred in intentObj.joinPreds:
         bitToSet = schemaDicts.backwardMapOpsToBits[joinPred + ";join"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    refineIntent(0, intentObj.intentBitVec, schemaDicts, "recall", configDict)
+    refineIntent(0, intentObj.intentBitVec, schemaDicts, "recall", configDict, None)
 
 
 if __name__ == "__main__":

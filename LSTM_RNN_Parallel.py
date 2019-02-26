@@ -333,7 +333,7 @@ def computePredictedIntentsRNN(threadID, predictedY, schemaDicts, configDict, cu
         return computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID,
                                               sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
     elif configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True':
-        return ReverseEnggQueries.predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict)
+        return ReverseEnggQueries.predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict, sessionStreamDict[curSessID+","+curQueryID])
 
 
 def computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
