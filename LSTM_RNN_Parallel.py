@@ -526,6 +526,41 @@ def appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntent
                                                                    outputIntentFileName, configDict, foldID)
     return elapsedAppendTime
 
+def updateTimeResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
+    accThres = float(configDict['ACCURACY_THRESHOLD'])
+
+    '''
+    QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
+                                  configDict['ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU'])
+    outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + configDict[
+        'ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                    'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                                configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+    outputExcelQuality = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + \
+                         configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                             'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                             'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + "_" + configDict[
+                             'RNN_INCREMENTAL_OR_FULL_TRAIN'] + ".xlsx"
+    ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
+
+
+    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    '''
+    QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
+                               configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"])
+
+    outputEvalTimeFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalTimeShortTermIntent_" + configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES']
+    outputExcelTimeEval = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelTime_" + configDict['ALGORITHM'] + "_" + \
+                          configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                              'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                          configDict['EPISODE_IN_QUERIES'] + "_" + configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] + ".xlsx"
+    ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
+    print "--Completed Quality and Time Evaluation--"
+    return
+
 def updateQualityResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
     accThres = float(configDict['ACCURACY_THRESHOLD'])
 
@@ -860,7 +895,8 @@ def runFromExistingOutput(configDict):
                                       configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                           'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
                                           'EPISODE_IN_QUERIES'] + ".pickle"
-        updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+        #updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+        updateTimeResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
 def runFromExistingOutputInBetween(configDict):
     if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
@@ -889,7 +925,8 @@ if __name__ == "__main__":
     if configDict['RUN_FROM_EXISTING_OUTPUT'] == 'False':
         executeRNN(configDict)
     elif configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True':
-        runFromExistingOutputInBetween(configDict)
+        #runFromExistingOutputInBetween(configDict)
+        runFromExistingOutput(configDict)
 
 '''
     for key in keyOrder:
