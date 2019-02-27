@@ -304,11 +304,11 @@ def predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, confi
     for threshold in thresholds:
         topKCandidateVector = employWeightThreshold(predictedY, schemaDicts, threshold)
         if int(configDict['TOP_K']) == 3 and threshold == 0.3:
-            precOrRecallFavor = "precision"
+            precOrRecallFavor = "recall"
         elif int(configDict['TOP_K']) == 3 and threshold == 0.2:
-            precOrRecallFavor = "precision"
+            precOrRecallFavor = "recall"
         elif int(configDict['TOP_K']) == 3 and threshold == 0.1:
-            precOrRecallFavor = "precision"
+            precOrRecallFavor = "recall"
         topKNovelIntent = refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec)
         topKPredictedIntents.append(topKNovelIntent)
     return topKPredictedIntents
