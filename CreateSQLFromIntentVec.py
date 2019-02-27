@@ -520,7 +520,7 @@ def fixHavingViolations(intentObj, precOrRecallFavor):
 
 def fixNullQueryTypeWithPrevEffect(intentObj, curIntentObj):
     if intentObj.queryType is None:
-        if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentObj is not None:
+        if curIntentObj is not None:
             intentObj.queryType = copy.copy(curIntentObj.queryType) # borrow the querytype of the current query
             opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[intentObj.queryType+";querytype"]
         else:
@@ -532,7 +532,7 @@ def fixNullQueryTypeWithPrevEffect(intentObj, curIntentObj):
 
 def fixNullTableViolationsWithPrevEffect(intentObj, curIntentObj):
     if len(intentObj.tables) == 0:
-        if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentObj is not None:
+        if curIntentObj is not None:
             intentObj.tables = list(curIntentObj.tables)
             for tableName in intentObj.tables:
                 opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName+";table"]
@@ -550,7 +550,7 @@ def fixNullProjColViolationsWithPrevEffect(intentObj, curIntentObj):
         intersectTables = []
         if curIntentObj is not None:
             intersectTables = list(set(intentObj.tables).intersection(set(curIntentObj.tables)))
-        if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and len(intersectTables) > 0 and len(curIntentObj.projCols) > 0:
+        if len(intersectTables) > 0 and len(curIntentObj.projCols) > 0:
             for curProjCol in curIntentObj.projCols:
                 curTableName = curProjCol.split(".")[0]
                 if curTableName in intersectTables:
