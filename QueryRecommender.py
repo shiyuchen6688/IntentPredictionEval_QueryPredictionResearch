@@ -281,6 +281,7 @@ def computeQueRIEFMeasureForEachEpisode(line, configDict):
     recallAtMaxFMeasure = 0.0
     maxFMeasure = 0.0
     accuracyAtMaxFMeasure = 0.0
+    maxFIndex = -1
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
         actualQueryIntent = BitMap.fromstring(tokens[3].split(":")[1])
     elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
@@ -298,11 +299,12 @@ def computeQueRIEFMeasureForEachEpisode(line, configDict):
             precisionAtMaxFMeasure = precision
             recallAtMaxFMeasure = recall
             accuracyAtMaxFMeasure = accuracy
+            maxFIndex = i-4 # gives the topKIndex
         #if precision > maxPrecision:
         #if recall > maxRecall:
         #if accuracy > maxAccuracy:
     # print "float(len(tokens)-4 ="+str(len(tokens)-4)+", precision = "+str(precision/float(len(tokens)-4))
-    return (sessID, queryID, numEpisodes, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure, maxFMeasure)
+    return (sessID, queryID, numEpisodes, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure, maxFMeasure, maxFIndex)
 
 def computeCosineSimFMeasureForEachEpisode(line, configDict):
     tokens = line.strip().split(";")
@@ -340,11 +342,12 @@ def computeCosineSimFMeasureForEachEpisode(line, configDict):
 
 def computeAccuracyForEachEpisode(line, configDict):
     assert configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'COSINESIM' or configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'QUERIE'
+    maxFIndex = -1
     if configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'COSINESIM':
         (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure) = computeCosineSimFMeasureForEachEpisode(line, configDict)
     elif configDict['COSINESIM_OR_QUERIE_FMEASURE'] == 'QUERIE':
-        (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure) = computeQueRIEFMeasureForEachEpisode(line, configDict)
-    return (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure)
+        (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure, maxFIndex) = computeQueRIEFMeasureForEachEpisode(line, configDict)
+    return (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure, maxFIndex)
 
 def appendToDict(avgDict, key, value):
     if key not in avgDict:
@@ -366,7 +369,7 @@ def computeAvgFoldAccuracy(kFoldOutputIntentFiles, configDict):
     for foldOutputIntentFile in kFoldOutputIntentFiles:
         with open(foldOutputIntentFile) as f:
             for line in f:
-                (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure) = computeAccuracyForEachEpisode(line, configDict)
+                (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure, maxFIndex) = computeAccuracyForEachEpisode(line, configDict)
                 avgMaxAccuracy = appendToDict(avgMaxAccuracy, numEpisodes, accuracy)
                 avgPrecision = appendToDict(avgPrecision, numEpisodes, precision)
                 avgRecall = appendToDict(avgRecall, numEpisodes, recall)
@@ -406,11 +409,11 @@ def evaluateQualityPredictions(outputIntentFileName, configDict, accThres, algoN
         pass
     with open(outputIntentFileName) as f:
         for line in f:
-            (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure) = computeAccuracyForEachEpisode(line,
+            (sessID, queryID, numEpisodes, accuracy, precision, recall, FMeasure, maxFIndex) = computeAccuracyForEachEpisode(line,
                                                                                                         configDict)
             outputEvalQualityStr = "Session:" + str(sessID) + ";Query:" + str(queryID) + ";#Episodes:" + str(
                 numEpisodes) + ";Precision:" + str(precision) + ";Recall:" + str(recall) + ";FMeasure:" + str(FMeasure) +";Accuracy:" + str(
-                accuracy)
+                accuracy)+";MaxFIndex:"+str(maxFIndex)
             ti.appendToFile(outputEvalQualityFileName, outputEvalQualityStr)
 
 def avgKFoldTimeAndQualityPlots(kFoldOutputIntentFiles,kFoldEpisodeResponseTimeDicts, avgTrainTimeFN, avgTestTimeFN, algoName, configDict):

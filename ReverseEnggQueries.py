@@ -280,7 +280,7 @@ def topKThres(configDict):
         thresholds.append(thresList[i])
     # special case:
     if int(configDict['TOP_K']) == 3:
-        thresholds = [0.8, 0.6, 0.4]
+        thresholds = [0.3, 0.2, 0.1]
     return thresholds
 
 def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
@@ -288,7 +288,7 @@ def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, 
     #print "-----------Original SQL----------------"
     predictedIntentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
     curIntentObj = None
-    if curIntentBitVec is not None:
+    if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentBitVec is not None:
         curIntentObj = CreateSQLFromIntentVec.regenerateSQL(curIntentBitVec, schemaDicts)
     # Step 2: refine SQL violations
     intentObj = CreateSQLFromIntentVec.fixSQLViolations(predictedIntentObj, precOrRecallFavor, curIntentObj)
@@ -303,12 +303,12 @@ def predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, confi
     precOrRecallFavor = configDict['PREC_OR_RECALL_FAVOR']
     for threshold in thresholds:
         topKCandidateVector = employWeightThreshold(predictedY, schemaDicts, threshold)
-        if int(configDict['TOP_K']) == 3 and threshold == 0.8:
-            precOrRecallFavor = "recall"
-        elif int(configDict['TOP_K']) == 3 and threshold == 0.6:
-            precOrRecallFavor = "recall"
-        elif int(configDict['TOP_K']) == 3 and threshold == 0.4:
-            precOrRecallFavor = "recall"
+        if int(configDict['TOP_K']) == 3 and threshold == 0.3:
+            precOrRecallFavor = "precision"
+        elif int(configDict['TOP_K']) == 3 and threshold == 0.2:
+            precOrRecallFavor = "precision"
+        elif int(configDict['TOP_K']) == 3 and threshold == 0.1:
+            precOrRecallFavor = "precision"
         topKNovelIntent = refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec)
         topKPredictedIntents.append(topKNovelIntent)
     return topKPredictedIntents

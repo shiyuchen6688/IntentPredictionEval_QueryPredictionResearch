@@ -159,7 +159,7 @@ def computeQualityMeasuresPerSession(resultDict, numSessions):
         for i in range(len(resultDict[threadID])):
             (sessID, queryID, predictedY, topKPredictedIntents, nextQueryIntent) = resultDict[threadID][i]
             output_str = QR.computePredictedOutputStrRNN(sessID, queryID, topKPredictedIntents, nextQueryIntent, numSessions, configDict)
-            (sessID, queryID, numSessions, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure, maxFMeasure) = QR.computeQueRIEFMeasureForEachEpisode(output_str, configDict)
+            (sessID, queryID, numSessions, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure, maxFMeasure, maxFIndex) = QR.computeQueRIEFMeasureForEachEpisode(output_str, configDict)
             sessFMeasure += maxFMeasure
             sessAccuracy += accuracyAtMaxFMeasure
             sessPrecision += precisionAtMaxFMeasure

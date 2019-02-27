@@ -173,7 +173,7 @@ def testActiveRNN(sessionLengthDict, trainSessionDict, testKeyOrder, testSession
             nextQueryIntent = testSessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             output_str = QR.computePredictedOutputStrRNN(sessID, queryID, topKPredictedIntents, nextQueryIntent, numSessions, configDict)
             (sessID, queryID, numSessions, accuracyAtMaxFMeasure, precisionAtMaxFMeasure, recallAtMaxFMeasure,
-             maxFMeasure) = QR.computeQueRIEFMeasureForEachEpisode(output_str, configDict)
+             maxFMeasure, maxFIndex) = QR.computeQueRIEFMeasureForEachEpisode(output_str, configDict)
             avgFMeasure+=maxFMeasure
             avgAccuracy+=accuracyAtMaxFMeasure
             avgPrecision+=precisionAtMaxFMeasure

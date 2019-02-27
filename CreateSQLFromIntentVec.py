@@ -189,6 +189,37 @@ def createSQLFromIntentString(intentObj):
     intentObj = populateJoinPredsStr(intentObj)
     return intentObj
 
+def createSQLString(intentObj):
+    actualSQLStr = "Query Type: "+str(intentObj.queryType)+"\n"
+    if len(intentObj.tables) > 0:
+        actualSQLStr += "Tables: "+str(intentObj.tables) + "\n"
+    if len(intentObj.projCols) > 0:
+        actualSQLStr += "Projected Columns: " + str(intentObj.projCols) + "\n"
+    if len(intentObj.avgCols) > 0:
+        actualSQLStr += "AVG Columns: " + str(intentObj.avgCols) + "\n"
+    if len(intentObj.minCols) > 0:
+        actualSQLStr += "MIN Columns: " + str(intentObj.minCols) + "\n"
+    if len(intentObj.maxCols) > 0:
+        actualSQLStr += "MAX Columns: " + str(intentObj.maxCols) + "\n"
+    if len(intentObj.sumCols) > 0:
+        actualSQLStr += "SUM Columns: " + str(intentObj.sumCols) + "\n"
+    if len(intentObj.countCols) > 0:
+        actualSQLStr += "COUNT Columns: " + str(intentObj.countCols) + "\n"
+    if len(intentObj.selCols) > 0:
+        actualSQLStr += "SEL Columns: " + str(intentObj.selCols) + "\n"
+    if len(intentObj.groupByCols) > 0:
+        actualSQLStr += "GROUP BY Columns: " + str(intentObj.groupByCols) + "\n"
+    if len(intentObj.orderByCols) > 0:
+        actualSQLStr += "ORDER BY Columns: " + str(intentObj.orderByCols) + "\n"
+    if len(intentObj.havingCols) > 0:
+        actualSQLStr += "HAVING Columns: " + str(intentObj.havingCols) + "\n"
+    if intentObj.limit is not None:
+        actualSQLStr += "Limit: "+str(intentObj.limit)+"\n"
+    if len(intentObj.joinPreds) > 0:
+        actualSQLStr += "JOIN PRED ColPairs: " + str(intentObj.joinPreds) + "\n"
+    return actualSQLStr
+
+
 def printSQLOps(intentObj):
     print "Query Type: "+str(intentObj.queryType)
     print "Tables: "+str(intentObj.tables)
@@ -336,11 +367,12 @@ def populateSQLOpFromType(intentObj, sqlOp, opType):
 
 def createSQLFromIntentBits(intentObj):
     for setBitIndex in intentObj.newSetBitPosList:
-        setSQLOp = intentObj.schemaDicts.forwardMapBitsToOps[setBitIndex]
-        opTokens = setSQLOp.split(";")
-        sqlOp = opTokens[0]
-        opType = opTokens[1]
-        intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
+        if setBitIndex in intentObj.schemaDicts.forwardMapBitsToOps:
+            setSQLOp = intentObj.schemaDicts.forwardMapBitsToOps[setBitIndex]
+            opTokens = setSQLOp.split(";")
+            sqlOp = opTokens[0]
+            opType = opTokens[1]
+            intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
     #printSQLOps(intentObj)
     return intentObj
 
@@ -486,9 +518,9 @@ def fixHavingViolations(intentObj, precOrRecallFavor):
                 intentObj = setBit(opDimBit, intentObj)
     return intentObj
 
-def fixNullQueryType(intentObj, curIntentObj):
+def fixNullQueryTypeWithPrevEffect(intentObj, curIntentObj):
     if intentObj.queryType is None:
-        if curIntentObj is not None:
+        if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentObj is not None:
             intentObj.queryType = copy.copy(curIntentObj.queryType) # borrow the querytype of the current query
             opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[intentObj.queryType+";querytype"]
         else:
@@ -498,9 +530,9 @@ def fixNullQueryType(intentObj, curIntentObj):
         intentObj = setBit(opDimBit, intentObj)
     return intentObj
 
-def fixNullTableViolations(intentObj, curIntentObj):
+def fixNullTableViolationsWithPrevEffect(intentObj, curIntentObj):
     if len(intentObj.tables) == 0:
-        if curIntentObj is not None:
+        if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentObj is not None:
             intentObj.tables = list(curIntentObj.tables)
             for tableName in intentObj.tables:
                 opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName+";table"]
@@ -513,12 +545,12 @@ def fixNullTableViolations(intentObj, curIntentObj):
             intentObj.tables.append(tableName)
     return intentObj
 
-def fixNullProjColViolations(intentObj, curIntentObj):
+def fixNullProjColViolationsWithPrevEffect(intentObj, curIntentObj):
     if intentObj.queryType == "select" and len(intentObj.projCols) == 0:
         intersectTables = []
         if curIntentObj is not None:
             intersectTables = list(set(intentObj.tables).intersection(set(curIntentObj.tables)))
-        if len(intersectTables) > 0:
+        if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and len(intersectTables) > 0 and len(curIntentObj.projCols) > 0:
             for curProjCol in curIntentObj.projCols:
                 curTableName = curProjCol.split(".")[0]
                 if curTableName in intersectTables:
@@ -534,10 +566,37 @@ def fixNullProjColViolations(intentObj, curIntentObj):
                 intentObj = setBit(opDimBit, intentObj)
     return intentObj
 
+def fixNullQueryTypeDefaultOtherQuery(intentObj, curIntentObj):
+    if intentObj.queryType is None:
+        #select by default
+        intentObj.queryType = "select"
+        opDimBit = 0 # 0 for select
+        intentObj = setBit(opDimBit, intentObj)
+    return intentObj
+
+def fixNullTableViolationsDefaultOtherQuery(intentObj, curIntentObj):
+    if len(intentObj.tables) == 0:
+        # by default select the first table from the schema order
+        tableStartBit = intentObj.schemaDicts.tableStartBitIndex
+        intentObj = setBit(tableStartBit, intentObj)
+        tableName = intentObj.schemaDicts.forwardMapBitsToOps[tableStartBit].split(";")[0] # coz the value has ;table in the end
+        intentObj.tables.append(tableName)
+    return intentObj
+
+def fixNullProjColViolationsDefaultOtherQuery(intentObj, curIntentObj):
+    if intentObj.queryType == "select" and len(intentObj.projCols) == 0:
+        # by default project the first column from the first table
+        if len(intentObj.tables) > 0:
+            tableName = intentObj.tables[0]
+            colName = intentObj.schemaDicts.colDict[tableName][0]
+            opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[tableName+"."+colName+";project"]
+            intentObj = setBit(opDimBit, intentObj)
+    return intentObj
+
 
 def fixSQLViolations(intentObj, precOrRecallFavor, curIntentObj):
     assert precOrRecallFavor == "precision" or precOrRecallFavor == "recall"
-    fixNullQueryType(intentObj, curIntentObj)
+    fixNullQueryTypeWithPrevEffect(intentObj, curIntentObj)
     # no need to fix tables -- they are fixed automatically while fixing other operators
     fixColumnTableViolations(intentObj, "project", precOrRecallFavor)
     fixColumnTableViolations(intentObj, "avg", precOrRecallFavor)
@@ -554,17 +613,20 @@ def fixSQLViolations(intentObj, precOrRecallFavor, curIntentObj):
     # out of order by, group by and having -- order by and having can have columns different from projected columns but group by cannot
     fixGroupByViolations(intentObj, precOrRecallFavor)
     fixHavingViolations(intentObj, precOrRecallFavor)
-    fixNullTableViolations(intentObj, curIntentObj)
-    fixNullProjColViolations(intentObj, curIntentObj)
+    fixNullTableViolationsWithPrevEffect(intentObj, curIntentObj)
+    fixNullProjColViolationsWithPrevEffect(intentObj, curIntentObj)
     return intentObj
 
 
 def regenerateSQL(topKCandidateVector, schemaDicts):
     setBitPosList = topKCandidateVector.nonzero()
+    #print setBitPosList
+    #print schemaDicts.allOpSize
     newSetBitPosList = []
     for bitPos in setBitPosList:
         newBitPos = schemaDicts.allOpSize - 1 - bitPos # because 1s appear in reverse, no need to prune the extra padded bits
         newSetBitPosList.append(newBitPos)
+    #print newSetBitPosList
     intentObj = SQLForBitMapIntent(schemaDicts, topKCandidateVector, newSetBitPosList)
     intentObj = createSQLFromIntentBits(intentObj)
     return intentObj
