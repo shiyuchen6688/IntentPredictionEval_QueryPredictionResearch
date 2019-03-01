@@ -11,6 +11,7 @@ def parseSchema(schemaFileName):
 
 def getConfig(relativePath):
     homeDir = expanduser("~")
+    homeDir = "/hdd2/vamsiCodeData"
     absPath = homeDir+"/"+relativePath
     return absPath
 

@@ -373,7 +373,7 @@ def createSQLFromIntentBits(intentObj):
             sqlOp = opTokens[0]
             opType = opTokens[1]
             intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
-    #printSQLOps(intentObj)
+    printSQLOps(intentObj)
     return intentObj
 
 def setBit(opDimBit, intentObj):
@@ -653,7 +653,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
-    intentObjDict = readIntentObjectsFromFile("/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
+    intentObjDict = readIntentObjectsFromFile("/hdd2/vamsiCodeData/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
+    #intentObjDict = readIntentObjectsFromFile("/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
     #createSQLFromIntentStrSanityCheck(schemaDicts, intentObjDict)
     createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict)
     #createSQLFromIntent(schemaDicts, intentObjDict['intentVector'])
