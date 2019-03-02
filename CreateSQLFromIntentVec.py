@@ -24,6 +24,7 @@ import multiprocessing
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 import ReverseEnggQueries
+import socket
 
 class SQLForBitMapIntent:
     def __init__(self, schemaDicts, intentBitVec, newSetBitPosList):
@@ -653,8 +654,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
-    intentObjDict = readIntentObjectsFromFile("/hdd2/vamsiCodeData/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
-    #intentObjDict = readIntentObjectsFromFile("/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
+    tempVectorFileName = "/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector"
+    if socket.gethostname() == "en4119510l":
+        tempVectorFileName = "/hdd2/vamsiCodeData/Documents/DataExploration-Research/MINC/InputOutput/tempVector"
+    intentObjDict = readIntentObjectsFromFile(tempVectorFileName)
+    #intentObjDict = readIntentObjectsFromFile()
     #createSQLFromIntentStrSanityCheck(schemaDicts, intentObjDict)
     createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict)
     #createSQLFromIntent(schemaDicts, intentObjDict['intentVector'])

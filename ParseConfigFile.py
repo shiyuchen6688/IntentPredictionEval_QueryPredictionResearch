@@ -1,4 +1,5 @@
 from os.path import expanduser
+import socket
 def parseSchema(schemaFileName):
     schemaDict = {}
     colIndex = 0  #colIndex starts from 0
@@ -11,7 +12,8 @@ def parseSchema(schemaFileName):
 
 def getConfig(relativePath):
     homeDir = expanduser("~")
-    homeDir = "/hdd2/vamsiCodeData"
+    if socket.gethostname() == "en4119510l":
+        homeDir = "/hdd2/vamsiCodeData"
     absPath = homeDir+"/"+relativePath
     return absPath
 
