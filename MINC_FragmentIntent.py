@@ -9,6 +9,7 @@ import re
 import MINC_prepareJoinKeyPairs
 from ParseConfigFile import getConfig
 import random
+import ReverseEnggQueries
 #import MINC_QueryParser as MINC_QP
 
 def concatenateSeqIntentVectorFiles(configDict):
@@ -65,17 +66,21 @@ def removeExcessDelimiters(sessQueryIntent):
     ret_str = ret_str + ";"+tokens[len(tokens)-1]
     return ret_str
 
+def tryDeletionIfExists(fileName):
+    try:
+        os.remove(fileName)
+    except OSError:
+        pass
+    return
+
 def createConcurrentIntentVectors(sessionQueryDict, configDict):
     intentFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
     concurrentFile = getConfig(configDict['CONCURRENT_QUERY_SESSIONS'])
-    try:
-        os.remove(intentFile)
-    except OSError:
-        pass
-    try:
-        os.remove(concurrentFile)
-    except:
-        pass
+    tableIntentFile = getConfig(configDict['BIT_FRAGMENT_TABLE_INTENT_SESSIONS'])
+    schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
+    tryDeletionIfExists(intentFile)
+    tryDeletionIfExists(concurrentFile)
+    tryDeletionIfExists(tableIntentFile)
     queryCount = 0
     queryIndex = 0
     absCount = 0
@@ -98,9 +103,14 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             assert queryCount>=0
             if queryCount == 0:
                 output_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + tokens[2]
+                output_table_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + \
+                             tokens[2][schemaDicts.tableStartBitIndex:schemaDicts.tableStartBitIndex+len(schemaDicts.tableDict)]
                 conc_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1].split(":")[1]
             else:
                 output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + tokens[2]
+                output_table_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + \
+                                   tokens[2][schemaDicts.tableStartBitIndex:schemaDicts.tableStartBitIndex + len(
+                                       schemaDicts.tableDict)]
                 conc_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1].split(":")[1]
             queryCount += 1
             absCount+=1
@@ -112,6 +122,7 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
                 print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", absQueryCount: " + str(absCount))
     if queryCount > 0:
         ti.appendToFile(intentFile, output_str)
+        ti.appendToFile(tableIntentFile, output_table_str)
         ti.appendToFile(concurrentFile, conc_str)
     print ("Created intent vectors for # Sessions: "+str(numSessions)+" and # Queries: "+str(absCount))
 
