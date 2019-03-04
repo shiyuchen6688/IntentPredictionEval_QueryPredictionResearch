@@ -655,7 +655,7 @@ if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
     tempVectorFileName = "/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector"
-    if socket.gethostname() == "en4119510l":
+    if socket.gethostname() == "en4119510l" or socket.gethostname() == "en4119509l" or socket.gethostname() == "en4119508l" or socket.gethostname() == "en4119507l":
         tempVectorFileName = "/hdd2/vamsiCodeData/Documents/DataExploration-Research/MINC/InputOutput/tempVector"
     intentObjDict = readIntentObjectsFromFile(tempVectorFileName)
     #intentObjDict = readIntentObjectsFromFile()

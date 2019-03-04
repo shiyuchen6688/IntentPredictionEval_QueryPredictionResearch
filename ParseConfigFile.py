@@ -12,7 +12,7 @@ def parseSchema(schemaFileName):
 
 def getConfig(relativePath):
     homeDir = expanduser("~")
-    if socket.gethostname() == "en4119510l":
+    if socket.gethostname() == "en4119510l" or socket.gethostname() == "en4119509l" or socket.gethostname() == "en4119508l" or socket.gethostname() == "en4119507l":
         homeDir = "/hdd2/vamsiCodeData"
     absPath = homeDir+"/"+relativePath
     return absPath
