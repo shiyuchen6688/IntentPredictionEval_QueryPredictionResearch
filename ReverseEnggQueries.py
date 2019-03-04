@@ -300,7 +300,7 @@ def predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, confi
     topKPredictedIntents = []
     #schemaDicts = readSchemaDicts(configDict)
     thresholds = topKThres(configDict)
-    precOrRecallFavor = configDict['PREC_OR_RECALL_FAVOR']
+    precOrRecallFavor = configDict['RNN_PREC_OR_RECALL_FAVOR']
     for threshold in thresholds:
         topKCandidateVector = employWeightThreshold(predictedY, schemaDicts, threshold)
         if int(configDict['TOP_K']) == 3 and threshold == 0.3:
@@ -410,5 +410,5 @@ if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = readSchemaDicts(configDict)
     #intentObjDict = CreateSQLFromIntentVec.readIntentObjectsFromFile("/Users/postgres/Documents/DataExploration-Research/MINC/InputOutput/tempVector")
-    #refineIntent(0, BitMap.fromstring(intentObjDict['intentVector']), schemaDicts, configDict['PREC_OR_RECALL_FAVOR'], configDict)
+    #refineIntent(0, BitMap.fromstring(intentObjDict['intentVector']), schemaDicts, configDict['RNN_PREC_OR_RECALL_FAVOR'], configDict)
     createAndRefineIntentsForMockQueries(schemaDicts, configDict)
