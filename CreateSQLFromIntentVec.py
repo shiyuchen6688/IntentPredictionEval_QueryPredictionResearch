@@ -374,7 +374,7 @@ def populateSQLOpFromType(intentObj, sqlOp, opType):
 
 def createSQLTableFromIntentBits(intentObj):
     for setBitIndex in intentObj.newSetBitPosList:
-        tempIndex = setBitIndex + schemaDicts.tableStartBitIndex
+        tempIndex = setBitIndex + intentObj.schemaDicts.tableStartBitIndex
         if tempIndex in intentObj.schemaDicts.forwardMapBitsToOps:
             setSQLOp = intentObj.schemaDicts.forwardMapBitsToOps[tempIndex]
             opTokens = setSQLOp.split(";")
