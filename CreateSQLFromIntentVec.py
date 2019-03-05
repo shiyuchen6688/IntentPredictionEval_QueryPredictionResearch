@@ -374,7 +374,7 @@ def createSQLFromIntentBits(intentObj):
             sqlOp = opTokens[0]
             opType = opTokens[1]
             intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
-    printSQLOps(intentObj)
+    #printSQLOps(intentObj)
     return intentObj
 
 def setBit(opDimBit, intentObj):
@@ -618,6 +618,18 @@ def fixSQLViolations(intentObj, precOrRecallFavor, curIntentObj):
     fixNullProjColViolationsWithPrevEffect(intentObj, curIntentObj)
     return intentObj
 
+def regenerateSQLTable(topKCandidateVector, schemaDicts):
+    setBitPosList = topKCandidateVector.nonzero()
+    #print setBitPosList
+    #print schemaDicts.allOpSize
+    newSetBitPosList = []
+    for bitPos in setBitPosList:
+        newBitPos = schemaDicts.tableBitMapSize - 1 - bitPos # because 1s appear in reverse, no need to prune the extra padded bits
+        newSetBitPosList.append(newBitPos)
+    #print newSetBitPosList
+    intentObj = SQLForBitMapIntent(schemaDicts, topKCandidateVector, newSetBitPosList)
+    intentObj = createSQLFromIntentBits(intentObj)
+    return intentObj
 
 def regenerateSQL(topKCandidateVector, schemaDicts):
     setBitPosList = topKCandidateVector.nonzero()

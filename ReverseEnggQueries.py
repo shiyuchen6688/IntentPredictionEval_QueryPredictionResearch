@@ -283,17 +283,28 @@ def topKThres(configDict):
         thresholds = [0.3, 0.2, 0.1]
     return thresholds
 
-def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
+def refineIntentForQuery(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
     # Step 1: regenerate the query ops from the topKCandidateVector
-    #print "-----------Original SQL----------------"
+    # print "-----------Original SQL----------------"
     predictedIntentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
     curIntentObj = None
     if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentBitVec is not None:
         curIntentObj = CreateSQLFromIntentVec.regenerateSQL(curIntentBitVec, schemaDicts)
     # Step 2: refine SQL violations
     intentObj = CreateSQLFromIntentVec.fixSQLViolations(predictedIntentObj, precOrRecallFavor, curIntentObj)
-    #print "-----------Refined SQL-----------------"
-    #intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
+    # print "-----------Refined SQL-----------------"
+    # intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
+    return intentObj
+
+def refineIntentForTable(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
+    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(topKCandidateVector, schemaDicts)
+
+def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
+    assert configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY' or configDict['RNN_PREDICT_QUERY_OR_TABLE'] =='TABLE'
+    if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
+        intentObj = refineIntentForQuery(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec)
+    elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] =='TABLE':
+        intentObj = refineIntentForTable(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec)
     return intentObj.intentBitVec
 
 def predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, configDict, curIntentBitVec):
@@ -399,7 +410,7 @@ def createAndRefineIntentsForMockQueries(schemaDicts, configDict):
     for joinPred in intentObj.joinPreds:
         bitToSet = schemaDicts.backwardMapOpsToBits[joinPred + ";join"]
         CreateSQLFromIntentVec.setBit(bitToSet, intentObj)
-    refineIntent(0, intentObj.intentBitVec, schemaDicts, "recall", configDict, None)
+    refineIntentForQuery(0, intentObj.intentBitVec, schemaDicts, "recall", configDict, None)
 
 
 if __name__ == "__main__":

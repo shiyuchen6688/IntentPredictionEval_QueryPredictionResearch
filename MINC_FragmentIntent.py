@@ -104,13 +104,12 @@ def createConcurrentIntentVectors(sessionQueryDict, configDict):
             if queryCount == 0:
                 output_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + tokens[2]
                 output_table_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + \
-                             tokens[2][schemaDicts.tableStartBitIndex:schemaDicts.tableStartBitIndex+len(schemaDicts.tableDict)]
+                             tokens[2][schemaDicts.tableStartBitIndex:schemaDicts.tableStartBitIndex+schemaDicts.tableBitMapSize]
                 conc_str = "Session " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1].split(":")[1]
             else:
                 output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + tokens[2]
                 output_table_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1] + ";" + \
-                                   tokens[2][schemaDicts.tableStartBitIndex:schemaDicts.tableStartBitIndex + len(
-                                       schemaDicts.tableDict)]
+                                   tokens[2][schemaDicts.tableStartBitIndex:schemaDicts.tableStartBitIndex + schemaDicts.tableBitMapSize]
                 conc_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + tokens[1].split(":")[1]
             queryCount += 1
             absCount+=1
