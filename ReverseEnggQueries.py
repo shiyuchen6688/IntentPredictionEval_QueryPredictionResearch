@@ -280,7 +280,7 @@ def topKThres(configDict):
         thresholds.append(thresList[i])
     # special case:
     if int(configDict['TOP_K']) == 3:
-        thresholds = [0.3, 0.2, 0.1]
+        thresholds = [0.8, 0.6, 0.4]
     return thresholds
 
 def refineIntentForQuery(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
@@ -315,11 +315,11 @@ def predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, confi
     precOrRecallFavor = configDict['RNN_PREC_OR_RECALL_FAVOR']
     for threshold in thresholds:
         topKCandidateVector = employWeightThreshold(predictedY, schemaDicts, threshold)
-        if int(configDict['TOP_K']) == 3 and threshold == 0.3:
+        if int(configDict['TOP_K']) == 3 and threshold == 0.8:
             precOrRecallFavor = "recall"
-        elif int(configDict['TOP_K']) == 3 and threshold == 0.2:
+        elif int(configDict['TOP_K']) == 3 and threshold == 0.6:
             precOrRecallFavor = "recall"
-        elif int(configDict['TOP_K']) == 3 and threshold == 0.1:
+        elif int(configDict['TOP_K']) == 3 and threshold == 0.4:
             precOrRecallFavor = "recall"
         topKNovelIntent = refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec)
         topKPredictedIntents.append(topKNovelIntent)

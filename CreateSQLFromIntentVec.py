@@ -491,11 +491,12 @@ def fixGroupByViolation1(intentObj, precOrRecallFavor):
     return intentObj
 
 def fixGroupByViolation2(intentObj, precOrRecallFavor):
-    # Violation 2: An attribute is in the group by list but not in the projection list - aggr cols are also included in the projection list
+    # Violation 2: An attribute is in the group by list but not in the projection list while aggr list is empty - aggr cols are also included in the projection list
     # since we cannot predict which aggr op a column belongs to or if at all it is just projected and doesnt belong to any aggregate, the fact
-    # that it is in a gorup by list should make it  part of the projection list
+    # that it is in a group by list should make it  part of the projection list
     for grpByCol in intentObj.groupByCols:
-        if grpByCol not in intentObj.projCols:
+        if grpByCol not in intentObj.projCols and len(intentObj.avgCols) == 0 and len(intentObj.minCols) == 0 and len(intentObj.maxCols) == 0 and \
+                        len(intentObj.sumCols) == 0 and len(intentObj.countCols) == 0:
             if precOrRecallFavor == "precision":
                 # drop the group by column
                 intentObj.groupByCols.remove(grpByCol)
