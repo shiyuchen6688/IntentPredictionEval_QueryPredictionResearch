@@ -50,6 +50,7 @@ def readFromOutputEvalFile(outputEvalQualityFileName):
 
 def procPredictedIntents(schemaDicts, curQueryDict, outputEvalDict, outputIntentFileName, outputSQLLog):
     QR.deleteIfExists(outputSQLLog)
+    assert configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY' or configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE'
     with open(outputIntentFileName) as f:
         for line in f:
             tokens = line.strip().split(";")
@@ -61,13 +62,23 @@ def procPredictedIntents(schemaDicts, curQueryDict, outputEvalDict, outputIntent
             nextQueryID = "Query:"+str(int(tokens[1].split(":")[1]) + 1)
             outputSQLStr += "Next Query: "+curQueryDict[tokens[0]+";"+nextQueryID]+"\n"
             actualIntent = BitMap.fromstring(tokens[3].split(":")[1])
-            actualIntentObj = CreateSQLFromIntentVec.regenerateSQL(actualIntent, schemaDicts)
-            outputSQLStr += "Actual SQL Ops:\n"+CreateSQLFromIntentVec.createSQLString(actualIntentObj)
+            if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
+                actualIntentObj = CreateSQLFromIntentVec.regenerateSQL(actualIntent, schemaDicts)
+                outputSQLStr += "Actual SQL Ops:\n" + CreateSQLFromIntentVec.createSQLString(actualIntentObj)
+            elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
+                actualIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(actualIntent, None, schemaDicts)
+                outputSQLStr += "Actual SQL Ops:\n" + CreateSQLFromIntentVec.createSQLStringForTable(actualIntentObj)
             for i in range(4, len(tokens)):
                 predictedIntent = BitMap.fromstring(tokens[i].split(":")[1])
-                predictedIntentObj = CreateSQLFromIntentVec.regenerateSQL(predictedIntent, schemaDicts)
-                relIndex = i-4
-                outputSQLStr += "Predicted SQL Ops "+str(relIndex)+":\n"+CreateSQLFromIntentVec.createSQLString(predictedIntentObj)
+                relIndex = i - 4
+                if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
+                    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQL(predictedIntent, schemaDicts)
+                    outputSQLStr += "Predicted SQL Ops " + str(
+                        relIndex) + ":\n" + CreateSQLFromIntentVec.createSQLString(predictedIntentObj)
+                elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
+                    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(predictedIntent, None, schemaDicts)
+                    outputSQLStr += "Predicted SQL Ops " + str(
+                        relIndex) + ":\n" + CreateSQLFromIntentVec.createSQLStringForTable(predictedIntentObj)
             ti.appendToFile(outputSQLLog, outputSQLStr)
     return
 

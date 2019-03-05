@@ -190,6 +190,12 @@ def createSQLFromIntentString(intentObj):
     intentObj = populateJoinPredsStr(intentObj)
     return intentObj
 
+def createSQLStringForTable(intentObj):
+    actualSQLStr = None
+    if len(intentObj.tables) > 0:
+        actualSQLStr = "Tables: "+str(intentObj.tables) + "\n"
+    return actualSQLStr
+
 def createSQLString(intentObj):
     actualSQLStr = "Query Type: "+str(intentObj.queryType)+"\n"
     if len(intentObj.tables) > 0:
