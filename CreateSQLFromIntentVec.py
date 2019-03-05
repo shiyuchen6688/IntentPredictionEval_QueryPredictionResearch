@@ -637,16 +637,22 @@ def fixSQLViolations(intentObj, precOrRecallFavor, curIntentObj):
     fixNullProjColViolationsWithPrevEffect(intentObj, curIntentObj)
     return intentObj
 
-def regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts, configDict):
-    setBitPosList = topKCandidateVector.nonzero()
-    if len(setBitPosList) == 0 and configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentBitVec is not None:
-        setBitPosList = curIntentBitVec.nonzero() # default to current query
-    #print setBitPosList
-    #print schemaDicts.allOpSize
+def convertOldToNewSetBitsTable(schemaDicts, setBitPosList):
     newSetBitPosList = []
     for bitPos in setBitPosList:
-        newBitPos = schemaDicts.tableBitMapSize - 1 - bitPos # because 1s appear in reverse, no need to prune the extra padded bits
-        newSetBitPosList.append(newBitPos)
+        newBitPos = schemaDicts.tableBitMapSize - 1 - bitPos  # because 1s appear in reverse, no need to prune the extra padded bits
+        if newBitPos >= 0: # sometimes padded bits may exceed the weight threshold and may get set
+            newSetBitPosList.append(newBitPos)
+    return newSetBitPosList
+
+def regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts, configDict):
+    setBitPosList = topKCandidateVector.nonzero()
+    #print setBitPosList
+    #print schemaDicts.allOpSize
+    newSetBitPosList = convertOldToNewSetBitsTable(schemaDicts, setBitPosList)
+    if len(newSetBitPosList) == 0 and configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentBitVec is not None:
+        setBitPosList = curIntentBitVec.nonzero()  # default to current query
+        newSetBitPosList = convertOldToNewSetBitsTable(schemaDicts, setBitPosList)
     #print newSetBitPosList
     intentObj = SQLForBitMapIntent(schemaDicts, topKCandidateVector, newSetBitPosList)
     intentObj = createSQLTableFromIntentBits(intentObj)
