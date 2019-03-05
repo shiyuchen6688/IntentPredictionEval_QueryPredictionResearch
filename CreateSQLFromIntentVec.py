@@ -191,7 +191,7 @@ def createSQLFromIntentString(intentObj):
     return intentObj
 
 def createSQLStringForTable(intentObj):
-    actualSQLStr = None
+    actualSQLStr = str(None)
     if len(intentObj.tables) > 0:
         actualSQLStr = "Tables: "+str(intentObj.tables) + "\n"
     return actualSQLStr
