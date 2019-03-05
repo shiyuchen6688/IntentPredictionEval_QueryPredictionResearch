@@ -618,8 +618,10 @@ def fixSQLViolations(intentObj, precOrRecallFavor, curIntentObj):
     fixNullProjColViolationsWithPrevEffect(intentObj, curIntentObj)
     return intentObj
 
-def regenerateSQLTable(topKCandidateVector, schemaDicts):
+def regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts):
     setBitPosList = topKCandidateVector.nonzero()
+    if len(setBitPosList) == 0 and configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentBitVec is not None:
+        setBitPosList = curIntentBitVec.nonzero() # default to current query
     #print setBitPosList
     #print schemaDicts.allOpSize
     newSetBitPosList = []

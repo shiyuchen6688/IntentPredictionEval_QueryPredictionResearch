@@ -297,7 +297,8 @@ def refineIntentForQuery(threadID, topKCandidateVector, schemaDicts, precOrRecal
     return intentObj
 
 def refineIntentForTable(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
-    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(topKCandidateVector, schemaDicts)
+    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts)
+    return predictedIntentObj
 
 def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
     assert configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY' or configDict['RNN_PREDICT_QUERY_OR_TABLE'] =='TABLE'
