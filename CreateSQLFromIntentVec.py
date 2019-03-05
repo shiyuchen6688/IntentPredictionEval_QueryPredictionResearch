@@ -372,6 +372,19 @@ def populateSQLOpFromType(intentObj, sqlOp, opType):
         print "OpError !!"
     return intentObj
 
+def createSQLTableFromIntentBits(intentObj):
+    for setBitIndex in intentObj.newSetBitPosList:
+        tempIndex = setBitIndex + schemaDicts.tableStartBitIndex
+        if tempIndex in intentObj.schemaDicts.forwardMapBitsToOps:
+            setSQLOp = intentObj.schemaDicts.forwardMapBitsToOps[tempIndex]
+            opTokens = setSQLOp.split(";")
+            sqlOp = opTokens[0]
+            assert sqlOp == schemaDicts.tableOrderDict[setBitIndex]
+            opType = opTokens[1]
+            intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
+    #printSQLOps(intentObj)
+    return intentObj
+
 def createSQLFromIntentBits(intentObj):
     for setBitIndex in intentObj.newSetBitPosList:
         if setBitIndex in intentObj.schemaDicts.forwardMapBitsToOps:
@@ -636,7 +649,7 @@ def regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts, config
         newSetBitPosList.append(newBitPos)
     #print newSetBitPosList
     intentObj = SQLForBitMapIntent(schemaDicts, topKCandidateVector, newSetBitPosList)
-    intentObj = createSQLFromIntentBits(intentObj)
+    intentObj = createSQLTableFromIntentBits(intentObj)
     return intentObj
 
 def regenerateSQL(topKCandidateVector, schemaDicts):
