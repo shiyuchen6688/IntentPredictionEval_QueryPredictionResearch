@@ -379,7 +379,7 @@ def createSQLTableFromIntentBits(intentObj):
             setSQLOp = intentObj.schemaDicts.forwardMapBitsToOps[tempIndex]
             opTokens = setSQLOp.split(";")
             sqlOp = opTokens[0]
-            assert sqlOp == schemaDicts.tableOrderDict[setBitIndex]
+            assert sqlOp == intentObj.schemaDicts.tableOrderDict[setBitIndex]
             opType = opTokens[1]
             intentObj = populateSQLOpFromType(intentObj, sqlOp, opType)
     #printSQLOps(intentObj)
