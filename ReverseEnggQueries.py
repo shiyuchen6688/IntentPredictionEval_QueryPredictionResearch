@@ -297,7 +297,7 @@ def refineIntentForQuery(threadID, topKCandidateVector, schemaDicts, precOrRecal
     return intentObj
 
 def refineIntentForTable(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
-    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts)
+    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts, configDict)
     return predictedIntentObj
 
 def refineIntent(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):

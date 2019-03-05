@@ -48,7 +48,7 @@ def readFromOutputEvalFile(outputEvalQualityFileName):
             outputEvalDict[tokens[0]+";"+tokens[1]] = ";".join(tokens[2:])
     return outputEvalDict
 
-def procPredictedIntents(schemaDicts, curQueryDict, outputEvalDict, outputIntentFileName, outputSQLLog):
+def procPredictedIntents(configDict, schemaDicts, curQueryDict, outputEvalDict, outputIntentFileName, outputSQLLog):
     QR.deleteIfExists(outputSQLLog)
     assert configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY' or configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE'
     with open(outputIntentFileName) as f:
@@ -66,7 +66,7 @@ def procPredictedIntents(schemaDicts, curQueryDict, outputEvalDict, outputIntent
                 actualIntentObj = CreateSQLFromIntentVec.regenerateSQL(actualIntent, schemaDicts)
                 outputSQLStr += "Actual SQL Ops:\n" + CreateSQLFromIntentVec.createSQLString(actualIntentObj)
             elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
-                actualIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(actualIntent, None, schemaDicts)
+                actualIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(actualIntent, None, schemaDicts, configDict)
                 outputSQLStr += "Actual SQL Ops:\n" + CreateSQLFromIntentVec.createSQLStringForTable(actualIntentObj)
             for i in range(4, len(tokens)):
                 predictedIntent = BitMap.fromstring(tokens[i].split(":")[1])
@@ -76,7 +76,7 @@ def procPredictedIntents(schemaDicts, curQueryDict, outputEvalDict, outputIntent
                     outputSQLStr += "Predicted SQL Ops " + str(
                         relIndex) + ":\n" + CreateSQLFromIntentVec.createSQLString(predictedIntentObj)
                 elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
-                    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(predictedIntent, None, schemaDicts)
+                    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(predictedIntent, None, schemaDicts, configDict)
                     outputSQLStr += "Predicted SQL Ops " + str(
                         relIndex) + ":\n" + CreateSQLFromIntentVec.createSQLStringForTable(predictedIntentObj)
             ti.appendToFile(outputSQLLog, outputSQLStr)
@@ -110,7 +110,7 @@ def createSQLLogsFromConfigDict(configDict, args):
     curQueryDict = readFromConcurrentFile(concSessFile)
     outputEvalDict = readFromOutputEvalFile(outputEvalQualityFileName)
     schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
-    procPredictedIntents(schemaDicts, curQueryDict, outputEvalDict, outputIntentFileName, outputSQLLog)
+    procPredictedIntents(configDict, schemaDicts, curQueryDict, outputEvalDict, outputIntentFileName, outputSQLLog)
     return
 
 if __name__ == "__main__":
