@@ -727,7 +727,7 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
         os.remove(outputIntentFileName)
     except OSError:
         pass
-    numEpisodes = -1 # coz in the episode ID 0 nothing is written, writing starts from Episode 1
+    numEpisodes = 1 # starts from Episode 1
     startEpisode = time.time()
     prevSessID = -1
     elapsedAppendTime = 0.0
@@ -745,7 +745,6 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
                                                                sampledQueryHistory, sessionStreamDict,
                                                                sessionLengthDict,
                                                                modelRNN, max_lookback, configDict)
-            numEpisodes += 1  # episodes start from 1, numEpisodes = numTestSessions
             episodeWiseKeys = []
             prevSessID = sessID
             isEmpty = checkResultDictNotEmpty(resultDict)
@@ -758,6 +757,7 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
                                                             numEpisodes, startEpisode, elapsedAppendTime)
                 #print episodeResponseTime.keys()
                 resultDict = clear(resultDict)
+                numEpisodes += 1  # episodes start from 1, numEpisodes = numTestSessions
         episodeWiseKeys.append(key)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
