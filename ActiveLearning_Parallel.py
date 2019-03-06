@@ -123,20 +123,19 @@ def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTra
         sorted_minimaxDict = createSortedMiniMaxProbDict(minimaxDict, modelRNN, max_lookback, holdOutTrainKeyOrder,
                                                    sessionStreamDict, configDict, schemaDicts)
     resCount = 0
-    for cosSimEntry in sorted_minimaxDict:
-        sessIDQueryID = cosSimEntry[0]
+    for minimaxEntry in sorted_minimaxDict:
+        sessIDQueryID = minimaxEntry[0]
         availTrainKeyOrder.append(sessIDQueryID)
         holdOutTrainKeyOrder.remove(sessIDQueryID)
         resCount += 1
         if resCount >= exampleBatchSize:
             break
         print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", Added " + str(
-            resCount) + "th example, sessIDQueryID: " + str(sessIDQueryID) + " with cosineSim: " + str(
-            cosSimEntry[1]) + " to the data"
+            resCount) + "th example, sessIDQueryID: " + str(sessIDQueryID) + " with cosineSim/prob: " + str(
+            minimaxEntry[1]) + " to the data"
     LSTM_RNN_Parallel.updateSampledQueryHistory(configDict, availTrainSampledQueryHistory, availTrainKeyOrder,
                                                 sessionStreamDict)
     return (availTrainSampledQueryHistory, availTrainKeyOrder, holdOutTrainKeyOrder, resCount)
-
 
 
 def createAvailHoldOutTrainKeyOrder(availTrainKeyOrder, holdOutTrainKeyOrder, lo_index, batchSize):
