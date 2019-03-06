@@ -458,11 +458,11 @@ def computeAvgFoldTime(kFoldEpisodeResponseTimeDicts, algoName, configDict):
     for kFoldEpisodeTimeDict in kFoldEpisodeResponseTimeDicts:
         episodeResponseTime = readFromPickleFile(kFoldEpisodeTimeDict)
         #print "Ep: "+str(episodeResponseTime.keys())
-        for episodes in episodeResponseTime:
+        for episodes in range(1,len(episodeResponseTime)+1):
             if episodes not in avgKFoldTimeDict:
                 avgKFoldTimeDict[episodes] = []
             avgKFoldTimeDict[episodes].append(episodeResponseTime[episodes])
-    for episodes in avgKFoldTimeDict:
+    for episodes in range(1,len(avgKFoldTimeDict)+1):
         avgKFoldTimeDict[episodes] = float(sum(avgKFoldTimeDict[episodes]))/float(len(avgKFoldTimeDict[episodes]))
     writeToPickleFile(avgKFoldTimeDictName, avgKFoldTimeDict)
     return avgKFoldTimeDictName
