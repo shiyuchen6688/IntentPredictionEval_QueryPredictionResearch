@@ -58,11 +58,11 @@ def exampleSelectionRandom(foldID, activeIter, availTrainKeyOrder, holdOutTrainK
     return (availTrainSampledQueryHistory, availTrainKeyOrder, holdOutTrainKeyOrder, exampleBatchSize)
 
 
-def createSortedMiniMaxCSD(minimaxCosineSimDict, modelRNN, max_lookback, holdOutTrainKeyOrder, availTrainDictGlobal, availTrainSampledQueryHistory, sessionLengthDict, sessionStreamDict, configDict):
+def createSortedMiniMaxCSD(minimaxCosineSimDict, modelRNN, max_lookback, holdOutTrainKeyOrder, availTrainDictGlobal, availTrainSampledQueryHistory, sessionLengthDict, sessionStreamDict, configDict, schemaDicts):
     lo = 0
     hi = len(holdOutTrainKeyOrder) - 1
     holdOutResultDict = {}
-    holdOutResultDict = LSTM_RNN_Parallel.predictIntentsWithoutCurrentBatch(lo, hi, holdOutTrainKeyOrder, holdOutResultDict,
+    holdOutResultDict = LSTM_RNN_Parallel.predictIntentsWithoutCurrentBatch(lo, hi, holdOutTrainKeyOrder, schemaDicts, holdOutResultDict,
                                                                      availTrainDictGlobal,
                                                                      availTrainSampledQueryHistory, sessionStreamDict,
                                                                      sessionLengthDict,
@@ -75,8 +75,35 @@ def createSortedMiniMaxCSD(minimaxCosineSimDict, modelRNN, max_lookback, holdOut
     sorted_minimaxCSD = sorted(minimaxCosineSimDict.items(), key=operator.itemgetter(1))  # we sort in ASC order
     return sorted_minimaxCSD
 
+def findAverageTopProbs(predictedY, schemaDicts):
+    # no need of weight thresholds, just pick the top three dimensions
+    # simplest query is always select col from table -- which has 3 bits set for query type, single column and single table
+    # these three dimensions are always mandated to have the highest weights or probabilities. Our aim is to check which predictions
+    # that the RNN is least confident about. So we look for those weight vectors which have the least average weight of the Top-3 dimensions (miniMax)
+    startBit = len(predictedY) - schemaDicts.allOpSize
+    predictedY = predictedY[startBit:len(predictedY)]
+    predictedY.sort(reverse=True)
+    avgMaxProb = 0.0
+    numTopKDims = 3
+    for i in range(0, numTopKDims):
+        avgMaxProb += float(predictedY[i])
+    if avgMaxProb > 0:
+        avgMaxProb = float(avgMaxProb) / float(numTopKDims)
+    return avgMaxProb
 
-def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTrainKeyOrder, holdOutTrainKeyOrder, availTrainDictGlobal, availTrainSampledQueryHistory, sessionLengthDict, sessionStreamDict, configDict):
+
+def createSortedMiniMaxProbDict(minimaxProbDict, modelRNN, max_lookback, holdOutTrainKeyOrder,
+                                                   sessionStreamDict, configDict, schemaDicts):
+    for sessQueryID in holdOutTrainKeyOrder:
+        sessID = int(sessQueryID.split(",")[0])
+        queryID = int(sessQueryID.split(",")[1])
+        predictedY = LSTM_RNN_Parallel.predictWeightVector(modelRNN, sessionStreamDict, sessID, queryID, max_lookback, configDict)
+        avgMaxProb = findAverageTopProbs(predictedY, schemaDicts)
+        minimaxProbDict[sessQueryID] = avgMaxProb
+    sorted_minimaxProbDict = sorted(minimaxProbDict.items(), key=operator.itemgetter(1))  # we sort in ASC order
+    return sorted_minimaxProbDict
+
+def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTrainKeyOrder, holdOutTrainKeyOrder, availTrainDictGlobal, availTrainSampledQueryHistory, sessionLengthDict, sessionStreamDict, configDict, schemaDicts):
     assert configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'MINIMAX'
     assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
     # get rid of the availTrainKeys you trained on so far for incremental train but not the dictionary or sample coz they are used for query recommendation
@@ -84,12 +111,19 @@ def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTra
         del availTrainKeyOrder
         availTrainKeyOrder = []
     exampleBatchSize = int(configDict['ACTIVE_BATCH_SIZE'])
-    minimaxCosineSimDict = {}
+    minimaxDict = {}
     i = 0
     print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", #Avail-Dict-Pairs: " + str(len(availTrainKeyOrder))  + ", #Hold-Out-Dict-Pairs: " + str(len(holdOutTrainKeyOrder))
-    sorted_minimaxCSD = createSortedMiniMaxCSD(minimaxCosineSimDict, modelRNN, max_lookback, holdOutTrainKeyOrder, availTrainDictGlobal, availTrainSampledQueryHistory, sessionLengthDict, sessionStreamDict, configDict)
+    assert configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True' or configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False'
+    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        sorted_minimaxDict = createSortedMiniMaxCSD(minimaxDict, modelRNN, max_lookback, holdOutTrainKeyOrder,
+                                                   availTrainDictGlobal, availTrainSampledQueryHistory, sessionLengthDict,
+                                                   sessionStreamDict, configDict, schemaDicts)
+    elif configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True':
+        sorted_minimaxDict = createSortedMiniMaxProbDict(minimaxDict, modelRNN, max_lookback, holdOutTrainKeyOrder,
+                                                   sessionStreamDict, configDict, schemaDicts)
     resCount = 0
-    for cosSimEntry in sorted_minimaxCSD:
+    for cosSimEntry in sorted_minimaxDict:
         sessIDQueryID = cosSimEntry[0]
         availTrainKeyOrder.append(sessIDQueryID)
         holdOutTrainKeyOrder.remove(sessIDQueryID)
@@ -141,8 +175,9 @@ def initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile,
     availTrainKeyOrder = []
     availTrainSampledQueryHistory = set()  # it is a set
     (availTrainKeyOrder, holdOutTrainKeyOrder) = createAvailHoldOutTrainKeyOrder(availTrainKeyOrder, holdOutTrainKeyOrder, 0, int(configDict['ACTIVE_SEED_TRAINING_SIZE']))
-    availTrainSampledQueryHistory = LSTM_RNN_Parallel.updateSampledQueryHistory(configDict, availTrainSampledQueryHistory, availTrainKeyOrder,
-                                                                      trainSessionStreamDict)
+    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        availTrainSampledQueryHistory = LSTM_RNN_Parallel.updateSampledQueryHistory(configDict, availTrainSampledQueryHistory, availTrainKeyOrder,
+                                                                          trainSessionStreamDict)
 
     (sessionStreamDict, testKeyOrder, resultDict, testEpisodeResponseTime) = LSTM_RNN_Parallel.initRNNOneFoldTest(trainSessionStreamDict, testIntentSessionFile,
                                                                                         configDict)
@@ -251,7 +286,7 @@ def runActiveRNNKFoldExp(configDict):
             startTime = time.time()
             assert configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'MINIMAX' or configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'RANDOM'
             if configDict['ACTIVE_EXSEL_STRATEGY_MINIMAX_RANDOM'] == 'MINIMAX':
-                (availTrainSampledQueryHistory, availTrainKeyOrder, holdOutTrainKeyOrder, resCount) = exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTrainKeyOrder, holdOutTrainKeyOrder, availTrainDictGlobal, availTrainSampledQueryHistory, sessionLengthDict, sessionStreamDict, configDict)
+                (availTrainSampledQueryHistory, availTrainKeyOrder, holdOutTrainKeyOrder, resCount) = exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTrainKeyOrder, holdOutTrainKeyOrder, availTrainDictGlobal, availTrainSampledQueryHistory, sessionLengthDict, sessionStreamDict, configDict, schemaDicts)
             else:
                 (availTrainSampledQueryHistory, availTrainKeyOrder, holdOutTrainKeyOrder, resCount) = exampleSelectionRandom(foldID, activeIter, availTrainKeyOrder, holdOutTrainKeyOrder, availTrainSampledQueryHistory, sessionStreamDict)
             exSelTime = float(time.time() - startTime)
