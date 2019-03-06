@@ -53,8 +53,10 @@ def exampleSelectionRandom(foldID, activeIter, availTrainKeyOrder, holdOutTrainK
         holdOutTrainKeyOrder.remove(sessIDQueryID)
         print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", Added " + str(
             len(chosenKeys)) + "th example, sessIDQueryID: " + str(sessIDQueryID) + " to the data"
-    LSTM_RNN_Parallel.updateSampledQueryHistory(configDict, availTrainSampledQueryHistory, availTrainKeyOrder,
-                                                sessionStreamDict)
+    assert configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True' or configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False'
+    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        LSTM_RNN_Parallel.updateSampledQueryHistory(configDict, availTrainSampledQueryHistory, availTrainKeyOrder,
+                                                    sessionStreamDict)
     return (availTrainSampledQueryHistory, availTrainKeyOrder, holdOutTrainKeyOrder, exampleBatchSize)
 
 
@@ -133,8 +135,9 @@ def exampleSelectionMinimax(foldID, activeIter, modelRNN, max_lookback, availTra
         print "foldID: " + str(foldID) + ", activeIter: " + str(activeIter) + ", Added " + str(
             resCount) + "th example, sessIDQueryID: " + str(sessIDQueryID) + " with cosineSim/prob: " + str(
             minimaxEntry[1]) + " to the data"
-    LSTM_RNN_Parallel.updateSampledQueryHistory(configDict, availTrainSampledQueryHistory, availTrainKeyOrder,
-                                                sessionStreamDict)
+    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        LSTM_RNN_Parallel.updateSampledQueryHistory(configDict, availTrainSampledQueryHistory, availTrainKeyOrder,
+                                                    sessionStreamDict)
     return (availTrainSampledQueryHistory, availTrainKeyOrder, holdOutTrainKeyOrder, resCount)
 
 
