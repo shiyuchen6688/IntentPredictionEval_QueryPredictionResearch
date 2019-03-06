@@ -598,6 +598,7 @@ def updateQualityResultsToExcel(configDict, episodeResponseTimeDictName, outputI
 
     return
 
+
 def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
     accThres = float(configDict['ACCURACY_THRESHOLD'])
 
@@ -757,8 +758,6 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
                                                             numEpisodes, startEpisode, elapsedAppendTime)
                 resultDict = clear(resultDict)
         episodeWiseKeys.append(key)
-    if len(episodeResponseTime) > 0:
-        updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
 
