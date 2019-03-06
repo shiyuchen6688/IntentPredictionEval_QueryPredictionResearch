@@ -832,7 +832,8 @@ def initRNNOneFoldTrain(trainIntentSessionFile, configDict):
         for line in f:
             (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict, sessionStreamDict)
             keyOrder.append(str(sessID) + "," + str(queryID))
-    sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, keyOrder,
+    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, keyOrder,
                                                     sessionStreamDict)
     f.close()
     modelRNN = None
