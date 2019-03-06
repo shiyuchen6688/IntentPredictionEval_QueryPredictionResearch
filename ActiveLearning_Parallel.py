@@ -84,7 +84,7 @@ def findAverageTopProbs(predictedY, schemaDicts):
     # that the RNN is least confident about. So we look for those weight vectors which have the least average weight of the Top-3 dimensions (miniMax)
     startBit = len(predictedY) - schemaDicts.allOpSize
     predictedY = predictedY[startBit:len(predictedY)]
-    predictedY.sort(reverse=True)
+    sorted(predictedY, reverse=True)
     avgMaxProb = 0.0
     numTopKDims = min(3, len(predictedY))
     for i in range(0, numTopKDims):
