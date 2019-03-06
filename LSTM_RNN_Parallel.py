@@ -727,7 +727,7 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
         os.remove(outputIntentFileName)
     except OSError:
         pass
-    numEpisodes = 0
+    numEpisodes = 1
     startEpisode = time.time()
     prevSessID = -1
     elapsedAppendTime = 0.0
@@ -751,7 +751,6 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
             isEmpty = checkResultDictNotEmpty(resultDict)
             assert isEmpty == 'True' or isEmpty == 'False'
             if isEmpty == 'False':
-                print "In Fold ID: "+str(foldID)
                 elapsedAppendTime = appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes,
                                                         outputIntentFileName, configDict, foldID)
                 (episodeResponseTimeDictName, episodeResponseTime, startEpisode,
@@ -849,6 +848,7 @@ def runRNNKFoldExp(configDict):
     avgTestTime = []
     algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
     schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
+    print "Num Folds to Run: "+str(int(configDict['NUM_FOLDS_TO_RUN']))
     for foldID in range(int(configDict['NUM_FOLDS_TO_RUN'])):
         outputIntentFileName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + algoName + "_" + \
                                configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
