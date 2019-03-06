@@ -84,7 +84,7 @@ def findAverageTopProbs(predictedY, schemaDicts):
     predictedY = predictedY[startBit:len(predictedY)]
     predictedY.sort(reverse=True)
     avgMaxProb = 0.0
-    numTopKDims = 3
+    numTopKDims = min(3, len(predictedY))
     for i in range(0, numTopKDims):
         avgMaxProb += float(predictedY[i])
     if avgMaxProb > 0:
