@@ -727,7 +727,7 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
         os.remove(outputIntentFileName)
     except OSError:
         pass
-    numEpisodes = 0
+    numEpisodes = -1 # coz in the episode ID 0 nothing is written, writing starts from Episode 1
     startEpisode = time.time()
     prevSessID = -1
     elapsedAppendTime = 0.0
@@ -756,7 +756,7 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
                 (episodeResponseTimeDictName, episodeResponseTime, startEpisode,
                  elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime,
                                                             numEpisodes, startEpisode, elapsedAppendTime)
-                print episodeResponseTime.keys()
+                #print episodeResponseTime.keys()
                 resultDict = clear(resultDict)
         episodeWiseKeys.append(key)
     return (outputIntentFileName, episodeResponseTimeDictName)
