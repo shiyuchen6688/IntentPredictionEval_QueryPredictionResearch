@@ -751,6 +751,7 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
             isEmpty = checkResultDictNotEmpty(resultDict)
             assert isEmpty == 'True' or isEmpty == 'False'
             if isEmpty == 'False':
+                print "In Fold ID: "+str(foldID)
                 elapsedAppendTime = appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes,
                                                         outputIntentFileName, configDict, foldID)
                 (episodeResponseTimeDictName, episodeResponseTime, startEpisode,
