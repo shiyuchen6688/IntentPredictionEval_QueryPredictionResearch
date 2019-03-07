@@ -82,7 +82,6 @@ def findAverageTopProbs(predictedY, schemaDicts):
     # simplest query is always select col from table -- which has 3 bits set for query type, single column and single table
     # these three dimensions are always mandated to have the highest weights or probabilities. Our aim is to check which predictions
     # that the RNN is least confident about. So we look for those weight vectors which have the least average weight of the Top-3 dimensions (miniMax)
-
     assert configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY' or configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE'
     if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
         startBit = len(predictedY) - schemaDicts.allOpSize
@@ -97,7 +96,14 @@ def findAverageTopProbs(predictedY, schemaDicts):
     elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
         startBit = len(predictedY) - schemaDicts.tableBitMapSize
         predictedY = predictedY[startBit:len(predictedY)]
-        avgMaxProb = max(predictedY) # the topmost probability indicates the confidence for the most likely table dimension -- minimum one table is set
+        #avgMaxProb = max(predictedY) # the topmost probability indicates the confidence for the most likely table dimension -- minimum one table is set
+        predictedY = sorted(predictedY, reverse=True)
+        avgMaxProb = 0.0
+        numTopKDims = min(3, len(predictedY))
+        for i in range(0, numTopKDims):
+            avgMaxProb += float(predictedY[i])
+        if avgMaxProb > 0:
+            avgMaxProb = float(avgMaxProb) / float(numTopKDims)
     return avgMaxProb
 
 
