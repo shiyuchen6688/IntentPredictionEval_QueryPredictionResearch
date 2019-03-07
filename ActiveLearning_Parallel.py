@@ -279,7 +279,7 @@ def runActiveRNNKFoldExp(configDict):
         (resultDict, availTrainSampledQueryHistory, sessionLengthDict, availTrainDictGlobal, availTrainKeyOrder, holdOutTrainKeyOrder, modelRNN, max_lookback, sessionStreamDict,
          testKeyOrder, testEpisodeResponseTime) = initRNNOneFoldActiveTrainTest(trainIntentSessionFile, testIntentSessionFile, configDict)
         activeIter = 0
-        resCount = 1 # randomly intiialized
+        resCount = 1 # randomly initialized
         while len(holdOutTrainKeyOrder) > 0 and resCount > 0:
             startTime = time.time()
             assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
