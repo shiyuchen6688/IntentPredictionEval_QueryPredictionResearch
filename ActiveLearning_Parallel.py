@@ -96,7 +96,8 @@ def findAverageTopProbs(predictedY, schemaDicts):
     elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
         startBit = len(predictedY) - schemaDicts.tableBitMapSize
         predictedY = predictedY[startBit:len(predictedY)]
-        #avgMaxProb = max(predictedY) # the topmost probability indicates the confidence for the most likely table dimension -- minimum one table is set
+        avgMaxProb = max(predictedY) # the topmost probability indicates the confidence for the most likely table dimension -- minimum one table is set
+        '''
         predictedY = sorted(predictedY, reverse=True)
         avgMaxProb = 0.0
         numTopKDims = min(3, len(predictedY))
@@ -104,6 +105,7 @@ def findAverageTopProbs(predictedY, schemaDicts):
             avgMaxProb += float(predictedY[i])
         if avgMaxProb > 0:
             avgMaxProb = float(avgMaxProb) / float(numTopKDims)
+        '''
     return avgMaxProb
 
 
