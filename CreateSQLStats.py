@@ -39,8 +39,6 @@ def checkTableOverlaps(curTableSet, nextTableSet):
     overlap = list(set(curTableSet).intersection(set(nextTableSet)))
     if len(overlap) == 0:
         return "numTableSetChangedCompletely"
-    else:
-        return "numTableSetChangedWithOverlaps"
 
 
 def computeTableStats(intentObjDict):
@@ -71,6 +69,7 @@ def computeTableStats(intentObjDict):
             statsDict = increment(key, statsDict)
             key = checkTableOverlaps(curTableSet, nextTableSet)
             statsDict = increment(key, statsDict)
+            statsDict['numTableSetChangedWithOverlaps'] = statsDict['numTransitions'] - (statsDict['numTableSetChangedCompletely'] + statsDict['numtableSetNotChanged'])
     return statsDict
 
 def writeDictToFile(statsDict, outputSQLStats):
