@@ -29,17 +29,18 @@ def increment(key, dictName):
         dictName[key] = dictName[key] + 1
     return dictName
 
-def checkTableOverlaps(curTableSet, nextTableSet):
+def checkTableAddedOrDropped(curTableSet, nextTableSet):
     if set(curTableSet).issubset(set(nextTableSet)):
         return "numTableAddedOnly"
     elif set(nextTableSet).issubset(set(curTableSet)):
         return "numTableDroppedOnly"
+
+def checkTableOverlaps(curTableSet, nextTableSet):
+    overlap = list(set(curTableSet).intersection(set(nextTableSet)))
+    if len(overlap) == 0:
+        return "numTableSetChangedCompletely"
     else:
-        overlap = list(set(curTableSet).intersection(set(nextTableSet)))
-        if len(overlap) == 0:
-            return "numTableSetChangedCompletely"
-        else:
-            return "numTableSetChangedWithOverlaps"
+        return "numTableSetChangedWithOverlaps"
 
 
 def computeTableStats(intentObjDict):
@@ -66,6 +67,8 @@ def computeTableStats(intentObjDict):
                 statsDict = increment("numSeveralTablesToOneTable", statsDict)
             if set(curTableSet) == set(nextTableSet):
                 statsDict = increment("numTableSetNotChanged", statsDict)
+            key = checkTableAddedOrDropped(curTableSet, nextTableSet)
+            statsDict = increment(key, statsDict)
             key = checkTableOverlaps(curTableSet, nextTableSet)
             statsDict = increment(key, statsDict)
     return statsDict
