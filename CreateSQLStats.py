@@ -69,7 +69,7 @@ def computeTableStats(intentObjDict):
             statsDict = increment(key, statsDict)
             key = checkTableOverlaps(curTableSet, nextTableSet)
             statsDict = increment(key, statsDict)
-            statsDict['numTableSetChangedWithOverlaps'] = statsDict['numTransitions'] - (statsDict['numTableSetChangedCompletely'] + statsDict['numtableSetNotChanged'])
+            statsDict['numTableSetChangedWithOverlaps'] = statsDict['numTransitions'] - (statsDict['numTableSetChangedCompletely'] + statsDict['numTableSetNotChanged'])
     return statsDict
 
 def writeDictToFile(statsDict, outputSQLStats):
