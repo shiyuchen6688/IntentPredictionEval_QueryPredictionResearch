@@ -212,7 +212,8 @@ def predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_
     if len(testX) < max_lookback:
         testX = pad_sequences(testX, maxlen=max_lookback, padding='pre')
     #print "Padded sequences sessID: " + str(sessID) + ", queryID: " + str(queryID)
-    predictedY = modelRNNThread.predict(testX)
+    batchSize = min(int(configDict['ACTIVE_BATCH_SIZE']), len(testX))
+    predictedY = modelRNNThread.predict(testX, batch_size = batchSize)
     predictedY = predictedY[0][predictedY.shape[1] - 1]
     #print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
     return predictedY
