@@ -95,7 +95,7 @@ def updateRNNFullTrain(modelRNN, x_train, y_train, configDict):
     (x_train, max_lookback) = perform_input_padding(x_train)
     y_train = np.array(y_train)
     batchSize = min(len(x_train), int(configDict['RNN_BATCH_SIZE']))
-    modelRNN.fit(x_train, y_train, epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']), batch_size=batchSize)
+    modelRNN.fit(x_train, y_train, epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']), batch_size=len(x_train))
     return (modelRNN, max_lookback)
     '''
        for i in range(len(x_train)):
