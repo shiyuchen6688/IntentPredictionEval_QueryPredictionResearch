@@ -116,7 +116,7 @@ def initializeRNN(n_features, n_memUnits, configDict):
     elif configDict['RNN_BACKPROP_LSTM_GRU'] == 'GRU':
         modelRNN.add(GRU(n_memUnits, input_shape=(None, n_features), return_sequences=True))
     if int(configDict['RNN_HIDDEN_LAYERS'])==1:
-        # model.add(Dropout(0.1))
+        modelRNN.add(Dropout(0.5))
         modelRNN.add(Dense(n_features, activation="sigmoid"))
         modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
     elif int(configDict['RNN_HIDDEN_LAYERS'])==2:
