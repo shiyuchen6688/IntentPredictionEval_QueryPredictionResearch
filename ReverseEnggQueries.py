@@ -185,8 +185,11 @@ def employWeightThreshold(predictedY, schemaDicts, weightThreshold):
     newPredictedY = []
     minY = min(predictedY)
     maxY = max(predictedY)
+    denom = float(maxY - minY)
     for y in predictedY:
-        newY = float(y - minY) / float(maxY - minY)  # normalize each dimension to lie between 0 and 1
+        newY = float(y)
+        if denom > 0:
+            newY = float(y - minY) / float(maxY - minY)  # normalize each dimension to lie between 0 and 1
         if newY < float(weightThreshold):
             newY = 0
         else:
@@ -200,8 +203,11 @@ def pruneUnImportantDimensions(predictedY, weightThreshold):
     newPredictedY = []
     minY = min(predictedY)
     maxY = max(predictedY)
+    denom = float(maxY - minY)
     for y in predictedY:
-        newY = float(y-minY)/float(maxY-minY) # normalize each dimension to lie between 0 and 1
+        newY = float(y)
+        if denom > 0:
+            newY = float(y-minY)/float(maxY-minY) # normalize each dimension to lie between 0 and 1
         if newY < float(weightThreshold):
             newY = 0.0
         newPredictedY.append(newY)
