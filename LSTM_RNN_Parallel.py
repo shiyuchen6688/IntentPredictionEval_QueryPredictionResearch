@@ -24,7 +24,7 @@ from keras.preprocessing.sequence import pad_sequences
 from keras import regularizers
 from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential
-from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU
+from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU, BatchNormalization
 import CFCosineSim
 import argparse
 from ParseConfigFile import getConfig
@@ -117,13 +117,16 @@ def initializeRNN(n_features, n_memUnits, configDict):
         modelRNN.add(GRU(n_memUnits, input_shape=(None, n_features), return_sequences=True))
     if int(configDict['RNN_HIDDEN_LAYERS'])==1:
         modelRNN.add(Dropout(0.5))
+        modelRNN.add(BatchNormalization())
         modelRNN.add(Dense(n_features, activation="sigmoid"))
         modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
     elif int(configDict['RNN_HIDDEN_LAYERS'])==2:
         modelRNN.add(Dropout(0.5))
+        modelRNN.add(BatchNormalization())
         modelRNN.add(Dense(256, activation='relu'))  # However this size of weight matrix 256 * 100,000 could potentially blow up
         #print "Inside MultiLayer RNN"
         modelRNN.add(Dropout(0.25))
+        modelRNN.add(BatchNormalization())
         modelRNN.add(Dense(n_features, activation="sigmoid"))
         modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
     return modelRNN
