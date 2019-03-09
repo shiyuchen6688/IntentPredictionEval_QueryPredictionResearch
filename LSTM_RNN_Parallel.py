@@ -86,7 +86,8 @@ def updateRNNIncrementalTrain_Backup(modelRNN, max_lookback, x_train, y_train, c
 def updateRNNIncrementalTrain(modelRNN, max_lookback, x_train, y_train, configDict):
     (x_train, max_lookback_this) = perform_input_padding(x_train)
     y_train = np.array(y_train)
-    modelRNN.fit(x_train, y_train, epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']), batch_size=len(x_train))
+    batchSize = min(len(x_train), int(configDict['RNN_BATCH_SIZE']))
+    modelRNN.fit(x_train, y_train, epochs=int(configDict['RNN_FULL_TRAIN_EPOCHS']), batch_size=batchSize)
     if max_lookback_this > max_lookback:
         max_lookback = max_lookback_this
     return (modelRNN, max_lookback)
@@ -116,7 +117,7 @@ def initializeRNN(n_features, n_memUnits, configDict):
     elif configDict['RNN_BACKPROP_LSTM_GRU'] == 'GRU':
         modelRNN.add(GRU(n_memUnits, input_shape=(None, n_features), return_sequences=True))
     if int(configDict['RNN_HIDDEN_LAYERS'])==1:
-        modelRNN.add(Dropout(0.5))
+        #modelRNN.add(Dropout(0.5))
         modelRNN.add(BatchNormalization())
         modelRNN.add(Dense(n_features, activation="sigmoid"))
         modelRNN.compile(loss="binary_crossentropy", optimizer="rmsprop", metrics=['accuracy'])
