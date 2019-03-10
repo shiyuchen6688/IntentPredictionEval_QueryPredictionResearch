@@ -19,7 +19,7 @@ def concatenateSeqIntentVectorFiles(configDict):
     sessionQueryDict = {} # key is session ID and value is line
     queryCount = 0
     prevSessName = None
-    sessID = -1
+    sessID = int(configDict['BIT_FRAGMENT_START_SESS_INDEX'])-1
     for i in range(numFiles):
         fileNamePerThread = splitDir+"/"+splitFileName+str(i)
         with open(fileNamePerThread) as f:
