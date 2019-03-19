@@ -362,7 +362,7 @@ def initCFCosineSimSingularity(configDict):
     manager = multiprocessing.Manager()
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
-        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + \
+        'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
                                   configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
@@ -404,7 +404,7 @@ def updateSessionHistory(sessQueryID, distinctQueriesSessWise, sessionSampleDict
     if LSTM_RNN_Parallel.findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, distinctQueries) == "False":
         distinctQueries.append(sessQueryID)
     # employ uniform sampling for repeatability on the same dataset
-    sampleFrac = float(configDict['RNN_SAMPLING_FRACTION'])
+    sampleFrac = float(configDict['CF_SAMPLING_FRACTION'])
     count = int(float(configDict['EPISODE_IN_QUERIES']) * sampleFrac)
     if len(distinctQueries) < count:
         count = len(distinctQueries)
@@ -553,9 +553,9 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
         sessionSampleDict = updateSampledQueryDictHistory(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict)
         # -- Refinement and prediction is done at every query, episode update alone is done at end of the episode --
         sessionSummaries = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionSummaries, sessionStreamDict)
-        assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
-        # we have empty queryKeysSetAside because we want to incrementally train the RNN at the end of each episode
-        if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+        assert configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+        # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
+        if configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
             del queryKeysSetAside
             queryKeysSetAside = []
         # we record the times including train and test
