@@ -15,6 +15,7 @@ import multiprocessing
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 import LSTM_RNN_Parallel
+import argparse
 
 def OR(sessionSummary, curQueryIntent, configDict):
     if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
@@ -582,7 +583,11 @@ def runCFCosineSim(configDict):
         runCFCosineSimKFoldExp(configDict)
 
 if __name__ == "__main__":
-    configDict = parseConfig.parseConfigFile("configFile.txt")
+    #configDict = parseConfig.parseConfigFile("configFile.txt")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-config", help="Config parameters file", type=str, required=True)
+    args = parser.parse_args()
+    configDict = parseConfig.parseConfigFile(args.config)
     runCFCosineSim(configDict)
 
 
