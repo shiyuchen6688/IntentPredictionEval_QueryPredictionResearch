@@ -374,18 +374,18 @@ def initCFCosineSimSingularity(configDict):
                            configDict['CF_COSINESIM_MF'] + "_" + \
                            configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
-    sessionSummaries = {}  # key is sessionID and value is summary
-    sessionSampleDict = {} # key is sessionID and value is a list of sampled intent vectors
+    sessionSummaries = manager.dict()  # key is sessionID and value is summary
+    sessionSampleDict = manager.dict() # key is sessionID and value is a list of sampled intent vectors
     numEpisodes = 0
     queryKeysSetAside = []
     episodeResponseTime = {}
-    resultDict = {}
+    resultDict = manager.dict()
     sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
     try:
         os.remove(outputIntentFileName)
     except OSError:
         pass
-    sessionStreamDict = {}
+    sessionStreamDict = manager.dict()
     keyOrder = []
     with open(intentSessionFile) as f:
         for line in f:
@@ -463,7 +463,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
-def predictTopKIntentsPerThread(i, t_lo, t_hi, keyOrder, resList, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict):
+def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict)):
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
@@ -473,34 +473,33 @@ def predictTopKIntentsPerThread(i, t_lo, t_hi, keyOrder, resList, sessionSummari
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
             topKSessQueryIndices = predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
-            resList.append((sessID, queryID, topKSessQueryIndices))
-    return resList
+            resultDict[threadID].append((sessID, queryID, topKSessQueryIndices))
+    return resultDict
 
 
 def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict):
     numThreads = int(configDict['CF_THREADS'])
     numKeysPerThread = int(float(hi - lo + 1) / float(numThreads))
-    threads = {}
+    #threads = {}
     t_loHiDict = {}
     t_hi = lo - 1
-    for i in range(numThreads):
+    for threadID in range(numThreads):
         t_lo = t_hi + 1
-        if i == numThreads - 1:
+        if threadID == numThreads - 1:
             t_hi = hi
         else:
             t_hi = t_lo + numKeysPerThread - 1
-        t_loHiDict[i] = (t_lo, t_hi)
-        resultDict[i] = list()
+        t_loHiDict[threadID] = (t_lo, t_hi)
+        resultDict[threadID] = list()
         # print "Set tuple boundaries for Threads"
     if numThreads == 1:
-        predictTopKIntentsPerThread(0, lo, hi, keyOrder, resultDict[0], sessionSummaries, sessionSampleDict, sessionStreamDict, configDict)
+        predictTopKIntentsPerThread((0, lo, hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
     else:
         pool = multiprocessing.Pool()
         argsList = []
-        for i in range(numThreads):
-            (t_lo, t_hi) = t_loHiDict[i]
-            resList = resultDict[i]
-            argsList.append((i, t_lo, t_hi, keyOrder, resList, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
+        for threadID in range(numThreads):
+            (t_lo, t_hi) = t_loHiDict[threadID]
+            argsList.append((threadID, t_lo, t_hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
             #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             #threads[i].start()
         pool.map(predictTopKIntentsPerThread, argsList)
