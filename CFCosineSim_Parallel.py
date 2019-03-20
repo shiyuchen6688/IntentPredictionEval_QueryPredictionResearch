@@ -363,7 +363,6 @@ def initCFCosineSimOneFold(trainIntentSessionFile, configDict):
     return (sessionSummaries, sessionDict, sessionLengthDict, sessionStreamDict, keyOrder, episodeResponseTime)
 
 def initCFCosineSimSingularity(configDict):
-    manager = multiprocessing.Manager()
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
         'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
@@ -374,18 +373,19 @@ def initCFCosineSimSingularity(configDict):
                            configDict['CF_COSINESIM_MF'] + "_" + \
                            configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
-    sessionSummaries = manager.dict()  # key is sessionID and value is summary
+    sessionSummaries = {}  # key is sessionID and value is summary
     sessionSampleDict = {} # key is sessionID and value is a list of sampled intent vectors
     numEpisodes = 0
     queryKeysSetAside = []
     episodeResponseTime = {}
-    resultDict = manager.dict()
-    sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
+    #sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
     try:
         os.remove(outputIntentFileName)
     except OSError:
         pass
+    manager = multiprocessing.Manager()
     sessionStreamDict = manager.dict()
+    resultDict = manager.dict()
     keyOrder = []
     with open(intentSessionFile) as f:
         for line in f:
@@ -394,7 +394,7 @@ def initCFCosineSimSingularity(configDict):
             keyOrder.append(str(sessID) + "," + str(queryID))
     f.close()
     startEpisode = time.time()
-    return (sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionLengthDict, sessionStreamDict, numEpisodes,
+    return (sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict, numEpisodes,
      episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName)
 
 def updateSessionHistory(sessQueryID, distinctQueriesSessWise, sessionSampleDict, sessionStreamDict, configDict):
@@ -571,7 +571,7 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
 
 
 def runCFCosineSimSingularityExp(configDict):
-    (sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionLengthDict, sessionStreamDict, numEpisodes,
+    (sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict, numEpisodes,
      episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName) = initCFCosineSimSingularity(configDict)
     trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict, numEpisodes,
      episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName)
