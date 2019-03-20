@@ -473,6 +473,7 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resultDict, ses
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
             topKSessQueryIndices = predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
+            print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
             resultDict[threadID].append((sessID, queryID, topKSessQueryIndices))
     return resultDict
 
