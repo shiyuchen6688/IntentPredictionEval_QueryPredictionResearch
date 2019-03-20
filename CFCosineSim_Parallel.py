@@ -425,7 +425,7 @@ def updateSessionHistory(sessQueryID, distinctQueriesSessWise, sessionSampleDict
 
 
 def updateSampledQueryDictHistory(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict):
-    distinctQueriesSessWise = [] # key is sessID and value is a list of distinct keys
+    distinctQueriesSessWise = {} # key is sessID and value is a list of distinct keys
     for sessQueryID in queryKeysSetAside:
         (distinctQueriesSessWise, sessionSampleDict) = updateSessionHistory(sessQueryID, distinctQueriesSessWise, sessionSampleDict, sessionStreamDict, configDict)
     del distinctQueriesSessWise
