@@ -387,7 +387,7 @@ def initCFCosineSimSingularity(configDict):
         pass
     manager = multiprocessing.Manager()
     sessionStreamDict = manager.dict()
-    resultDict = manager.dict()
+    resultDict = {}
     keyOrder = []
     with open(intentSessionFile) as f:
         for line in f:
@@ -465,7 +465,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
-def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict)):
+def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict)):
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
@@ -476,8 +476,10 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resultDict, ses
             topKSessQueryIndices = predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
             print "ThreadID: "+str(threadID)+", computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
-            resultDict[threadID].append((sessID, queryID, topKSessQueryIndices))
-    return resultDict
+            resList.append((sessID, queryID, topKSessQueryIndices))
+    QR.writeToPickleFile(
+        getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle", resList)
+    return resList
 
 
 def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict):
@@ -496,18 +498,21 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
         resultDict[threadID] = list()
         # print "Set tuple boundaries for Threads"
     if numThreads == 1:
-        predictTopKIntentsPerThread((0, lo, hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
+        predictTopKIntentsPerThread((0, lo, hi, keyOrder, resultDict[0], sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
     else:
         pool = multiprocessing.Pool()
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
+            argsList.append((threadID, t_lo, t_hi, keyOrder, resultDict[threadID], sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
             #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             #threads[i].start()
         pool.map(predictTopKIntentsPerThread, argsList)
         pool.close()
         pool.join()
+        for threadID in range(numThreads):
+            resultDict[threadID] = QR.readFromPickleFile(
+                getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle")
     return resultDict
 
 def appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, foldID):
