@@ -533,7 +533,7 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
     batchSize = int(configDict['EPISODE_IN_QUERIES'])
     lo = 0
     hi = -1
-    assert configDict['INCLUDE_CUR_SESS'] == False  # you never recommend queries from current session coz it is the most similar to the query you have
+    assert configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
     while hi < len(keyOrder) - 1:
         lo = hi + 1
         if len(keyOrder) - lo < batchSize:
