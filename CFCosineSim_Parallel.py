@@ -375,7 +375,7 @@ def initCFCosineSimSingularity(configDict):
                            configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
     sessionSummaries = manager.dict()  # key is sessionID and value is summary
-    sessionSampleDict = manager.dict() # key is sessionID and value is a list of sampled intent vectors
+    sessionSampleDict = {} # key is sessionID and value is a list of sampled intent vectors
     numEpisodes = 0
     queryKeysSetAside = []
     episodeResponseTime = {}
@@ -421,8 +421,7 @@ def updateSessionHistory(sessQueryID, distinctQueriesSessWise, sessionSampleDict
         curIndex = 0
         covered = 0
         while covered < count and curIndex < len(distinctQueriesSessWise[sessID]):
-            elem = distinctQueriesSessWise[sessID][curIndex]
-            sessionSampleDict[sessID].append(elem)
+            sessionSampleDict[sessID].append(distinctQueriesSessWise[sessID][curIndex])
             curIndex += batchSize
             covered += 1
     return (distinctQueriesSessWise, sessionSampleDict)
