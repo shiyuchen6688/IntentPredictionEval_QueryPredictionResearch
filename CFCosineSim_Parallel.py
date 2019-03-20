@@ -403,8 +403,8 @@ def updateSessionHistory(sessQueryID, distinctQueriesSessWise, sessionSampleDict
         distinctQueriesSessWise[sessID] = []
     if sessID not in sessionSampleDict:
         sessionSampleDict[sessID] = []
-    distinctQueries = distinctQueriesSessWise[sessID]
-    sampledQueryHistory = sessionSampleDict[sessID]
+    #distinctQueries = distinctQueriesSessWise[sessID]
+    #sampledQueryHistory = sessionSampleDict[sessID]
     if LSTM_RNN_Parallel.findIfQueryInside(sessQueryID, sessionStreamDict, sessionSampleDict[sessID], distinctQueriesSessWise[sessID]) == "False":
         distinctQueriesSessWise[sessID].append(sessQueryID)
     # employ uniform sampling for repeatability on the same dataset
