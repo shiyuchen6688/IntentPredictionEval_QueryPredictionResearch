@@ -225,7 +225,7 @@ def insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, config
     return (minheap, cosineSimDict)
 
 
-def predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict, sessID, configDict):
+def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict, sessID, configDict):
     # python supports for min-heap not max-heap so negate items and insert into min-heap
     predSessSummary = computePredSessSummary(curQueryIntent, sessionSummaries, sessID, configDict)
     minheap = []
@@ -235,7 +235,7 @@ def predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sess
             (minheap, cosineSimDict) = insertIntoMinSessHeap(minheap, sessionSummaries, sessIndex, configDict, cosineSimDict, predSessSummary, sessIndex)
     if len(minheap) > 0:
         (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
-        print "Found Top-K Sessions"
+        print "ThreadID: "+str(threadID)+", Found Top-K Sessions"
     else:
         return (None, None)
 
@@ -248,7 +248,7 @@ def predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sess
         (minheap, cosineSimDict) = insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, configDict, cosineSimDict, predSessSummary, topKSessIndex)
     if len(minheap) > 0:
         (minheap, topKSessQueryIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
-        print "Found Top-K Queries"
+        print "ThreadID: "+str(threadID)+", Found Top-K Queries"
     '''
     topKPredictedIntents = []
     for topKSessQueryIndex in topKSessQueryIndices:
@@ -473,9 +473,9 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resultDict, ses
         curQueryIntent = sessionStreamDict[sessQueryID]
         #if queryID < sessionLengthDict[sessID]-1:
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
-            topKSessQueryIndices = predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict,
+            topKSessQueryIndices = predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
-            print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            print "ThreadID: "+str(threadID)+", computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
             resultDict[threadID].append((sessID, queryID, topKSessQueryIndices))
     return resultDict
 
