@@ -405,23 +405,23 @@ def updateSessionHistory(sessQueryID, distinctQueriesSessWise, sessionSampleDict
         sessionSampleDict[sessID] = []
     distinctQueries = distinctQueriesSessWise[sessID]
     sampledQueryHistory = sessionSampleDict[sessID]
-    if LSTM_RNN_Parallel.findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, distinctQueries) == "False":
-        distinctQueries.append(sessQueryID)
+    if LSTM_RNN_Parallel.findIfQueryInside(sessQueryID, sessionStreamDict, sessionSampleDict[sessID], distinctQueriesSessWise[sessID]) == "False":
+        distinctQueriesSessWise[sessID].append(sessQueryID)
     # employ uniform sampling for repeatability on the same dataset
     sampleFrac = float(configDict['CF_SAMPLING_FRACTION'])
     count = int(float(configDict['EPISODE_IN_QUERIES']) * sampleFrac)
-    if len(distinctQueries) < count:
-        count = len(distinctQueries)
+    if len(distinctQueriesSessWise[sessID]) < count:
+        count = len(distinctQueriesSessWise[sessID])
     if count == 0:
         count = 1
     if count > 0:
-        batchSize = int(len(distinctQueries) / count)
+        batchSize = int(len(distinctQueriesSessWise[sessID]) / count)
         if batchSize == 0:
             batchSize = 1
         curIndex = 0
         covered = 0
-        while covered < count and curIndex < len(distinctQueries):
-            sampledQueryHistory.append(distinctQueries[curIndex])
+        while covered < count and curIndex < len(distinctQueriesSessWise[sessID]):
+            sessionSampleDict[sessID].append(distinctQueriesSessWise[sessID][curIndex])
             curIndex += batchSize
             covered += 1
     return (distinctQueriesSessWise, sessionSampleDict)
