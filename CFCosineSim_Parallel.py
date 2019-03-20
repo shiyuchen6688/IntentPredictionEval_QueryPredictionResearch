@@ -235,6 +235,7 @@ def predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sess
             (minheap, cosineSimDict) = insertIntoMinSessHeap(minheap, sessionSummaries, sessIndex, configDict, cosineSimDict, predSessSummary, sessIndex)
     if len(minheap) > 0:
         (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
+        print "Found Top-K Sessions"
     else:
         return (None, None)
 
@@ -247,6 +248,7 @@ def predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sess
         (minheap, cosineSimDict) = insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, configDict, cosineSimDict, predSessSummary, topKSessIndex)
     if len(minheap) > 0:
         (minheap, topKSessQueryIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
+        print "Found Top-K Queries"
     '''
     topKPredictedIntents = []
     for topKSessQueryIndex in topKSessQueryIndices:
