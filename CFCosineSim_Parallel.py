@@ -421,7 +421,8 @@ def updateSessionHistory(sessQueryID, distinctQueriesSessWise, sessionSampleDict
         curIndex = 0
         covered = 0
         while covered < count and curIndex < len(distinctQueriesSessWise[sessID]):
-            sessionSampleDict[sessID].append(distinctQueriesSessWise[sessID][curIndex])
+            elem = distinctQueriesSessWise[sessID][curIndex]
+            sessionSampleDict[sessID].append(elem)
             curIndex += batchSize
             covered += 1
     return (distinctQueriesSessWise, sessionSampleDict)
