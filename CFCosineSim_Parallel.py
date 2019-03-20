@@ -37,10 +37,13 @@ def ADD(sessionSummary, curQueryIntent, configDict):
     sessionSummary = QR.normalizeWeightedVector(';'.join(sessTokens))
     return sessionSummary
 
-def computePredSessSummary(sessionSummaries, sessID, configDict):
+def computePredSessSummary(curQueryIntent, sessionSummaries, sessID, configDict):
     alpha = 0.5  # fixed does not change so no problem hardcoding
     predSessSummary = []
-    curSessSummary = sessionSummaries[sessID] #predSessSummary is a list coz it will consist of weights and floats, but curSessSummary is either a bitmap or a string separated by ;s
+    if sessID in sessionSummaries:
+        curSessSummary = sessionSummaries[sessID] #predSessSummary is a list coz it will consist of weights and floats, but curSessSummary is either a bitmap or a string separated by ;s
+    else:
+        curSessSummary = createEntrySimilarTo(curQueryIntent, configDict)
     if configDict['BIT_OR_WEIGHTED'] == 'BIT':
         for i in range(curSessSummary.size()):
             if curSessSummary.test(i):
@@ -222,9 +225,9 @@ def insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, config
     return (minheap, cosineSimDict)
 
 
-def predictTopKIntents(sessionSummaries, sessionSampleDict, sessionStreamDict, sessID, configDict):
+def predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict, sessID, configDict):
     # python supports for min-heap not max-heap so negate items and insert into min-heap
-    predSessSummary = computePredSessSummary(sessionSummaries, sessID, configDict)
+    predSessSummary = computePredSessSummary(curQueryIntent, sessionSummaries, sessID, configDict)
     minheap = []
     cosineSimDict = {}
     for sessIndex in sessionSummaries: # exclude the current session
@@ -325,7 +328,7 @@ def testCFCosineSim(foldID, testIntentSessionFile, outputIntentFileName, session
             queryKeysSetAside = []
             queryKeysSetAside.append(str(sessID)+","+str(queryID))
             (sessionDict, sessionSummaries) = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict,
-                                                                                          sessionDict, sessionSummaries,
+                                                                                          sessionSummaries,
                                                                                           sessionStreamDict)
             (topKSessQueryIndices, topKPredictedIntents) = predictTopKIntents(sessionSummaries, sessionDict, sessID,
                                                                       curQueryIntent, configDict)
@@ -468,7 +471,7 @@ def predictTopKIntentsPerThread(i, t_lo, t_hi, keyOrder, resList, sessionSummari
         curQueryIntent = sessionStreamDict[sessQueryID]
         #if queryID < sessionLengthDict[sessID]-1:
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
-            topKSessQueryIndices = predictTopKIntents(sessionSummaries, sessionSampleDict, sessionStreamDict,
+            topKSessQueryIndices = predictTopKIntents(curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
             resList.append((sessID, queryID, topKSessQueryIndices))
     return resList
