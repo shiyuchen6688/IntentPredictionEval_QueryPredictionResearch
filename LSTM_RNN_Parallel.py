@@ -429,7 +429,7 @@ def updateSessionDictsThreads(threadID, sessionDictsThreads, t_lo, t_hi, keyOrde
     return sessionDictsThreads
 
 def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, schemaDicts, resultDict, sessionDictGlobal, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
-    numThreads = int(configDict['RNN_THREADS'])
+    numThreads = min(int(configDict['RNN_THREADS']), hi-lo+1)
     numKeysPerThread = int(float(hi-lo+1)/float(numThreads))
     threads = {}
     t_loHiDict = {}
