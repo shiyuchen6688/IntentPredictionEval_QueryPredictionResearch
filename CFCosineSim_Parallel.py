@@ -217,7 +217,8 @@ def popTopKfromHeap(configDict, minheap, cosineSimDict):
     for i in range(numElemToPop):
         topCosineSim = 0 - (heapq.heappop(minheap))  # negated to get back the item
         topKIndex = findTopKSessIndex(topCosineSim, cosineSimDict, topKIndices)
-        topKIndices.append(topKIndex)
+        if topKIndex is not None:
+            topKIndices.append(topKIndex)
     return (minheap, topKIndices)
 
 def insertIntoMinSessHeap(minheap, cosineSim, cosineSimDict, insertKey):
@@ -562,7 +563,8 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
                     print "sessQueryID: "+sessQueryID+" not in sessionStreamDict !!"
                     sys.exit(0)
             print "ThreadID: "+str(threadID)+", computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
-            resList.append((sessID, queryID, topKSessQueryIndices))
+            if topKSessQueryIndices is not None:
+                resList.append((sessID, queryID, topKSessQueryIndices))
     QR.writeToPickleFile(
         getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle", resList)
     return resList
