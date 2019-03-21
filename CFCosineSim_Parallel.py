@@ -215,6 +215,7 @@ def popTopKfromHeap(configDict, minheap, cosineSimDict):
     if len(minheap) < numElemToPop:
         numElemToPop = len(minheap)
     i=0
+    print "len(minheap): "+str(len(minheap))+", numElemToPop: "+str(numElemToPop)
     while len(topKIndices) < numElemToPop and i < len(minheap):
         topCosineSim = 0 - (heapq.heappop(minheap))  # negated to get back the item
         topKIndex = findTopKSessIndex(topCosineSim, cosineSimDict, topKIndices)
