@@ -549,7 +549,7 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
 
 
 def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict):
-    numThreads = min(int(configDict['CF_THREADS'], hi-lo+1))
+    numThreads = min(int(configDict['CF_THREADS']), hi-lo+1)
     numKeysPerThread = int(float(hi - lo + 1) / float(numThreads))
     #threads = {}
     t_loHiDict = {}
