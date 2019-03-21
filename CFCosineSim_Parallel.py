@@ -579,8 +579,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
     if numThreads == 1:
         predictTopKIntentsPerThread((0, lo, hi, keyOrder, resultDict[0], sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
     else:
-        #pool = multiprocessing.Pool()
-        pool = MyPool()
+        pool = multiprocessing.Pool()
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
