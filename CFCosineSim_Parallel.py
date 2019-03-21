@@ -238,9 +238,8 @@ def insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, config
         cosineSimDict[cosineSim].append(sessQueryIndex)
     return (minheap, cosineSimDict)
 
-def computeSessSimilaritySingleThread(sharedQ, curSessSummary):
+def computeSessSimilaritySingleThread(sessionSummaries, curSessSummary):
     sessSimDict = {}
-    sessionSummaries = sharedQ.get()
     for sessID in sessionSummaries:
         prevSessSummary = sessionSummaries[sessID]
         sessSim = computeBitCosineSimilarity(curSessSummary, prevSessSummary)
@@ -284,13 +283,13 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSample
     minheap = []
     sessSimDict = {}
     # compute cosine similarity in parallel between curSessSummary and all the sessions from sessionSummaries
-    sharedQ = multiprocessing.Manager().Queue()
-    sharedQ.put(sessionSummaries)
     numSubThreads = min(int(configDict['CF_SUB_THREADS']), len(sessionSummaries))
 
     if numSubThreads == 1:
-        sessSimDict = computeSessSimilaritySingleThread(sharedQ, curSessSummary)
+        sessSimDict = computeSessSimilaritySingleThread(sessionSummaries, curSessSummary)
     else:
+        sharedQ = multiprocessing.Manager().Queue()
+        sharedQ.put(sessionSummaries)
         sessPartitions = partitionSessionsAmongSubThreads(numSubThreads, sessionSummaries, sessID)
         pool = multiprocessing.Pool()
         argsList = []
