@@ -557,6 +557,10 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
             topKSessQueryIndices = predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
+            for sessQueryID in topKSessQueryIndices:
+                if sessQueryID not in sessionStreamDict:
+                    print "sessQueryID: "+sessQueryID+" not in sessionStreamDict !!"
+                    sys.exit(0)
             print "ThreadID: "+str(threadID)+", computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
             resList.append((sessID, queryID, topKSessQueryIndices))
     QR.writeToPickleFile(
