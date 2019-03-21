@@ -18,6 +18,19 @@ from multiprocessing import Queue
 import LSTM_RNN_Parallel
 import argparse
 
+class NoDaemonProcess(multiprocessing.Process):
+    # make 'daemon' attribute always return False
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
+# because the latter is only a wrapper function, not a proper class.
+class MyPool(multiprocessing.pool.Pool):
+    Process = NoDaemonProcess
+
 def OR(sessionSummary, curQueryIntent, configDict):
     if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
         assert sessionSummary.size() == curQueryIntent.size()
@@ -566,7 +579,8 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
     if numThreads == 1:
         predictTopKIntentsPerThread((0, lo, hi, keyOrder, resultDict[0], sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
     else:
-        pool = multiprocessing.Pool()
+        #pool = multiprocessing.Pool()
+        pool = MyPool()
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
