@@ -284,7 +284,7 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSample
     minheap = []
     sessSimDict = {}
     # compute cosine similarity in parallel between curSessSummary and all the sessions from sessionSummaries
-    sharedQ = Queue()
+    sharedQ = multiprocessing.Manager().Queue()
     sharedQ.put(sessionSummaries)
     numSubThreads = min(int(configDict['CF_SUB_THREADS']), len(sessionSummaries))
 
