@@ -246,9 +246,8 @@ def computeSessSimilaritySingleThread(sessionSummaries, curSessSummary):
         sessSimDict[sessID] = sessSim
     return sessSimDict
 
-def computeSessSimilarityMultiThread((threadID, subThreadID, sessPartition, sharedQ, curSessSummary, configDict)):
+def computeSessSimilarityMultiThread((threadID, subThreadID, sessPartition, sessionSummaries, curSessSummary, configDict)):
     sessSimDict = {}
-    sessionSummaries = sharedQ.get()
     for sessID in sessPartition:
         prevSessSummary = sessionSummaries[sessID]
         sessSim = computeBitCosineSimilarity(curSessSummary, prevSessSummary)
@@ -288,14 +287,16 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSample
     if numSubThreads == 1:
         sessSimDict = computeSessSimilaritySingleThread(sessionSummaries, curSessSummary)
     else:
-        sharedQ = multiprocessing.Manager().Queue()
-        sharedQ.put(sessionSummaries)
+        manager = multiprocessing.Manager()
+        sharedSessSummaryDict = manager.dict()
+        for sessID in sessionSummaries:
+            sharedSessSummaryDict[sessID] = sessionSummaries[sessID]
         sessPartitions = partitionSessionsAmongSubThreads(numSubThreads, sessionSummaries, sessID)
         pool = multiprocessing.Pool()
         argsList = []
         localSessSimDicts = {}
         for subThreadID in range(numSubThreads):
-            argsList.append((threadID, subThreadID, sessPartitions[subThreadID], sharedQ, curSessSummary, configDict))
+            argsList.append((threadID, subThreadID, sessPartitions[subThreadID], sharedSessSummaryDict, curSessSummary, configDict))
             # threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             # threads[i].start()
         pool.map(computeSessSimilarityMultiThread, argsList)
