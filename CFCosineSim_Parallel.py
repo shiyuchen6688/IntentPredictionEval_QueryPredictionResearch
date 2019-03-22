@@ -591,9 +591,11 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
         # print "Set tuple boundaries for Threads"
     if numThreads == 1:
         predictTopKIntentsPerThread((0, lo, hi, keyOrder, resultDict[0], sessionSummaries, sessionSampleDict, sessionStreamDict, configDict))
-    else:
-        pool = multiprocessing.Pool()
-        #pool = ThreadPool()
+    elif numThreads > 1:
+        if int(configDict['CF_SUB_THREADS']) == 1:
+            pool = multiprocessing.Pool()
+        if int(configDict['CF_SUB_THREADS']) > 1:
+            pool = ThreadPool()
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
