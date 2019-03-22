@@ -214,14 +214,12 @@ def popTopKfromHeap(configDict, minheap, cosineSimDict):
     numElemToPop = int(configDict['TOP_K'])
     if len(minheap) < numElemToPop:
         numElemToPop = len(minheap)
-    i=0
-    print "len(minheap): "+str(len(minheap))+", numElemToPop: "+str(numElemToPop)
-    while len(topKIndices) < numElemToPop and i < len(minheap):
+    #print "len(minheap): "+str(len(minheap))+", numElemToPop: "+str(numElemToPop)
+    while len(topKIndices) < numElemToPop and len(minheap)>0:
         topCosineSim = 0 - (heapq.heappop(minheap))  # negated to get back the item
         topKIndex = findTopKSessIndex(topCosineSim, cosineSimDict, topKIndices)
         if topKIndex is not None:
             topKIndices.append(topKIndex)
-        i+=1
     return (minheap, topKIndices)
 
 def insertIntoMinSessHeap(minheap, cosineSim, cosineSimDict, insertKey):
