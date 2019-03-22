@@ -119,8 +119,7 @@ def computeBitCosineSimilarity(curSessionSummary, oldSessionSummary):
     numSetBitsIntersect = len(list(set(nonzeroDimsCurSess) & set(nonzeroDimsOldSess)))  # number of overlapping one bit dimensions
     l2NormProduct = math.sqrt(len(nonzeroDimsCurSess)) * math.sqrt(len(nonzeroDimsOldSess))
     cosineSim = float(numSetBitsIntersect)/l2NormProduct
-    if cosineSim <0 or cosineSim > 1:
-        print "Outlier Case !!"
+    #assert cosineSim >=0 and cosineSim < 1.1
     return cosineSim
 
 def computeListBitCosineSimilarityPredictOnlyOptimized(predSessSummary, oldSessionSummary, configDict):
