@@ -234,6 +234,7 @@ def insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, config
         elem = sessionStreamDict[sessQueryIndex]
         assert configDict['BIT_OR_WEIGHTED'] == 'BIT'
         cosineSim = computeBitCosineSimilarity(curSessSummary, elem)
+        assert cosineSim >= 0 and cosineSim <= 1
         heapq.heappush(minheap, -cosineSim)  # insert -ve cosineSim
         if cosineSim not in cosineSimDict:
             cosineSimDict[cosineSim] = list()
@@ -245,6 +246,7 @@ def computeSessSimilaritySingleThread(sessionSummaries, curSessSummary):
     for sessID in sessionSummaries:
         prevSessSummary = sessionSummaries[sessID]
         sessSim = computeBitCosineSimilarity(curSessSummary, prevSessSummary)
+        assert sessSim >=0 and sessSim <=1
         sessSimDict[sessID] = sessSim
     return sessSimDict
 
