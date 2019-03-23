@@ -343,6 +343,13 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSample
     '''
     return topKSessQueryIndices
 
+def saveModel(configDict, sessionSummaries):
+    sessionSummaryFile =  getConfig(configDict['OUTPUT_DIR']) + "/SessionSummaries_" + configDict[
+        'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
+                                  configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                      'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
+    QR.writeToPickleFile(sessionSummaryFile, sessionSummaries)
+    return
 
 def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionSummaries, sessionStreamDict):
     for key in queryKeysSetAside:
@@ -350,6 +357,7 @@ def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, s
         queryID = int(key.split(",")[1])
         curQueryIntent = sessionStreamDict[key]
         sessionSummaries = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries)
+    saveModel(configDict, sessionSummaries)
     return sessionSummaries
 
 def runCFCosineSimKFoldExp(configDict):
