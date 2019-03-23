@@ -496,7 +496,7 @@ def initCFCosineSimSingularity(configDict):
 
 def updateSessionHistory(distinctQueriesSessWise, sessionSampleDict, configDict):
     sampleFrac = float(configDict['CF_SAMPLING_FRACTION'])
-    for sessID in sessionSampleDict:
+    for sessID in distinctQueriesSessWise:
         distinctSessCount = len(distinctQueriesSessWise[sessID])
         count = int(float(distinctSessCount) * sampleFrac)
         if count == 0:
