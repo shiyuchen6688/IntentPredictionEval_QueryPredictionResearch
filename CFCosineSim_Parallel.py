@@ -477,7 +477,7 @@ def initCFCosineSimSingularity(configDict):
         os.remove(outputIntentFileName)
     except OSError:
         pass
-    if int(configDict['CF_THREADS'])>1:
+    if int(configDict['CF_THREADS'])>1 and int(configDict['CF_SUB_THREADS']) == 1:
         manager = multiprocessing.Manager()
         sessionStreamDict = manager.dict()
     else:
