@@ -519,9 +519,9 @@ def updateSampledQueryDictHistory(configDict, sessionSampleDict, queryKeysSetAsi
     for sessQueryID in queryKeysSetAside:
         sessID = int(sessQueryID.split(",")[0])
         if sessID not in distinctQueriesSessWise:
-            distinctQueriesSessWise[sessID] = {}
+            distinctQueriesSessWise[sessID] = []
         if sessID not in sessionSampleDict:
-            sessionSampleDict[sessID] = {}
+            sessionSampleDict[sessID] = []
         if LSTM_RNN_Parallel.findIfQueryInside(sessQueryID, sessionStreamDict, sessionSampleDict[sessID],
                                                distinctQueriesSessWise[sessID]) == "False":
             distinctQueriesSessWise[sessID].append(sessQueryID)
