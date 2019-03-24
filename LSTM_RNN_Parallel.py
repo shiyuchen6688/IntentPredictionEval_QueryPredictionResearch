@@ -655,11 +655,11 @@ def compareBitMaps(bitMap1, bitMap2):
 def findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, distinctQueries):
     for oldSessQueryID in distinctQueries:
         if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
-            print "True"
+            #print "True"
             return "True"
     for oldSessQueryID in sampledQueryHistory:
         if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
-            print "True"
+            #print "True"
             return "True"
     return "False"
 
