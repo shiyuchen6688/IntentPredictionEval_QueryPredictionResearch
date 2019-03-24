@@ -681,6 +681,7 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
             # predict queries for the batch
             resultDict = predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSampleDict, sessionStreamDict, configDict)
         print "Starting training in Episode " + str(numEpisodes)
+        startTrainTime = time.time()
         # update SessionDictGlobal and train with the new batch
         queryKeysSetAside = updateQueriesSetAside(lo, hi, keyOrder, queryKeysSetAside)
         sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict)
@@ -697,6 +698,8 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
             elapsedAppendTime = appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, -1)
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = LSTM_RNN_Parallel.clear(resultDict)
+        totalTrainTime = float(time.time() - startTrainTime)
+        print "Total Train Time: "+str(totalTrainTime)
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
 
