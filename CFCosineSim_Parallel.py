@@ -494,27 +494,42 @@ def initCFCosineSimSingularity(configDict):
     return (sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict, numEpisodes,
      episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName)
 
-def updateSessionHistory(distinctQueriesSessWise, sessionSampleDict, configDict):
+def updateSessionSampleFixedFraction(distinctQueriesSessWise, sessionSampleDict, configDict):
     sampleFrac = float(configDict['CF_SAMPLING_FRACTION'])
     for sessID in distinctQueriesSessWise:
         distinctSessCount = len(distinctQueriesSessWise[sessID])
         count = int(float(distinctSessCount) * sampleFrac)
         if count == 0:
             count = 1
-        if count > 0:
-            batchSize = int(len(distinctQueriesSessWise[sessID]) / count)
-            if batchSize == 0:
-                batchSize = 1
-            curIndex = 0
-            covered = 0
-            while covered < count and curIndex < len(distinctQueriesSessWise[sessID]):
-                sessionSampleDict[sessID].append(distinctQueriesSessWise[sessID][curIndex])
-                curIndex += batchSize
-                covered += 1
+        computeSample(sessionSampleDict[sessID], distinctQueriesSessWise[sessID], count)
     return sessionSampleDict
 
+def computeSample(sampleList, totalList, sampleSize):
+    batchSize = int(len(totalList) / sampleSize)
+    if batchSize == 0:
+        batchSize = 1
+    curIndex = 0
+    covered = 0
+    while covered < sampleSize and curIndex < len(totalList):
+        sampleList.append(totalList[curIndex])
+        curIndex += batchSize
+        covered += 1
+    return sampleList
 
-def updateSampledQueryDictHistory(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict):
+def updateSessionSampleFixedCount(distinctQueriesSessWise, sessionSampleDict, configDict):
+    # with streaming queries sample gets updated
+    sampleCount = int(configDict['CF_SAMPLE_COUNT_PER_SESS'])
+    for sessID in distinctQueriesSessWise:
+        sessSample = []
+        curCount = min(sampleCount, len(distinctQueriesSessWise[sessID]))
+        if curCount > 0:
+            sessSample = computeSample(sessSample, distinctQueriesSessWise[sessID], curCount)
+            tempList = sessionSampleDict[sessID] + sessSample
+            sessionSampleDict[sessID] = []
+            computeSample(sessionSampleDict[sessID], tempList, sampleCount)
+    return sessionSampleDict
+
+def updateSampledQueryDict(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict):
     distinctQueriesSessWise = {} # key is sessID and value is a list of distinct keys
     for sessQueryID in queryKeysSetAside:
         sessID = int(sessQueryID.split(",")[0])
@@ -525,7 +540,11 @@ def updateSampledQueryDictHistory(configDict, sessionSampleDict, queryKeysSetAsi
         if LSTM_RNN_Parallel.findIfQueryInside(sessQueryID, sessionStreamDict, sessionSampleDict[sessID],
                                                distinctQueriesSessWise[sessID]) == "False":
             distinctQueriesSessWise[sessID].append(sessQueryID)
-    sessionSampleDict = updateSessionHistory(distinctQueriesSessWise, sessionSampleDict, configDict)
+    assert configDict['CF_SAMPLE_FIXED_COUNT_OR_FRACTION']=='COUNT' or configDict['CF_SAMPLE_FIXED_COUNT_OR_FRACTION']=='FRACTION'
+    if configDict['CF_SAMPLE_FIXED_COUNT_OR_FRACTION']=='COUNT':
+        sessionSampleDict = updateSessionSampleFixedCount(distinctQueriesSessWise, sessionSampleDict, configDict)
+    elif configDict['CF_SAMPLE_FIXED_COUNT_OR_FRACTION']=='FRACTION':
+        sessionSampleDict = updateSessionSampleFixedFraction(distinctQueriesSessWise, sessionSampleDict, configDict)
     del distinctQueriesSessWise
     return sessionSampleDict
 
@@ -664,7 +683,7 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
         print "Starting training in Episode " + str(numEpisodes)
         # update SessionDictGlobal and train with the new batch
         queryKeysSetAside = updateQueriesSetAside(lo, hi, keyOrder, queryKeysSetAside)
-        sessionSampleDict = updateSampledQueryDictHistory(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict)
+        sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict)
         # -- Refinement and prediction is done at every query, episode update alone is done at end of the episode --
         sessionSummaries = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionSummaries, sessionStreamDict)
         assert configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'

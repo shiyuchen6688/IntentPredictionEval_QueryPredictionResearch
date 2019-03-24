@@ -645,12 +645,19 @@ def clear(resultDict):
         del resultDict[resKey]
     return resultDict
 
+def compareBitMaps(bitMap1, bitMap2):
+    set1 = set(bitMap1.nonzero())
+    set2 = set(bitMap2.nonzero())
+    if set1 == set2:
+        return "True"
+    return "False"
+
 def findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, distinctQueries):
     for oldSessQueryID in distinctQueries:
-        if sessionStreamDict[oldSessQueryID].tostring() == sessionStreamDict[sessQueryID].tostring():
+        if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return "True"
     for oldSessQueryID in sampledQueryHistory:
-        if sessionStreamDict[oldSessQueryID].tostring() == sessionStreamDict[sessQueryID].tostring():
+        if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return "True"
     return "False"
 
