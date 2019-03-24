@@ -588,7 +588,7 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
             topKSessQueryIndices = predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
             for sessQueryID in topKSessQueryIndices:
-                print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
+                #print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
                 if sessQueryID not in sessionStreamDict:
                     print "sessQueryID: "+sessQueryID+" not in sessionStreamDict !!"
                     sys.exit(0)
