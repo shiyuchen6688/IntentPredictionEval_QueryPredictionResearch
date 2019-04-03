@@ -242,6 +242,14 @@ def insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, config
         cosineSimDict[cosineSim].append(sessQueryIndex)
     return (minheap, cosineSimDict)
 
+def computeSessQuerySimilaritySingleThread(sessQueryIDs, sessionStreamDict, curSessSummary):
+    sessQuerySimDict = {}
+    for sessQueryID in sessQueryIDs:
+        prevSessQuery = sessionStreamDict[sessQueryID]
+        sessQuerySim = computeBitCosineSimilarity(curSessSummary, prevSessQuery)
+        sessQuerySimDict[sessQueryID] = sessQuerySim
+    return sessQuerySimDict
+
 def computeSessSimilaritySingleThread(sessionSummaries, curSessSummary):
     sessSimDict = {}
     for sessID in sessionSummaries:
@@ -250,6 +258,17 @@ def computeSessSimilaritySingleThread(sessionSummaries, curSessSummary):
         #assert sessSim >=0 and sessSim <=1
         sessSimDict[sessID] = sessSim
     return sessSimDict
+
+def computeSessQuerySimilarityMultiThread((threadID, subThreadID, sessQueryPartition, sessionStreamDict, curSessSummary, configDict)):
+    sessQuerySimDict = {}
+    for sessQueryID in sessQueryPartition:
+        prevSessQuery = sessionStreamDict[sessQueryID]
+        sessQuerySim = computeBitCosineSimilarity(curSessSummary, prevSessQuery)
+        sessQuerySimDict[sessQueryID] = sessQuerySim
+    QR.writeToPickleFile(
+        getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFSessQuerySimDict_" + str(threadID) + "_" + str(
+            subThreadID) + ".pickle", sessQuerySimDict)
+    return
 
 def computeSessSimilarityMultiThread((threadID, subThreadID, sessPartition, sessionSummaries, curSessSummary, configDict)):
     sessSimDict = {}
@@ -260,6 +279,16 @@ def computeSessSimilarityMultiThread((threadID, subThreadID, sessPartition, sess
     QR.writeToPickleFile(
         getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFSessSimDict_" + str(threadID) + "_" + str(subThreadID)+ ".pickle", sessSimDict)
     return
+
+def partitionSessQueriesAmongThreads(numSubThreads, sessQueryIDs):
+    sessQueryPartitions = {}
+    for i in range(numSubThreads):
+        sessQueryPartitions[i] = []
+    sessQueryCount = 0
+    for sessQueryID in sessQueryIDs:
+        subThreadID = sessQueryCount % numSubThreads
+        sessQueryPartitions[subThreadID].append(sessQueryID)
+    return sessQueryPartitions
 
 def partitionSessionsAmongSubThreads(numSubThreads, sessionSummaries, curSessID):
     #numSessPerThread = int(len(sessionSummaries) / numSubThreads)
@@ -277,11 +306,132 @@ def partitionSessionsAmongSubThreads(numSubThreads, sessionSummaries, curSessID)
 
 def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
     for subThreadID in localCosineSimDicts:
-        for sessID in localCosineSimDicts[subThreadID]:
-            cosineSimDict[sessID] = localCosineSimDicts[subThreadID][sessID]
+        for key in localCosineSimDicts[subThreadID]:
+            cosineSimDict[key] = localCosineSimDicts[subThreadID][key]
     return cosineSimDict
 
+# this may involve sorting but could be more optimized
+def findTopKSessSort(sessSimDict, curSessID):
+    sorted_csd = sorted(sessSimDict.items(), key=operator.itemgetter(1), reverse=True)
+    topKSessIndices = []
+    for sessID in sorted_csd:
+        if sessID != curSessID and len(topKSessIndices) < int(configDict['TOP_K']):
+            topKSessIndices.append(sessID)
+        else:
+            return topKSessIndices
+    return topKSessIndices
+
+def findTopKSessHeap(sessSimDict, sessID):
+    minheap = []
+    cosineSimDict = {}
+    for sessIndex in sessSimDict:  # exclude the current session
+        if sessIndex != sessID:
+            (minheap, cosineSimDict) = insertIntoMinSessHeap(minheap, sessSimDict[sessIndex], cosineSimDict, sessIndex)
+    if len(minheap) > 0:
+        (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
+        # print "ThreadID: "+str(threadID)+", Found Top-K Sessions"
+    else:
+        return None
+    del minheap
+    del cosineSimDict
+    return topKSessIndices
+
+def findTopKSessQueriesHeap(topKSessIndices, sessionSampleDict, sessionStreamDict, curSessSummary):
+    minheap = []
+    cosineSimDict = {}
+    topKSessQueryIndices = None
+    for topKSessIndex in topKSessIndices:
+        (minheap, cosineSimDict) = insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, configDict,
+                                                          cosineSimDict, curSessSummary, topKSessIndex)
+    if len(minheap) > 0:
+        (minheap, topKSessQueryIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
+    del minheap
+    del cosineSimDict
+    return topKSessQueryIndices
+
+def findTopKSessQueriesSort(threadID, topKSessIndices, sessionSampleDict, sessionStreamDict, curSessSummary):
+    sessQueryIDs = []
+    for topKSessIndex in topKSessIndices:
+        for sessQueryID in sessionSampleDict[topKSessIndex]:
+            sessQueryIDs.append(sessQueryID)
+    numSubThreads = min(int(configDict['CF_SUB_THREADS']), len(sessQueryIDs))
+    if numSubThreads == 1:
+        sessQuerySimDict = computeSessQuerySimilaritySingleThread(sessQueryIDs, sessionStreamDict, curSessSummary)
+    else:
+        #manager = multiprocessing.Manager()
+        sessQueryPartitions = partitionSessQueriesAmongThreads(numSubThreads, sessQueryIDs)
+        pool = multiprocessing.Pool()
+        argsList = []
+        localSessQuerySimDicts = {}
+        for subThreadID in range(numSubThreads):
+            argsList.append((threadID, subThreadID, sessQueryPartitions[subThreadID], sessionStreamDict, curSessSummary, configDict))
+        pool.map(computeSessQuerySimilarityMultiThread, argsList)
+        pool.close()
+        pool.join()
+        for subThreadID in range(numSubThreads):
+            localSessQuerySimDicts[subThreadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFSessQuerySimDict_" + str(threadID) + "_" + str(
+            subThreadID) + ".pickle")
+        sessQuerySimDict = {}
+        sessQuerySimDict = concatenateLocalDicts(localSessQuerySimDicts, sessQuerySimDict)
+    sorted_csd = sorted(sessQuerySimDict.items(), key=operator.itemgetter(1), reverse=True)
+    topKSessQueryIndices = []
+    for sessQueryID in sorted_csd:
+        if len(topKSessQueryIndices) < int(configDict['TOP_K']):
+            topKSessQueryIndices.append(sessQueryID)
+        else:
+            return topKSessQueryIndices
+    return topKSessQueryIndices
+
 def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict, sessID, configDict):
+    # python supports for min-heap not max-heap so negate items and insert into min-heap
+    curSessSummary = fetchCurSessSummary(curQueryIntent, sessionSummaries, sessID, configDict)
+
+    sessSimDict = {}
+    # compute cosine similarity in parallel between curSessSummary and all the sessions from sessionSummaries
+    numSubThreads = min(int(configDict['CF_SUB_THREADS']), len(sessionSummaries))
+
+    if numSubThreads == 1:
+        sessSimDict = computeSessSimilaritySingleThread(sessionSummaries, curSessSummary)
+    else:
+        manager = multiprocessing.Manager()
+        sharedSessSummaryDict = manager.dict()
+        for sessID in sessionSummaries:
+            sharedSessSummaryDict[sessID] = sessionSummaries[sessID]
+        sessPartitions = partitionSessionsAmongSubThreads(numSubThreads, sessionSummaries, sessID)
+        pool = multiprocessing.Pool()
+        argsList = []
+        localSessSimDicts = {}
+        for subThreadID in range(numSubThreads):
+            argsList.append((threadID, subThreadID, sessPartitions[subThreadID], sharedSessSummaryDict, curSessSummary, configDict))
+            # threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
+            # threads[i].start()
+        pool.map(computeSessSimilarityMultiThread, argsList)
+        pool.close()
+        pool.join()
+        for subThreadID in range(numSubThreads):
+            localSessSimDicts[subThreadID] = QR.readFromPickleFile(
+                getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFSessSimDict_" + str(threadID) + "_" + str(
+                    subThreadID) + ".pickle")
+        sessSimDict = concatenateLocalDicts(localSessSimDicts, sessSimDict)
+    assert configDict['CF_HEAP_OR_SORT'] == 'HEAP' or configDict['CF_HEAP_OR_SORT'] == 'SORT'
+    if configDict['CF_HEAP_OR_SORT'] == 'HEAP':
+        topKSessIndices = findTopKSessHeap(sessSimDict, sessID)
+        topKSessQueryIndices = findTopKSessQueriesHeap(topKSessIndices, sessionSampleDict, sessionStreamDict, curSessSummary)
+    elif configDict['CF_HEAP_OR_SORT'] == 'SORT':
+        topKSessIndices = findTopKSessSort(sessSimDict, sessID)
+        topKSessQueryIndices = findTopKSessQueriesSort(threadID, topKSessIndices, sessionSampleDict, sessionStreamDict, curSessSummary)
+        #print "ThreadID: "+str(threadID)+", Found Top-K Queries"
+    '''
+    topKPredictedIntents = []
+    for topKSessQueryIndex in topKSessQueryIndices:
+        topKSessIndex = int(topKSessQueryIndex.split(",")[0])
+        topKQueryIndex = int(topKSessQueryIndex.split(",")[1])
+        topKIntent = sessionDict[topKSessIndex][topKQueryIndex]
+        topKPredictedIntents.append(topKIntent)
+    '''
+    return topKSessQueryIndices
+
+def predictTopKIntentsOld(threadID, curQueryIntent, sessionSummaries, sessionSampleDict, sessionStreamDict, sessID, configDict):
     # python supports for min-heap not max-heap so negate items and insert into min-heap
     curSessSummary = fetchCurSessSummary(curQueryIntent, sessionSummaries, sessID, configDict)
     minheap = []
