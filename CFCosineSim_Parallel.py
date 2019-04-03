@@ -314,7 +314,8 @@ def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
 def findTopKSessSort(sessSimDict, curSessID):
     sorted_csd = sorted(sessSimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKSessIndices = []
-    for sessID in sorted_csd:
+    for cosSimEntry in sorted_csd:
+        sessID = cosSimEntry[0]
         if sessID != curSessID and len(topKSessIndices) < int(configDict['TOP_K']):
             topKSessIndices.append(sessID)
         else:
@@ -375,7 +376,8 @@ def findTopKSessQueriesSort(threadID, topKSessIndices, sessionSampleDict, sessio
         sessQuerySimDict = concatenateLocalDicts(localSessQuerySimDicts, sessQuerySimDict)
     sorted_csd = sorted(sessQuerySimDict.items(), key=operator.itemgetter(1), reverse=True)
     topKSessQueryIndices = []
-    for sessQueryID in sorted_csd:
+    for cosSimEntry in sorted_csd:
+        sessQueryID = cosSimEntry[0]
         if len(topKSessQueryIndices) < int(configDict['TOP_K']):
             topKSessQueryIndices.append(sessQueryID)
         else:
