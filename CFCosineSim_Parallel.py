@@ -290,7 +290,7 @@ def partitionSessQueriesAmongThreads(numSubThreads, sessQueryIDs):
         sessQueryPartitions[subThreadID].append(sessQueryID)
     return sessQueryPartitions
 
-def partitionSessionsAmongSubThreads(numSubThreads, sessionSummaries, sessionSummarySample, curSessID):
+def partitionSessionsAmongSubThreads(numSubThreads, sessionSummarySample, curSessID):
     #numSessPerThread = int(len(sessionSummaries) / numSubThreads)
     # round robin assignment of queries to threads
     sessPartitions = {}
@@ -407,7 +407,7 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSummar
         sharedSessSummaryDict = manager.dict()
         for sessID in sessionSummarySample:
             sharedSessSummaryDict[sessID] = sessionSummaries[sessID]
-        sessPartitions = partitionSessionsAmongSubThreads(numSubThreads, sessionSummaries, sessionSummarySample, sessID)
+        sessPartitions = partitionSessionsAmongSubThreads(numSubThreads, sessionSummarySample, sessID)
         pool = multiprocessing.Pool()
         argsList = []
         localSessSimDicts = {}
