@@ -356,9 +356,9 @@ def findTopKSessQueriesSort(threadID, topKSessIndices, sessionSampleDict, sessio
         for sessQueryID in sessionSampleDict[topKSessIndex]:
             sessQueryIDs.append(sessQueryID)
     numSubThreads = min(int(configDict['CF_SUB_THREADS']), len(sessQueryIDs))
-    if numSubThreads == 1:
+    if numSubThreads <= 1:
         sessQuerySimDict = computeSessQuerySimilaritySingleThread(sessQueryIDs, sessionStreamDict, curSessSummary)
-    else:
+    elif numSubThreads > 1:
         #manager = multiprocessing.Manager()
         sessQueryPartitions = partitionSessQueriesAmongThreads(numSubThreads, sessQueryIDs)
         pool = multiprocessing.Pool()
@@ -394,7 +394,7 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSample
 
     if numSubThreads == 1:
         sessSimDict = computeSessSimilaritySingleThread(sessionSummaries, curSessSummary)
-    else:
+    elif numSubThreads > 1:
         manager = multiprocessing.Manager()
         sharedSessSummaryDict = manager.dict()
         for sessID in sessionSummaries:
