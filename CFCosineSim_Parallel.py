@@ -841,6 +841,7 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
             # predict queries for the batch
             sessionSummarySample = sampleSessionSummaries(sessionSummaries, float(configDict['CF_SAMPLE_SESSION_FRACTION']))
             resultDict = predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict)
+            del sessionSummarySample
         print "Starting training in Episode " + str(numEpisodes)
         startTrainTime = time.time()
         # update SessionDictGlobal and train with the new batch
