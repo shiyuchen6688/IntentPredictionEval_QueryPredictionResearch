@@ -125,8 +125,25 @@ def factorizeMatrix(svdObj):
     if latentFactors == 0 and len(svdObj.queryVocab) > 2 and len(svdObj.queryVocab) < 10:
         latentFactors = 2
     model = NMF(n_components=latentFactors, init='nndsvd', solver='mu') # multiplicative update solver, cd for coordinate descent
-    model.leftFactorMatrix = model.fit_transform(svdObj.matrix)
-    model.rightFactorMatrix = model.components_
+    svdObj.leftFactorMatrix = model.fit_transform(svdObj.matrix)
+    svdObj.rightFactorMatrix = model.components_
+
+def getProductElement(rowArr, colArr):
+    pdt = 0.0
+    assert len(rowArr) == len(colArr)
+    for i in range(len(rowArr)):
+        pdt += float(rowArr[i] * colArr[i])
+    return pdt
+
+def completeMatrix(svdObj):
+    pool = multiprocessing.Pool(processes=int(configDict['SVD_THREADS']))
+    for i in range(len(svdObj.leftFactorMatrix)):
+        rowArr = svdObj.leftFactorMatrix[i]
+        for j in range(len(svdObj.rightFactorMatrix[0])):
+            colArr = []
+            for k in range(len(svdObj.leftFactorMatrix)):
+                colArr.append(svdObj.leftFactorMatrix[k][j])
+            svdObj.matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
 
 def trainTestBatchWise(svdObj):
     batchSize = int(configDict['EPISODE_IN_QUERIES'])
@@ -150,6 +167,7 @@ def trainTestBatchWise(svdObj):
         updateQueryVocabSessAdjList(svdObj)
         createMatrix(svdObj)
         factorizeMatrix(svdObj)
+        completeMatrix(svdObj)
         assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
                                                                                   'SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
