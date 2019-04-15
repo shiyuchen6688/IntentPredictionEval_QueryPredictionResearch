@@ -40,7 +40,8 @@ class SVD_Obj:
             os.remove(self.outputIntentFileName)
         except OSError:
             pass
-        self.sessionStreamDict = {}
+        manager = multiprocessing.Manager()
+        self.sessionStreamDict = manager.dict()
         self.resultDict = {}
         self.keyOrder = []
         with open(self.intentSessionFile) as f:
@@ -74,7 +75,7 @@ def createMatrix(svdObj):
     # lastRow represents an empty cushion entry for sessIDs that are yet to come -- queries which belong to new sessions will use it for prediction
     rowEntry = [0.0] * len(svdObj.queryVocab)
     svdObj.matrix.append(rowEntry)
-    return
+    return sortedSessKeys
 
 def updateQueryVocabSessAdjList(svdObj):
     distinctQueries = []
@@ -134,18 +135,56 @@ def getProductElement(rowArr, colArr):
 
 def completeMatrix(svdObj):
     pool = multiprocessing.Pool(processes=int(configDict['SVD_THREADS']))
+    for i in range(len(svdObj.matrix)):
+        for j in range(len(svdObj.matrix[i])):
+            if svdObj.matrix[i][j] == 1.0:
+                svdObj.matrix[i][j] = -1.0 # to exclude earlier queries from a session from being recommended for the same session
     for i in range(len(svdObj.leftFactorMatrix)):
         rowArr = svdObj.leftFactorMatrix[i]
         for j in range(len(svdObj.rightFactorMatrix[0])):
             colArr = []
             for k in range(len(svdObj.leftFactorMatrix)):
                 colArr.append(svdObj.leftFactorMatrix[k][j])
-            svdObj.matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
+            if svdObj.matrix[i][j] == 0.0:
+                svdObj.matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
 
-def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList, queryVocab, configDict)):
+def predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, configDict):
+    matchingRowIndex = sortedSessKeys.index(sessID)
+    sessRow = matrix[matchingRowIndex]
+    topK = int(configDict['TOP_K'])
+    topKIndices = zip(*heapq.nlargest(topK, enumerate(sessRow), key=operator.itemgetter(1)))[0]
+    # other alternatives: sorted(range(len(a)), key=lambda i: a[i])[-topK:]
+    # sorted(range(len(a)), key=lambda i: a[i], reverse=True)[:topK]
+    # zip(*sorted(enumerate(a), key=operator.itemgetter(1)))[0][-topK:]
+    topKSessQueryIndices = []
+    for topKIndex in topKIndices:
+        topKSessQueryIndices.append(queryVocab[topKIndex])
+    return topKSessQueryIndices
 
 
-def predictIntentsWithoutCurrentBatch(svdObj, lo, hi):
+def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList, queryVocab, sortedSessKeys, sessionStreamDict, configDict)):
+    for i in range(t_lo, t_hi+1):
+        sessQueryID = keyOrder[i]
+        sessID = int(sessQueryID.split(",")[0])
+        queryID = int(sessQueryID.split(",")[1])
+        curQueryIntent = sessionStreamDict[sessQueryID]
+        #if queryID < sessionLengthDict[sessID]-1:
+        if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
+            topKSessQueryIndices = predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, configDict)
+            for sessQueryID in topKSessQueryIndices:
+                #print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
+                if sessQueryID not in sessionStreamDict:
+                    print "sessQueryID: "+sessQueryID+" not in sessionStreamDict !!"
+                    sys.exit(0)
+            #print "ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
+            #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            if topKSessQueryIndices is not None:
+                resList.append((sessID, queryID, topKSessQueryIndices))
+    QR.writeToPickleFile(
+        getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle", resList)
+    return resList
+
+def predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys):
     print "Prediction parallelized"
     numThreads = min(int(svdObj.configDict['SVD_THREADS']), hi - lo + 1)
     numKeysPerThread = int(float(hi - lo + 1) / float(numThreads))
@@ -161,8 +200,9 @@ def predictIntentsWithoutCurrentBatch(svdObj, lo, hi):
         t_loHiDict[threadID] = (t_lo, t_hi)
         svdObj.resultDict[threadID] = list()
         # print "Set tuple boundaries for Threads"
+    #sortedSessKeys = svdObj.sessAdjList.keys().sort()
     if numThreads == 1:
-        predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, configDict))
+        predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
     elif numThreads > 1:
         manager = multiprocessing.Manager()
         sharedMtx = manager.list()
@@ -172,7 +212,7 @@ def predictIntentsWithoutCurrentBatch(svdObj, lo, hi):
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, svdObj.keyOrder, sharedMtx, svdObj.resultDict[threadID], svdObj.queryVocab, configDict))
+            argsList.append((threadID, t_lo, t_hi, svdObj.keyOrder, sharedMtx, svdObj.resultDict[threadID], svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
             #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             #threads[i].start()
         pool.map(predictTopKIntentsPerThread, argsList)
@@ -180,14 +220,15 @@ def predictIntentsWithoutCurrentBatch(svdObj, lo, hi):
         pool.join()
         for threadID in range(numThreads):
             svdObj.resultDict[threadID] = QR.readFromPickleFile(
-                getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle")
+                getConfig(svdObj.configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle")
     return
 
 def trainTestBatchWise(svdObj):
-    batchSize = int(configDict['EPISODE_IN_QUERIES'])
+    batchSize = int(svdObj.configDict['EPISODE_IN_QUERIES'])
     lo = 0
     hi = -1
-    assert configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
+    assert svdObj.configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
+    sortedSessKeys = None
     while hi < len(svdObj.keyOrder) - 1:
         lo = hi + 1
         if len(svdObj.keyOrder) - lo < batchSize:
@@ -198,12 +239,12 @@ def trainTestBatchWise(svdObj):
         print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(keyOrder): " + str(len(svdObj.keyOrder))
         if len(svdObj.sessAdjList) > 1: # unless at least two rows hard to recommend
-            svdObj.resultDict = predictIntentsWithoutCurrentBatch(svdObj, lo, hi)
+            svdObj.resultDict = predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys)
         print "Starting training in Episode " + str(svdObj.numEpisodes)
         startTrainTime = time.time()
         svdObj.queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, svdObj.keyOrder, svdObj.queryKeysSetAside)
         updateQueryVocabSessAdjList(svdObj)
-        createMatrix(svdObj)
+        sortedSessKeys = createMatrix(svdObj)
         factorizeMatrix(svdObj)
         completeMatrix(svdObj)
         assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
