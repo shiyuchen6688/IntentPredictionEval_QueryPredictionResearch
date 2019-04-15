@@ -76,9 +76,6 @@ def createMatrix(svdObj):
     svdObj.matrix.append(rowEntry)
     return
 
-def predictIntentsWithoutCurrentBatch(svdObj, lo, hi):
-    print "Prediction parallelized"
-
 def updateQueryVocabSessAdjList(svdObj):
     distinctQueries = []
     for sessQueryID in svdObj.queryKeysSetAside:
@@ -144,6 +141,47 @@ def completeMatrix(svdObj):
             for k in range(len(svdObj.leftFactorMatrix)):
                 colArr.append(svdObj.leftFactorMatrix[k][j])
             svdObj.matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
+
+def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList, queryVocab, configDict)):
+
+
+def predictIntentsWithoutCurrentBatch(svdObj, lo, hi):
+    print "Prediction parallelized"
+    numThreads = min(int(svdObj.configDict['SVD_THREADS']), hi - lo + 1)
+    numKeysPerThread = int(float(hi - lo + 1) / float(numThreads))
+    # threads = {}
+    t_loHiDict = {}
+    t_hi = lo - 1
+    for threadID in range(numThreads):
+        t_lo = t_hi + 1
+        if threadID == numThreads - 1:
+            t_hi = hi
+        else:
+            t_hi = t_lo + numKeysPerThread - 1
+        t_loHiDict[threadID] = (t_lo, t_hi)
+        svdObj.resultDict[threadID] = list()
+        # print "Set tuple boundaries for Threads"
+    if numThreads == 1:
+        predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, configDict))
+    elif numThreads > 1:
+        manager = multiprocessing.Manager()
+        sharedMtx = manager.list()
+        for row in svdObj.matrix:
+            sharedMtx.append(row)
+        pool = multiprocessing.Pool()
+        argsList = []
+        for threadID in range(numThreads):
+            (t_lo, t_hi) = t_loHiDict[threadID]
+            argsList.append((threadID, t_lo, t_hi, svdObj.keyOrder, sharedMtx, svdObj.resultDict[threadID], svdObj.queryVocab, configDict))
+            #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
+            #threads[i].start()
+        pool.map(predictTopKIntentsPerThread, argsList)
+        pool.close()
+        pool.join()
+        for threadID in range(numThreads):
+            svdObj.resultDict[threadID] = QR.readFromPickleFile(
+                getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle")
+    return
 
 def trainTestBatchWise(svdObj):
     batchSize = int(configDict['EPISODE_IN_QUERIES'])

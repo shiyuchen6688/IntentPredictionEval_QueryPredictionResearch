@@ -54,7 +54,7 @@ def procPredictedIntents(configDict, schemaDicts, curQueryDict, outputEvalDict, 
     with open(outputIntentFileName) as f:
         for line in f:
             tokens = line.strip().split(";")
-            assert len(tokens) == 4 + int(configDict['TOP_K'])
+            #assert len(tokens) == 4 + int(configDict['TOP_K'])
             sessQueryID = tokens[0]+";"+tokens[1]
             outputSQLStr = "-----------------------------------------\n"
             outputSQLStr += outputEvalDict[sessQueryID]+"\n" # prints the metrics first
