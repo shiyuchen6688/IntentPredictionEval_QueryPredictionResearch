@@ -40,7 +40,7 @@ class SVD_Obj:
             os.remove(self.outputIntentFileName)
         except OSError:
             pass
-        manager = multiprocessing.Manager()
+        #manager = multiprocessing.Manager()
         self.sessionStreamDict = {}
         self.resultDict = {}
         self.keyOrder = []
@@ -188,9 +188,9 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList
         getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle", resList)
     return resList
 
-def predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys):
+def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, matrix, resultDict, queryVocab, sortedSessKeys, sessionStreamDictKeys, configDict):
     print "Prediction parallelized"
-    numThreads = min(int(svdObj.configDict['SVD_THREADS']), hi - lo + 1)
+    numThreads = min(int(configDict['SVD_THREADS']), hi - lo + 1)
     numKeysPerThread = int(float(hi - lo + 1) / float(numThreads))
     # threads = {}
     t_loHiDict = {}
@@ -202,11 +202,11 @@ def predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys):
         else:
             t_hi = t_lo + numKeysPerThread - 1
         t_loHiDict[threadID] = (t_lo, t_hi)
-        svdObj.resultDict[threadID] = list()
+        resultDict[threadID] = list()
         # print "Set tuple boundaries for Threads"
     #sortedSessKeys = svdObj.sessAdjList.keys().sort()
     if numThreads == 1:
-        predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict.keys(), svdObj.configDict))
+        resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, keyOrder, matrix, resultDict[0], queryVocab, sortedSessKeys, sessionStreamDictKeys, configDict))
     elif numThreads > 1:
         #sharedMtx = svdObj.matrix
         #manager = multiprocessing.Manager()
@@ -217,16 +217,15 @@ def predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys):
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[threadID], svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict.keys(), svdObj.configDict))
+            argsList.append((threadID, t_lo, t_hi, keyOrder, matrix, resultDict[threadID], queryVocab, sortedSessKeys, sessionStreamDictKeys, configDict))
             #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             #threads[i].start()
         pool.map(predictTopKIntentsPerThread, argsList)
         pool.close()
         pool.join()
         for threadID in range(numThreads):
-            svdObj.resultDict[threadID] = QR.readFromPickleFile(
-                getConfig(svdObj.configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle")
-    return
+            resultDict[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle")
+    return resultDict
 
 def trainTestBatchWise(svdObj):
     batchSize = int(svdObj.configDict['EPISODE_IN_QUERIES'])
@@ -244,7 +243,7 @@ def trainTestBatchWise(svdObj):
         print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(keyOrder): " + str(len(svdObj.keyOrder))
         if len(svdObj.sessAdjList) > 1 and len(svdObj.queryVocab) > 2: # unless at least two rows hard to recommend
-            predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys)
+            svdObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict, svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict.keys(), svdObj.configDict)
         print "Starting training in Episode " + str(svdObj.numEpisodes)
         startTrainTime = time.time()
         svdObj.queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, svdObj.keyOrder, svdObj.queryKeysSetAside)
