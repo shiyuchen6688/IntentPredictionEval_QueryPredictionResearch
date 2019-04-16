@@ -123,7 +123,7 @@ def factorizeMatrix(svdObj):
     latentFactors = min(int(configDict['SVD_LATENT_DIMS']), int(0.1 * len(svdObj.queryVocab)))
     if latentFactors == 0 and len(svdObj.queryVocab) > 2 and len(svdObj.queryVocab) < 10:
         latentFactors = 2
-    model = NMF(n_components=latentFactors, init='nndsvd', solver='mu') # multiplicative update solver, cd for coordinate descent
+    model = NMF(n_components=latentFactors, init='nndsvdar', solver='mu') # multiplicative update solver, cd for coordinate descent
     svdObj.leftFactorMatrix = model.fit_transform(svdObj.matrix)
     svdObj.rightFactorMatrix = model.components_
 
