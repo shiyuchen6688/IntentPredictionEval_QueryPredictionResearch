@@ -251,6 +251,8 @@ def trainTestBatchWise(svdObj):
             createMatrix(svdObj)
             factorizeMatrix(svdObj)
             completeMatrix(svdObj)
+        totalTrainTime = float(time.time() - startTrainTime)
+        print "Total Train Time: " + str(totalTrainTime)
         assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
                                                                                   'SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
@@ -265,8 +267,6 @@ def trainTestBatchWise(svdObj):
             (svdObj.episodeResponseTimeDictName, svdObj.episodeResponseTime, svdObj.startEpisode, svdObj.elapsedAppendTime) = QR.updateResponseTime(
                 svdObj.episodeResponseTimeDictName, svdObj.episodeResponseTime, svdObj.numEpisodes, svdObj.startEpisode, elapsedAppendTime)
             svdObj.resultDict = LSTM_RNN_Parallel.clear(svdObj.resultDict)
-        totalTrainTime = float(time.time() - startTrainTime)
-        print "Total Train Time: " + str(totalTrainTime)
     updateResultsToExcel(svdObj.configDict, svdObj.episodeResponseTimeDictName, svdObj.outputIntentFileName)
 
 
