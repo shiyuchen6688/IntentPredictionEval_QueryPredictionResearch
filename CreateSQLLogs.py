@@ -98,6 +98,11 @@ def createSQLLogsFromConfigDict(configDict, args):
                            configDict['CF_COSINESIM_MF'] + "_" + \
                            configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    elif configDict['ALGORITHM'] == 'SVD':
+        outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
+            'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
+        configDict[
+            'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
     if args.eval is not None:
         outputEvalQualityFileName = args.eval
     elif configDict['ALGORITHM'] == 'RNN':
@@ -110,7 +115,12 @@ def createSQLLogsFromConfigDict(configDict, args):
         'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
                                     'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                                 configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
-
+    elif configDict['ALGORITHM'] == 'SVD':
+        outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + \
+                                    configDict[
+                                        'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                        'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                                    configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
     if args.conc is not None:
         concSessFile = args.conc
     else:
