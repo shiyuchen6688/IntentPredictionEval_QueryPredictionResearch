@@ -40,8 +40,8 @@ class SVD_Obj:
             os.remove(self.outputIntentFileName)
         except OSError:
             pass
-        #manager = multiprocessing.Manager()
-        self.sessionStreamDict = {}
+        manager = multiprocessing.Manager()
+        self.sessionStreamDict = manager.dict()
         self.resultDict = {}
         self.keyOrder = []
         with open(self.intentSessionFile) as f:
@@ -50,7 +50,7 @@ class SVD_Obj:
                                                                                                  self.sessionStreamDict)
                 self.keyOrder.append(str(sessID) + "," + str(queryID))
         f.close()
-        self.matrix =  [] # this will be an array of arrays
+        self.matrix = manager.list() # this will be an array of arrays
         self.queryVocab = {}  # key is index and val is sessID,queryID
         self.sessAdjList = {} # key is sess index and val is a list of query vocab indices
         self.startEpisode = time.time()
@@ -209,18 +209,18 @@ def predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, con
     return topKSessQueryIndices
 
 
-def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList, queryVocab, sortedSessKeys, sessionStreamDictKeys, configDict)):
+def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList, queryVocab, sortedSessKeys, sessionStreamDict, configDict)):
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
         queryID = int(sessQueryID.split(",")[1])
         #curQueryIntent = sessionStreamDict[sessQueryID]
         #if queryID < sessionLengthDict[sessID]-1:
-        if str(sessID) + "," + str(queryID + 1) in sessionStreamDictKeys:
+        if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
             topKSessQueryIndices = predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, configDict)
             for sessQueryID in topKSessQueryIndices:
                 #print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
-                if sessQueryID not in sessionStreamDictKeys:
+                if sessQueryID not in sessionStreamDict:
                     print "sessQueryID: "+sessQueryID+" not in sessionStreamDict !!"
                     sys.exit(0)
             #print "ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
@@ -249,7 +249,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, svdObj):
         # print "Set tuple boundaries for Threads"
     #sortedSessKeys = svdObj.sessAdjList.keys().sort()
     if numThreads == 1:
-        svdObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict.keys(), svdObj.configDict))
+        svdObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
     elif numThreads > 1:
         #sharedMtx = svdObj.matrix
         #manager = multiprocessing.Manager()
@@ -260,7 +260,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, svdObj):
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[threadID], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict.keys(), svdObj.configDict))
+            argsList.append((threadID, t_lo, t_hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[threadID], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
             #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             #threads[i].start()
         pool.map(predictTopKIntentsPerThread, argsList)
