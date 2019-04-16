@@ -134,13 +134,54 @@ def getProductElement(rowArr, colArr):
         pdt += float(rowArr[i] * colArr[i])
     return pdt
 
+def partitionEntries(totalEntries, numThreads):
+    rowColPartitions = [[] for i in range(numThreads)]
+    entryIndex = 0
+    for entry in totalEntries:
+        threadIndex = entryIndex % numThreads
+        rowColPartitions[threadIndex].append(entry)
+        entryIndex+=1
+    return rowColPartitions
+
+def completeEntries((threadID, rowColPartition, leftFactorMatrix, rightFactorMatrix)):
+    resDict = {}
+    for entry in rowColPartition:
+        (rowIndex, colIndex) = entry
+        rowArr = leftFactorMatrix[rowIndex]
+        colArr = []
+        for r in range(len(rightFactorMatrix)):
+            colArr.append(rightFactorMatrix[r][colIndex])
+        pdt = getProductElement(rowArr, colArr)
+        resDict[(rowIndex, colIndex)] = pdt
+    QR.writeToPickleFile(
+        getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "rowColPartitions_" + str(threadID) + ".pickle", resDict)
+    return
+
 def completeMatrix(svdObj):
-    pool = multiprocessing.Pool(processes=int(configDict['SVD_THREADS']))
+    totalEntries = []
     for i in range(len(svdObj.matrix)):
         for j in range(len(svdObj.matrix[i])):
             if svdObj.matrix[i][j] == 1.0:
                 svdObj.matrix[i][j] = -1.0 # to exclude earlier queries from a session from being recommended for the same session
-    for i in range(len(svdObj.leftFactorMatrix)):
+            else:
+                totalEntries.append((i,j))
+    numThreads = min(int(configDict['SVD_THREADS']), len(totalEntries))
+    rowColPartitions = partitionEntries(totalEntries, numThreads)
+    pool = multiprocessing.Pool()
+    argsList = []
+    for threadID in range(numThreads):
+        argsList.append((threadID, rowColPartitions[threadID], svdObj.leftFactorMatrix, svdObj.rightFactorMatrix))
+    pool.map(completeEntries, argsList)
+    pool.close()
+    pool.join()
+    for threadID in range(numThreads):
+        resDict = QR.readFromPickleFile(
+        getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "rowColPartitions_" + str(threadID) + ".pickle")
+        for entry in resDict:
+            (rowIndex,colIndex) = entry
+            svdObj.matrix[rowIndex][colIndex] = resDict[entry]
+    '''
+        for i in range(len(svdObj.leftFactorMatrix)):
         rowArr = svdObj.leftFactorMatrix[i]
         for j in range(len(svdObj.rightFactorMatrix[0])):
             colArr = []
@@ -148,6 +189,8 @@ def completeMatrix(svdObj):
                 colArr.append(svdObj.rightFactorMatrix[k][j])
             if svdObj.matrix[i][j] == 0.0:
                 svdObj.matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
+    '''
+    return
 
 def predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, configDict):
     if sessID in sortedSessKeys:
@@ -205,9 +248,9 @@ def predictIntentsWithoutCurrentBatch(lo, hi, svdObj):
         svdObj.resultDict[threadID] = list()
         # print "Set tuple boundaries for Threads"
     #sortedSessKeys = svdObj.sessAdjList.keys().sort()
-    if numThreads == 1:
+    if numThreads >= 1:
         svdObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict.keys(), svdObj.configDict))
-    elif numThreads > 1:
+    elif numThreads < 1:
         #sharedMtx = svdObj.matrix
         #manager = multiprocessing.Manager()
         #sharedMtx = manager.list()
