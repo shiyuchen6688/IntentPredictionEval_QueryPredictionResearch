@@ -248,9 +248,9 @@ def predictIntentsWithoutCurrentBatch(lo, hi, svdObj):
         svdObj.resultDict[threadID] = list()
         # print "Set tuple boundaries for Threads"
     #sortedSessKeys = svdObj.sessAdjList.keys().sort()
-    if numThreads >= 1:
+    if numThreads == 1:
         svdObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict.keys(), svdObj.configDict))
-    elif numThreads < 1:
+    elif numThreads > 1:
         #sharedMtx = svdObj.matrix
         #manager = multiprocessing.Manager()
         #sharedMtx = manager.list()
