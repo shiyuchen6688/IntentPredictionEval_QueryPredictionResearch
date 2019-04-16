@@ -50,7 +50,7 @@ class SVD_Obj:
                                                                                                  self.sessionStreamDict)
                 self.keyOrder.append(str(sessID) + "," + str(queryID))
         f.close()
-        self.matrix = [] # this will be an array of arrays
+        self.matrix =  manager.list() # this will be an array of arrays
         self.queryVocab = {}  # key is index and val is sessID,queryID
         self.sessAdjList = {} # key is sess index and val is a list of query vocab indices
         self.startEpisode = time.time()
@@ -208,10 +208,11 @@ def predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys):
     if numThreads == 1:
         predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
     elif numThreads > 1:
-        manager = multiprocessing.Manager()
-        sharedMtx = manager.list()
-        for row in svdObj.matrix:
-            sharedMtx.append(row)
+        sharedMtx = svdObj.matrix
+        #manager = multiprocessing.Manager()
+        #sharedMtx = manager.list()
+        #for row in svdObj.matrix:
+            #sharedMtx.append(row)
         pool = multiprocessing.Pool()
         argsList = []
         for threadID in range(numThreads):
