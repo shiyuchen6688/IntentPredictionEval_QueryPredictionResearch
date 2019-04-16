@@ -62,7 +62,8 @@ def createMatrix(svdObj):
     if len(svdObj.matrix) > 0:
         del svdObj.matrix
         svdObj.matrix = []
-    sortedSessKeys = svdObj.sessAdjList.keys().sort()
+    sortedSessKeys = svdObj.sessAdjList.keys()
+    sortedSessKeys.sort()
     for sessID in sortedSessKeys:
         queryVocabIDs = svdObj.sessAdjList[sessID]
         rowEntry = []
@@ -149,7 +150,10 @@ def completeMatrix(svdObj):
                 svdObj.matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
 
 def predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, configDict):
-    matchingRowIndex = sortedSessKeys.index(sessID)
+    if sessID in sortedSessKeys:
+        matchingRowIndex = sortedSessKeys.index(sessID)
+    else:
+        matchingRowIndex = len(sortedSessKeys) - 1 # last row accommodates for new session as it inits with all 0s
     sessRow = matrix[matchingRowIndex]
     topK = int(configDict['TOP_K'])
     topKIndices = zip(*heapq.nlargest(topK, enumerate(sessRow), key=operator.itemgetter(1)))[0]
