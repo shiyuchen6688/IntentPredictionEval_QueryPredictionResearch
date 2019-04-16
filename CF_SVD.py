@@ -56,15 +56,16 @@ class SVD_Obj:
         self.startEpisode = time.time()
         self.leftFactorMatrix = None
         self.rightFactorMatrix = None
+        self.sortedSessKeys = None
 
 def createMatrix(svdObj):
     # based on svdObj.sessAdjList and svdObj.queryVocab
     if len(svdObj.matrix) > 0:
         del svdObj.matrix
         svdObj.matrix = []
-    sortedSessKeys = svdObj.sessAdjList.keys()
-    sortedSessKeys.sort()
-    for sessID in sortedSessKeys:
+    svdObj.sortedSessKeys = svdObj.sessAdjList.keys()
+    svdObj.sortedSessKeys.sort()
+    for sessID in svdObj.sortedSessKeys:
         queryVocabIDs = svdObj.sessAdjList[sessID]
         rowEntry = []
         for queryVocabID in svdObj.queryVocab.keys():
@@ -76,7 +77,6 @@ def createMatrix(svdObj):
     # lastRow represents an empty cushion entry for sessIDs that are yet to come -- queries which belong to new sessions will use it for prediction
     rowEntry = [0.0] * len(svdObj.queryVocab)
     svdObj.matrix.append(rowEntry)
-    return sortedSessKeys
 
 def updateQueryVocabSessAdjList(svdObj):
     distinctQueries = []
@@ -232,7 +232,6 @@ def trainTestBatchWise(svdObj):
     lo = 0
     hi = -1
     assert svdObj.configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
-    sortedSessKeys = None
     while hi < len(svdObj.keyOrder) - 1:
         lo = hi + 1
         if len(svdObj.keyOrder) - lo < batchSize:
@@ -249,7 +248,7 @@ def trainTestBatchWise(svdObj):
         svdObj.queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, svdObj.keyOrder, svdObj.queryKeysSetAside)
         updateQueryVocabSessAdjList(svdObj)
         if len(svdObj.queryVocab) > 2:
-            sortedSessKeys = createMatrix(svdObj)
+            createMatrix(svdObj)
             factorizeMatrix(svdObj)
             completeMatrix(svdObj)
         assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
