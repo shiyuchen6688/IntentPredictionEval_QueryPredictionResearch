@@ -208,7 +208,7 @@ def predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys):
     if numThreads == 1:
         predictTopKIntentsPerThread((0, lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
     elif numThreads > 1:
-        sharedMtx = svdObj.matrix
+        #sharedMtx = svdObj.matrix
         #manager = multiprocessing.Manager()
         #sharedMtx = manager.list()
         #for row in svdObj.matrix:
@@ -217,7 +217,7 @@ def predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys):
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, svdObj.keyOrder, sharedMtx, svdObj.resultDict[threadID], svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
+            argsList.append((threadID, t_lo, t_hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict[threadID], svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
             #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             #threads[i].start()
         pool.map(predictTopKIntentsPerThread, argsList)
