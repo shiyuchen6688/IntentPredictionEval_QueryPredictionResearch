@@ -242,15 +242,16 @@ def trainTestBatchWise(svdObj):
         # test first for each query in the batch if the classifier is not None
         print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(keyOrder): " + str(len(svdObj.keyOrder))
-        if len(svdObj.sessAdjList) > 1: # unless at least two rows hard to recommend
+        if len(svdObj.sessAdjList) > 1 and len(svdObj.queryVocab) > 2: # unless at least two rows hard to recommend
             svdObj.resultDict = predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys)
         print "Starting training in Episode " + str(svdObj.numEpisodes)
         startTrainTime = time.time()
         svdObj.queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, svdObj.keyOrder, svdObj.queryKeysSetAside)
         updateQueryVocabSessAdjList(svdObj)
-        sortedSessKeys = createMatrix(svdObj)
-        factorizeMatrix(svdObj)
-        completeMatrix(svdObj)
+        if len(svdObj.queryVocab) > 2:
+            sortedSessKeys = createMatrix(svdObj)
+            factorizeMatrix(svdObj)
+            completeMatrix(svdObj)
         assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
                                                                                   'SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
