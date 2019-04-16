@@ -244,7 +244,7 @@ def trainTestBatchWise(svdObj):
         print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(keyOrder): " + str(len(svdObj.keyOrder))
         if len(svdObj.sessAdjList) > 1 and len(svdObj.queryVocab) > 2: # unless at least two rows hard to recommend
-            svdObj.resultDict = predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys)
+            predictIntentsWithoutCurrentBatch(svdObj, lo, hi, sortedSessKeys)
         print "Starting training in Episode " + str(svdObj.numEpisodes)
         startTrainTime = time.time()
         svdObj.queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, svdObj.keyOrder, svdObj.queryKeysSetAside)
