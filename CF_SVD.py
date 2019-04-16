@@ -20,76 +20,77 @@ import argparse
 from sklearn.decomposition import NMF
 import CFCosineSim_Parallel
 
-class SVD_Obj:
-    def __init__(self, configDict):
-        self.configDict = configDict
-        self.intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
-        self.episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
-            'ALGORITHM'] + configDict['INTENT_REP'] + "_" + \
-                                      configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                                          'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
-                                          'EPISODE_IN_QUERIES'] + ".pickle"
-        self.outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
-            'ALGORITHM'] + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                                   'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
-        self.numEpisodes = 0
-        self.queryKeysSetAside = []
-        self.episodeResponseTime = {}
-        self.sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
-        try:
-            os.remove(self.outputIntentFileName)
-        except OSError:
-            pass
-        #manager = multiprocessing.Manager()
-        self.sessionStreamDict = {}
-        self.resultDict = {}
-        self.keyOrder = []
-        with open(self.intentSessionFile) as f:
-            for line in f:
-                (sessID, queryID, curQueryIntent, self.sessionStreamDict) = QR.updateSessionDict(line, self.configDict,
-                                                                                                 self.sessionStreamDict)
-                self.keyOrder.append(str(sessID) + "," + str(queryID))
-        f.close()
-        self.matrix =  [] # this will be an array of arrays
-        self.queryVocab = {}  # key is index and val is sessID,queryID
-        self.sessAdjList = {} # key is sess index and val is a list of query vocab indices
-        self.startEpisode = time.time()
-        self.leftFactorMatrix = None
-        self.rightFactorMatrix = None
 
-def createMatrix(svdObj):
+def initSingularity(configDict):
+    intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
+    episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
+        'ALGORITHM'] + configDict['INTENT_REP'] + "_" + \
+                                       configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                           'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                           'EPISODE_IN_QUERIES'] + ".pickle"
+    outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
+        'ALGORITHM'] + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                    'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    numEpisodes = 0
+    queryKeysSetAside = []
+    episodeResponseTime = {}
+    sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
+    try:
+        os.remove(outputIntentFileName)
+    except OSError:
+        pass
+    # manager = multiprocessing.Manager()
+    sessionStreamDict = {}
+    resultDict = {}
+    keyOrder = []
+    with open(intentSessionFile) as f:
+        for line in f:
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
+                                                                                             sessionStreamDict)
+            keyOrder.append(str(sessID) + "," + str(queryID))
+    f.close()
+    matrix = []  # this will be an array of arrays
+    queryVocab = {}  # key is index and val is sessID,queryID
+    sessAdjList = {}  # key is sess index and val is a list of query vocab indices
+    startEpisode = time.time()
+    leftFactorMatrix = None
+    rightFactorMatrix = None
+    return (intentSessionFile, episodeResponseTimeDictName, outputIntentFileName, numEpisodes, queryKeysSetAside, episodeResponseTime, sessionLengthDict, sessionStreamDict,
+            resultDict, keyOrder, matrix, queryVocab, sessAdjList, startEpisode, leftFactorMatrix, rightFactorMatrix)
+
+def createMatrix(matrix, sessAdjList, queryVocab):
     # based on svdObj.sessAdjList and svdObj.queryVocab
-    if len(svdObj.matrix) > 0:
-        del svdObj.matrix
-        svdObj.matrix = []
-    sortedSessKeys = svdObj.sessAdjList.keys()
+    if len(matrix) > 0:
+        del matrix
+        matrix = []
+    sortedSessKeys = sessAdjList.keys()
     sortedSessKeys.sort()
     for sessID in sortedSessKeys:
-        queryVocabIDs = svdObj.sessAdjList[sessID]
+        queryVocabIDs = sessAdjList[sessID]
         rowEntry = []
-        for queryVocabID in svdObj.queryVocab.keys():
+        for queryVocabID in queryVocab.keys():
             if queryVocabID in queryVocabIDs:
                 rowEntry.append(1.0)
             else:
                 rowEntry.append(0.0)
-        svdObj.matrix.append(rowEntry)
+        matrix.append(rowEntry)
     # lastRow represents an empty cushion entry for sessIDs that are yet to come -- queries which belong to new sessions will use it for prediction
-    rowEntry = [0.0] * len(svdObj.queryVocab)
-    svdObj.matrix.append(rowEntry)
-    return sortedSessKeys
+    rowEntry = [0.0] * len(queryVocab)
+    matrix.append(rowEntry)
+    return (matrix, sortedSessKeys)
 
-def updateQueryVocabSessAdjList(svdObj):
+def updateQueryVocabSessAdjList(queryKeysSetAside, sessionStreamDict, queryVocab, sessAdjList):
     distinctQueries = []
-    for sessQueryID in svdObj.queryKeysSetAside:
-        if LSTM_RNN_Parallel.findIfQueryInside(sessQueryID, svdObj.sessionStreamDict, svdObj.queryVocab.values(), distinctQueries) == "False":
+    for sessQueryID in queryKeysSetAside:
+        if LSTM_RNN_Parallel.findIfQueryInside(sessQueryID, sessionStreamDict, queryVocab.values(), distinctQueries) == "False":
             distinctQueries.append(sessQueryID)
-            key = len(svdObj.queryVocab)
-            svdObj.queryVocab[key] = sessQueryID
+            key = len(queryVocab)
+            queryVocab[key] = sessQueryID
             sessID = int(sessQueryID.split(",")[0])
-            if sessID not in svdObj.sessAdjList:
-                svdObj.sessAdjList[sessID] = []
-            svdObj.sessAdjList[sessID].append(key)
-    return
+            if sessID not in sessAdjList:
+                sessAdjList[sessID] = []
+            sessAdjList[sessID].append(key)
+    return (queryVocab, sessAdjList)
 
 def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
     accThres = float(configDict['ACCURACY_THRESHOLD'])
@@ -118,14 +119,15 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
-def factorizeMatrix(svdObj):
+def factorizeMatrix(queryVocab, matrix):
     print "Factorization using SVD_NMF_sklearn or NIMFA"
-    latentFactors = min(int(configDict['SVD_LATENT_DIMS']), int(0.1 * len(svdObj.queryVocab)))
-    if latentFactors == 0 and len(svdObj.queryVocab) > 2 and len(svdObj.queryVocab) < 10:
+    latentFactors = min(int(configDict['SVD_LATENT_DIMS']), int(0.1 * len(queryVocab)))
+    if latentFactors == 0 and len(queryVocab) > 2 and len(queryVocab) < 10:
         latentFactors = 2
     model = NMF(n_components=latentFactors, init='nndsvdar', solver='mu') # multiplicative update solver, cd for coordinate descent
-    svdObj.leftFactorMatrix = model.fit_transform(svdObj.matrix)
-    svdObj.rightFactorMatrix = model.components_
+    leftFactorMatrix = model.fit_transform(matrix)
+    rightFactorMatrix = model.components_
+    return (leftFactorMatrix, rightFactorMatrix)
 
 def getProductElement(rowArr, colArr):
     pdt = 0.0
@@ -134,20 +136,21 @@ def getProductElement(rowArr, colArr):
         pdt += float(rowArr[i] * colArr[i])
     return pdt
 
-def completeMatrix(svdObj):
+def completeMatrix(matrix, leftFactorMatrix, rightFactorMatrix, configDict):
     pool = multiprocessing.Pool(processes=int(configDict['SVD_THREADS']))
-    for i in range(len(svdObj.matrix)):
-        for j in range(len(svdObj.matrix[i])):
-            if svdObj.matrix[i][j] == 1.0:
-                svdObj.matrix[i][j] = -1.0 # to exclude earlier queries from a session from being recommended for the same session
-    for i in range(len(svdObj.leftFactorMatrix)):
-        rowArr = svdObj.leftFactorMatrix[i]
-        for j in range(len(svdObj.rightFactorMatrix[0])):
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            if matrix[i][j] == 1.0:
+                matrix[i][j] = -1.0 # to exclude earlier queries from a session from being recommended for the same session
+    for i in range(len(leftFactorMatrix)):
+        rowArr = leftFactorMatrix[i]
+        for j in range(len(rightFactorMatrix[0])):
             colArr = []
-            for k in range(len(svdObj.rightFactorMatrix)):
-                colArr.append(svdObj.rightFactorMatrix[k][j])
-            if svdObj.matrix[i][j] == 0.0:
-                svdObj.matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
+            for k in range(len(rightFactorMatrix)):
+                colArr.append(rightFactorMatrix[k][j])
+            if matrix[i][j] == 0.0:
+                matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
+    return matrix
 
 def predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, configDict):
     if sessID in sortedSessKeys:
@@ -227,54 +230,60 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, matrix, resultDict, quer
             resultDict[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle")
     return resultDict
 
-def trainTestBatchWise(svdObj):
-    batchSize = int(svdObj.configDict['EPISODE_IN_QUERIES'])
+def trainTestBatchWise(configDict, episodeResponseTimeDictName, outputIntentFileName, numEpisodes, queryKeysSetAside,
+     episodeResponseTime, sessionStreamDict,
+     resultDict, keyOrder, matrix, queryVocab, sessAdjList, startEpisode):
+    batchSize = int(configDict['EPISODE_IN_QUERIES'])
     lo = 0
     hi = -1
-    assert svdObj.configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
+    assert configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
     sortedSessKeys = None
-    while hi < len(svdObj.keyOrder) - 1:
+    while hi < len(keyOrder) - 1:
         lo = hi + 1
-        if len(svdObj.keyOrder) - lo < batchSize:
-            batchSize = len(svdObj.keyOrder) - lo
+        if len(keyOrder) - lo < batchSize:
+            batchSize = len(keyOrder) - lo
         hi = lo + batchSize - 1
         elapsedAppendTime = 0.0
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
-            hi) + ", len(keyOrder): " + str(len(svdObj.keyOrder))
-        if len(svdObj.sessAdjList) > 1 and len(svdObj.queryVocab) > 2: # unless at least two rows hard to recommend
-            svdObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, svdObj.keyOrder, svdObj.matrix, svdObj.resultDict, svdObj.queryVocab, sortedSessKeys, svdObj.sessionStreamDict.keys(), svdObj.configDict)
-        print "Starting training in Episode " + str(svdObj.numEpisodes)
+        print "Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(keyOrder): " + str(len(keyOrder))
+        if len(sessAdjList) > 1 and len(queryVocab) > 2: # unless at least two rows hard to recommend
+            resultDict = predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, matrix, resultDict, queryVocab, sortedSessKeys, sessionStreamDict.keys(), configDict)
+        print "Starting training in Episode " + str(numEpisodes)
         startTrainTime = time.time()
-        svdObj.queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, svdObj.keyOrder, svdObj.queryKeysSetAside)
-        updateQueryVocabSessAdjList(svdObj)
-        if len(svdObj.queryVocab) > 2:
-            sortedSessKeys = createMatrix(svdObj)
-            factorizeMatrix(svdObj)
-            completeMatrix(svdObj)
-        assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
+        queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, keyOrder, queryKeysSetAside)
+        (queryVocab, sessAdjList) = updateQueryVocabSessAdjList(queryKeysSetAside, sessionStreamDict, queryVocab, sessAdjList)
+        if len(queryVocab) > 2:
+            (matrix, sortedSessKeys) = createMatrix(matrix, sessAdjList, queryVocab)
+            (leftFactorMatrix, rightFactorMatrix) = factorizeMatrix(queryVocab, matrix)
+            matrix = completeMatrix(matrix, leftFactorMatrix, rightFactorMatrix, configDict)
+        assert configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
                                                                                   'SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
-        if svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
-            del svdObj.queryKeysSetAside
-            svdObj.queryKeysSetAside = []
+        if configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+            del queryKeysSetAside
+            queryKeysSetAside = []
         # we record the times including train and test
-        svdObj.numEpisodes += 1
-        if len(svdObj.resultDict) > 0:
-            elapsedAppendTime = CFCosineSim_Parallel.appendResultsToFile(svdObj.sessionStreamDict, svdObj.resultDict, elapsedAppendTime, svdObj.numEpisodes,
-                                                    svdObj.outputIntentFileName, svdObj.configDict, -1)
-            (svdObj.episodeResponseTimeDictName, svdObj.episodeResponseTime, svdObj.startEpisode, svdObj.elapsedAppendTime) = QR.updateResponseTime(
-                svdObj.episodeResponseTimeDictName, svdObj.episodeResponseTime, svdObj.numEpisodes, svdObj.startEpisode, elapsedAppendTime)
-            svdObj.resultDict = LSTM_RNN_Parallel.clear(svdObj.resultDict)
+        numEpisodes += 1
+        if len(resultDict) > 0:
+            elapsedAppendTime = CFCosineSim_Parallel.appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes,
+                                                    outputIntentFileName, configDict, -1)
+            (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(
+                episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+            resultDict = LSTM_RNN_Parallel.clear(resultDict)
         totalTrainTime = float(time.time() - startTrainTime)
         print "Total Train Time: " + str(totalTrainTime)
-    updateResultsToExcel(svdObj.configDict, svdObj.episodeResponseTimeDictName, svdObj.outputIntentFileName)
+    updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
 
 def runSVD(configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY'
-    svdObj = SVD_Obj(configDict)
-    trainTestBatchWise(svdObj)
+    (intentSessionFile, episodeResponseTimeDictName, outputIntentFileName, numEpisodes, queryKeysSetAside,
+     episodeResponseTime, sessionLengthDict, sessionStreamDict,
+     resultDict, keyOrder, matrix, queryVocab, sessAdjList, startEpisode, leftFactorMatrix, rightFactorMatrix) = initSingularity(configDict)
+    trainTestBatchWise(configDict, episodeResponseTimeDictName, outputIntentFileName, numEpisodes, queryKeysSetAside,
+     episodeResponseTime, sessionStreamDict,
+     resultDict, keyOrder, matrix, queryVocab, sessAdjList, startEpisode)
 
 if __name__ == "__main__":
     # configDict = parseConfig.parseConfigFile("configFile.txt")
