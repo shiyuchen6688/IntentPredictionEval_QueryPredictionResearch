@@ -144,8 +144,8 @@ def completeMatrix(svdObj):
         rowArr = svdObj.leftFactorMatrix[i]
         for j in range(len(svdObj.rightFactorMatrix[0])):
             colArr = []
-            for k in range(len(svdObj.leftFactorMatrix)):
-                colArr.append(svdObj.leftFactorMatrix[k][j])
+            for k in range(len(svdObj.rightFactorMatrix)):
+                colArr.append(svdObj.rightFactorMatrix[k][j])
             if svdObj.matrix[i][j] == 0.0:
                 svdObj.matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
 
