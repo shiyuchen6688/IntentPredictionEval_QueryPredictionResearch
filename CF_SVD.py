@@ -41,7 +41,7 @@ class SVD_Obj:
         except OSError:
             pass
         manager = multiprocessing.Manager()
-        self.sessionStreamDict = manager.dict()
+        self.sessionStreamDict = {}
         self.resultDict = {}
         self.keyOrder = []
         with open(self.intentSessionFile) as f:
