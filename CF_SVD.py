@@ -40,8 +40,8 @@ class SVD_Obj:
             os.remove(self.outputIntentFileName)
         except OSError:
             pass
-        manager = multiprocessing.Manager()
-        self.sessionStreamDict = manager.dict()
+        self.manager = multiprocessing.Manager()
+        self.sessionStreamDict = self.manager.dict()
         self.resultDict = {}
         self.keyOrder = []
         with open(self.intentSessionFile) as f:
@@ -50,7 +50,7 @@ class SVD_Obj:
                                                                                                  self.sessionStreamDict)
                 self.keyOrder.append(str(sessID) + "," + str(queryID))
         f.close()
-        self.matrix = manager.list() # this will be an array of arrays
+        self.matrix = self.manager.list() # this will be an array of arrays
         self.queryVocab = {}  # key is index and val is sessID,queryID
         self.sessAdjList = {} # key is sess index and val is a list of query vocab indices
         self.startEpisode = time.time()
@@ -62,7 +62,7 @@ def createMatrix(svdObj):
     # based on svdObj.sessAdjList and svdObj.queryVocab
     if len(svdObj.matrix) > 0:
         del svdObj.matrix
-        svdObj.matrix = []
+        svdObj.matrix = svdObj.manager.list()
     svdObj.sortedSessKeys = svdObj.sessAdjList.keys()
     svdObj.sortedSessKeys.sort()
     for sessID in svdObj.sortedSessKeys:
