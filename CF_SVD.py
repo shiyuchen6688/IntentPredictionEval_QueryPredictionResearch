@@ -120,7 +120,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
 
 def factorizeMatrix(svdObj):
     print "Factorization using SVD_NMF_sklearn or NIMFA"
-    latentFactors = min(int(configDict['SVD_LATENT_DIMS']), int(0.1 * len(svdObj.queryVocab)))
+    latentFactors = min(int(svdObj.configDict['SVD_LATENT_DIMS']), int(0.1 * len(svdObj.queryVocab)))
     if latentFactors == 0 and len(svdObj.queryVocab) > 2 and len(svdObj.queryVocab) < 10:
         latentFactors = 2
     model = NMF(n_components=latentFactors, init='nndsvdar', solver='mu') # multiplicative update solver, cd for coordinate descent
@@ -143,7 +143,7 @@ def partitionEntries(totalEntries, numThreads):
         entryIndex+=1
     return rowColPartitions
 
-def completeEntries((threadID, rowColPartition, leftFactorMatrix, rightFactorMatrix)):
+def completeEntries((threadID, rowColPartition, leftFactorMatrix, rightFactorMatrix, configDict)):
     resDict = {}
     for entry in rowColPartition:
         (rowIndex, colIndex) = entry
@@ -158,38 +158,42 @@ def completeEntries((threadID, rowColPartition, leftFactorMatrix, rightFactorMat
     return
 
 def completeMatrix(svdObj):
-    totalEntries = []
-    for i in range(len(svdObj.matrix)):
-        for j in range(len(svdObj.matrix[i])):
-            if svdObj.matrix[i][j] == 1.0:
-                svdObj.matrix[i][j] = -1.0 # to exclude earlier queries from a session from being recommended for the same session
-            else:
-                totalEntries.append((i,j))
-    numThreads = min(int(configDict['SVD_THREADS']), len(totalEntries))
-    rowColPartitions = partitionEntries(totalEntries, numThreads)
-    pool = multiprocessing.Pool()
-    argsList = []
-    for threadID in range(numThreads):
-        argsList.append((threadID, rowColPartitions[threadID], svdObj.leftFactorMatrix, svdObj.rightFactorMatrix))
-    pool.map(completeEntries, argsList)
-    pool.close()
-    pool.join()
-    for threadID in range(numThreads):
-        resDict = QR.readFromPickleFile(
-        getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "rowColPartitions_" + str(threadID) + ".pickle")
-        for entry in resDict:
-            (rowIndex,colIndex) = entry
-            svdObj.matrix[rowIndex][colIndex] = resDict[entry]
-    '''
+    if int(svdObj.configDict['SVD_THREADS']) > 1:
+        totalEntries = []
+        for i in range(len(svdObj.matrix)):
+            for j in range(len(svdObj.matrix[i])):
+                if svdObj.matrix[i][j] == 1.0:
+                    svdObj.matrix[i][j] = -1.0 # to exclude earlier queries from a session from being recommended for the same session
+                else:
+                    totalEntries.append((i,j))
+        numThreads = min(int(svdObj.configDict['SVD_THREADS']), len(totalEntries))
+        rowColPartitions = partitionEntries(totalEntries, numThreads)
+        pool = multiprocessing.Pool()
+        argsList = []
+        for threadID in range(numThreads):
+            argsList.append((threadID, rowColPartitions[threadID], svdObj.leftFactorMatrix, svdObj.rightFactorMatrix, svdObj.configDict))
+        pool.map(completeEntries, argsList)
+        pool.close()
+        pool.join()
+        for threadID in range(numThreads):
+            resDict = QR.readFromPickleFile(
+            getConfig(svdObj.configDict['PICKLE_TEMP_OUTPUT_DIR']) + "rowColPartitions_" + str(threadID) + ".pickle")
+            for entry in resDict:
+                (rowIndex,colIndex) = entry
+                svdObj.matrix[rowIndex][colIndex] = resDict[entry]
+    elif int(svdObj.configDict['SVD_THREADS']) == 1:
+        for i in range(len(svdObj.matrix)):
+            for j in range(len(svdObj.matrix[i])):
+                if svdObj.matrix[i][j] == 1.0:
+                    svdObj.matrix[i][j] = -1.0 # to exclude earlier queries from a session from being recommended for the same session
         for i in range(len(svdObj.leftFactorMatrix)):
-        rowArr = svdObj.leftFactorMatrix[i]
-        for j in range(len(svdObj.rightFactorMatrix[0])):
-            colArr = []
-            for k in range(len(svdObj.rightFactorMatrix)):
-                colArr.append(svdObj.rightFactorMatrix[k][j])
-            if svdObj.matrix[i][j] == 0.0:
-                svdObj.matrix[i][j]=pool.apply_async(getProductElement, rowArr, colArr)
-    '''
+            rowArr = svdObj.leftFactorMatrix[i]
+            for j in range(len(svdObj.rightFactorMatrix[0])):
+                colArr = []
+                for k in range(len(svdObj.rightFactorMatrix)):
+                    colArr.append(svdObj.rightFactorMatrix[k][j])
+                if svdObj.matrix[i][j] == 0.0:
+                    svdObj.matrix[i][j]=getProductElement(rowArr, colArr)
     return
 
 def predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, configDict):
