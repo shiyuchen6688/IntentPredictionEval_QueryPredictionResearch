@@ -50,7 +50,7 @@ class SVD_Obj:
                                                                                                  self.sessionStreamDict)
                 self.keyOrder.append(str(sessID) + "," + str(queryID))
         f.close()
-        self.matrix = self.manager.list() # this will be an array of arrays
+        self.matrix = [] # this will be an array of arrays
         self.queryVocab = {}  # key is index and val is sessID,queryID
         self.sessAdjList = {} # key is sess index and val is a list of query vocab indices
         self.startEpisode = time.time()
