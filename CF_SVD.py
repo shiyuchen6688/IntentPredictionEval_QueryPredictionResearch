@@ -62,7 +62,7 @@ def createMatrix(svdObj):
     # based on svdObj.sessAdjList and svdObj.queryVocab
     if len(svdObj.matrix) > 0:
         del svdObj.matrix
-        svdObj.matrix = svdObj.manager.list()
+        svdObj.matrix = []
     svdObj.sortedSessKeys = svdObj.sessAdjList.keys()
     svdObj.sortedSessKeys.sort()
     for sessID in svdObj.sortedSessKeys:
