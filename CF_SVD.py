@@ -274,6 +274,11 @@ def predictIntentsWithoutCurrentBatch(lo, hi, svdObj):
             svdObj.resultDict[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle")
     return svdObj.resultDict
 
+def saveModelToFile(svdObj):
+    QR.writeToPickleFile(
+        getConfig(configDict['OUTPUT_DIR']) + "SVDMatrix.pickle", svdObj.matrix)
+    return
+
 def trainTestBatchWise(svdObj):
     batchSize = int(svdObj.configDict['EPISODE_IN_QUERIES'])
     lo = 0
@@ -298,6 +303,7 @@ def trainTestBatchWise(svdObj):
             createMatrix(svdObj)
             factorizeMatrix(svdObj)
             completeMatrix(svdObj)
+            saveModelToFile(svdObj)
         totalTrainTime = float(time.time() - startTrainTime)
         print "Total Train Time: " + str(totalTrainTime)
         assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[

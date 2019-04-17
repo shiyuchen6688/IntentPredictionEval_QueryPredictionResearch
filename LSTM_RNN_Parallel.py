@@ -688,6 +688,10 @@ def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside
     print "len(distinctQueries): "+str(len(distinctQueries))+", len(sampledQueryHistory): "+str(len(sampledQueryHistory))
     return sampledQueryHistory
 
+def saveModel(modelRNN, configDict):
+    modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/modelRNN.h5'
+    modelRNN.save(modelRNNFileName, overwrite=True)
+    return
 
 def trainTestBatchWise(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
     batchSize = int(configDict['EPISODE_IN_QUERIES'])
@@ -716,6 +720,7 @@ def trainTestBatchWise(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetA
             sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside, sessionStreamDict)
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal,
                                                                         modelRNN, max_lookback, sessionStreamDict)
+        saveModel(modelRNN, configDict)
         assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
                                                                                    'RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the RNN at the end of each episode
