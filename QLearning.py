@@ -20,6 +20,7 @@ import CF_SVD
 import argparse
 from sklearn.decomposition import NMF
 import CFCosineSim_Parallel
+import random
 
 class Q_Obj:
     def __init__(self, configDict):
@@ -90,7 +91,7 @@ def updateQValues(prevKey, curSessQueryID, qObj):
 def updateQTable(curSessQueryID, prevSessQueryID, qObj):
     assert qObj.configDict['QTABLE_MEM_DISK'] == 'MEM' or qObj.configDict['QTABLE_MEM_DISK'] == 'DISK'
     if qObj.configDict['QTABLE_MEM_DISK'] == 'MEM':
-            prevKey = findQueryIndex(prevSessQueryID, qObj)
+            prevKey = findDistinctQuery(prevSessQueryID, qObj)
             if prevKey is not None:
                 updateQTableDims(prevKey, qObj)
                 updateQValues(prevKey, curSessQueryID, qObj)
@@ -122,7 +123,23 @@ def updateQueryVocabQTable(qObj):
     return
 
 def refineQTableUsingBellmanUpdate(qObj):
-    
+    for i in range(int(configDict['QL_REFINE_ITERS'])):
+        # pick a random start and end sessQueryID pair within the vocabulary in sessionDict
+        startSessID = random.choice(qObj.sessionDict.keys())
+        startQueryID = random.randint(0, qObj.sessionDict[startSessID])
+        endSessID = random.choice(qObj.sessionDict.keys())
+        endQueryID = random.randint(0, qObj.sessionDict[startSessID])
+        startSessQueryID = str(startSessID)+","+str(startQueryID)
+        endSessQueryID = str(endSessID)+","+str(endQueryID)
+        if startSessID == endSessID and endQueryID == startQueryID+1:
+            rewVal = 1.0
+        else:
+            rewVal = 0.0
+        startDistinctSessQueryID = findQueryIndex(startSessQueryID, qObj)
+        endDistinctSessQueryID = findQueryIndex(endSessQueryID, qObj)
+        endSessQueryIndex = qObj.queryVocab.index(endDistinctSessQueryID)
+        invokeBellmanUpdate(startDistinctSessQueryID, endSessQueryIndex, qObj, rewVal)
+    return
 
 def trainTestBatchWise(qObj):
     batchSize = int(qObj.configDict['EPISODE_IN_QUERIES'])
