@@ -656,11 +656,11 @@ def findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, disti
     for oldSessQueryID in distinctQueries:
         if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             #print "True"
-            return "True"
+            return oldSessQueryID
     for oldSessQueryID in sampledQueryHistory:
         if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             #print "True"
-            return "True"
+            return oldSessQueryID
     return "False"
 
 def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside, sessionStreamDict):

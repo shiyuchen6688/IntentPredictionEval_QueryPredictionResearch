@@ -325,6 +325,7 @@ def trainTestBatchWise(svdObj):
 
 def runSVD(configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY'
+    assert configDict['ALGORITHM'] == 'SVD'
     svdObj = SVD_Obj(configDict)
     trainTestBatchWise(svdObj)
 
