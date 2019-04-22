@@ -256,7 +256,7 @@ def trainTestBatchWise(qObj):
             qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj)
         print "Starting training in Episode " + str(qObj.numEpisodes)
         startTrainTime = time.time()
-        (qObj.queryKeysSetAside, qObj.sessionDict) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, qObj.keyOrder,
+        (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, qObj.keyOrder,
                                                                               qObj.queryKeysSetAside, qObj.sessionDict)
         updateQueryVocabQTable(qObj)
         if len(qObj.queryVocab) > 2:
