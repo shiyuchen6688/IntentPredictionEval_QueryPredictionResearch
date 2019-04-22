@@ -84,10 +84,12 @@ def findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict):
 def findDistinctQuery(sessQueryID, qObj):
     return findDistinctQueryAllArgs(sessQueryID, qObj.queryVocab, qObj.sessionStreamDict)
 
-def updateQTableDims(prevKey, qObj):
-    if prevKey not in qObj.qTable:
-        qObj.qTable[prevKey] = [0.0] * len(qObj.queryVocab)
-    for sessQueryID in qObj.qTable:
+def updateQTableDims(prevDistinctSessQueryID, qObj):
+    if prevDistinctSessQueryID not in qObj.qTable:
+        qObj.qTable[prevDistinctSessQueryID] = [0.0] * len(qObj.queryVocab)
+    for sessQueryID in qObj.queryVocab:
+        if sessQueryID not in qObj.qTable:
+            qObj.qTable[sessQueryID] = [0.0] * len(qObj.queryVocab)
         qValues = qObj.qTable[sessQueryID]
         while len(qValues) < len(qObj.queryVocab):
             qValues.append(0.0)
@@ -100,18 +102,18 @@ def invokeBellmanUpdate(curSessQueryID, nextKeyIndex, qObj, rewVal):
                                                 qObj.learningRate * (rewVal + qObj.decayRate * maxNextQVal)
     return
 
-def updateQValues(prevKey, curSessQueryID, qObj):
+def updateQValues(prevDistinctSessQueryID, curSessQueryID, qObj):
     keyIndex = qObj.queryVocab.index(curSessQueryID)
-    invokeBellmanUpdate(prevKey, keyIndex, qObj, 1.0)
+    invokeBellmanUpdate(prevDistinctSessQueryID, keyIndex, qObj, 1.0)
     return
 
 def updateQTable(curSessQueryID, prevSessQueryID, qObj):
     assert qObj.configDict['QTABLE_MEM_DISK'] == 'MEM' or qObj.configDict['QTABLE_MEM_DISK'] == 'DISK'
     if qObj.configDict['QTABLE_MEM_DISK'] == 'MEM':
-            prevKey = findDistinctQuery(prevSessQueryID, qObj)
-            if prevKey is not None:
-                updateQTableDims(prevKey, qObj)
-                updateQValues(prevKey, curSessQueryID, qObj)
+            prevDistinctSessQueryID= findDistinctQuery(prevSessQueryID, qObj)
+            if prevDistinctSessQueryID is not None:
+                updateQTableDims(prevDistinctSessQueryID, qObj)
+                updateQValues(prevDistinctSessQueryID, curSessQueryID, qObj)
     return
 
 def findIfQueryInside(sessQueryID, sessionStreamDict, queryVocab, distinctQueries):
