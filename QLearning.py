@@ -129,8 +129,7 @@ def updateQueryVocabQTable(qObj):
         retDistinctSessQueryID = findIfQueryInside(sessQueryID, qObj.sessionStreamDict, qObj.queryVocab, distinctQueries)
         if retDistinctSessQueryID is None:
             distinctQueries.append(sessQueryID)
-            key = len(qObj.queryVocab)
-            qObj.queryVocab[key] = sessQueryID
+            qObj.queryVocab.append(sessQueryID)
             retDistinctSessQueryID = sessQueryID
         sessID = int(sessQueryID.split(",")[0])
         queryID = int(sessQueryID.split(",")[1])
