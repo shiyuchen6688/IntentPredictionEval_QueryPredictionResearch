@@ -59,6 +59,20 @@ class Q_Obj:
         self.decayRate = float(configDict['QL_DECAY_RATE'])
         self.startEpisode = time.time()
 
+def findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict):
+    maxCosineSim = 0.0
+    maxSimSessQueryID = None
+    for oldSessQueryID in queryVocab:
+        if oldSessQueryID == sessQueryID:
+            return oldSessQueryID
+        cosineSim = CFCosineSim_Parallel.computeBitCosineSimilarity(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID])
+        if cosineSim >= 1.0:
+            return (1.0, oldSessQueryID)
+        elif cosineSim > maxCosineSim:
+            maxCosineSim = cosineSim
+            maxSimSessQueryID = oldSessQueryID
+    return (maxCosineSim, maxSimSessQueryID)
+
 def findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict):
     for oldSessQueryID in queryVocab:
         if oldSessQueryID == sessQueryID:
@@ -145,8 +159,8 @@ def refineQTableUsingBellmanUpdate(qObj):
     return
 
 def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamDict, configDict):
-    distinctSessQueryID = findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict)
-    qValues = qTable[distinctSessQueryID]
+    (maxCosineSim, maxSimSessQueryID) = findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict)
+    qValues = qTable[maxSimSessQueryID]
     topK = int(configDict['TOP_K'])
     topKIndices = zip(*heapq.nlargest(topK, enumerate(qValues), key=operator.itemgetter(1)))[0]
     topKSessQueryIndices = []
