@@ -118,7 +118,7 @@ def findIfQueryInside(sessQueryID, sessionStreamDict, queryVocab, distinctQuerie
     for oldSessQueryID in distinctQueries:
         if LSTM_RNN_Parallel.compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return oldSessQueryID
-    for oldSessQueryID in range(len(queryVocab)):
+    for oldSessQueryID in queryVocab:
         if LSTM_RNN_Parallel.compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return oldSessQueryID
     return None
