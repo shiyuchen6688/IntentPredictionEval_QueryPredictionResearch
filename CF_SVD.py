@@ -277,6 +277,8 @@ def predictIntentsWithoutCurrentBatch(lo, hi, svdObj):
 def saveModelToFile(svdObj):
     QR.writeToPickleFile(
         getConfig(configDict['OUTPUT_DIR']) + "SVDMatrix.pickle", svdObj.matrix)
+    QR.writeToPickleFile(
+        getConfig(configDict['OUTPUT_DIR']) + "SVDQueryVocab.pickle", svdObj.queryVocab)
     return
 
 def trainTestBatchWise(svdObj):

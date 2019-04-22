@@ -59,13 +59,16 @@ class Q_Obj:
         self.decayRate = float(configDict['QL_DECAY_RATE'])
         self.startEpisode = time.time()
 
-def findQueryIndex(sessQueryID, qObj):
-    for oldSessQueryID in qObj.queryVocab:
+def findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict):
+    for oldSessQueryID in queryVocab:
         if oldSessQueryID == sessQueryID:
             return oldSessQueryID
-        elif LSTM_RNN_Parallel.compareBitMaps(qObj.sessionStreamDict[oldSessQueryID], qObj.sessionStreamDict[sessQueryID]) == "True":
+        elif LSTM_RNN_Parallel.compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return oldSessQueryID
     return None
+
+def findDistinctQuery(sessQueryID, qObj):
+    return findDistinctQueryAllArgs(sessQueryID, qObj.queryVocab, qObj.sessionStreamDict)
 
 def updateQTableDims(prevKey, qObj):
     if prevKey not in qObj.qTable:
@@ -135,10 +138,92 @@ def refineQTableUsingBellmanUpdate(qObj):
             rewVal = 1.0
         else:
             rewVal = 0.0
-        startDistinctSessQueryID = findQueryIndex(startSessQueryID, qObj)
-        endDistinctSessQueryID = findQueryIndex(endSessQueryID, qObj)
+        startDistinctSessQueryID = findDistinctQuery(startSessQueryID, qObj)
+        endDistinctSessQueryID = findDistinctQuery(endSessQueryID, qObj)
         endSessQueryIndex = qObj.queryVocab.index(endDistinctSessQueryID)
         invokeBellmanUpdate(startDistinctSessQueryID, endSessQueryIndex, qObj, rewVal)
+    return
+
+def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamDict, configDict):
+    distinctSessQueryID = findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict)
+    qValues = qTable[distinctSessQueryID]
+    topK = int(configDict['TOP_K'])
+    topKIndices = zip(*heapq.nlargest(topK, enumerate(qValues), key=operator.itemgetter(1)))[0]
+    topKSessQueryIndices = []
+    for topKIndex in topKIndices:
+        topKSessQueryIndices.append(queryVocab[topKIndex])
+    return topKSessQueryIndices
+
+def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocab, sessionStreamDict, configDict)):
+    for i in range(t_lo, t_hi+1):
+        sessQueryID = keyOrder[i]
+        sessID = int(sessQueryID.split(",")[0])
+        queryID = int(sessQueryID.split(",")[1])
+        #curQueryIntent = sessionStreamDict[sessQueryID]
+        #if queryID < sessionLengthDict[sessID]-1:
+        if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
+            topKSessQueryIndices = predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamDict, configDict)
+            for sessQueryID in topKSessQueryIndices:
+                #print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
+                if sessQueryID not in sessionStreamDict:
+                    print "sessQueryID: "+sessQueryID+" not in sessionStreamDict !!"
+                    sys.exit(0)
+            #print "ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
+            #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            if topKSessQueryIndices is not None:
+                resList.append((sessID, queryID, topKSessQueryIndices))
+    QR.writeToPickleFile(
+        getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "QLResList_" + str(threadID) + ".pickle", resList)
+    return resList
+
+def predictIntentsWithoutCurrentBatch(lo, hi, qObj):
+    numThreads = min(int(configDict['QL_THREADS']), hi - lo + 1)
+    numKeysPerThread = int(float(hi - lo + 1) / float(numThreads))
+    # threads = {}
+    t_loHiDict = {}
+    t_hi = lo - 1
+    for threadID in range(numThreads):
+        t_lo = t_hi + 1
+        if threadID == numThreads - 1:
+            t_hi = hi
+        else:
+            t_hi = t_lo + numKeysPerThread - 1
+        t_loHiDict[threadID] = (t_lo, t_hi)
+        qObj.resultDict[threadID] = list()
+        # print "Set tuple boundaries for Threads"
+    # sortedSessKeys = svdObj.sessAdjList.keys().sort()
+    if numThreads == 1:
+        qObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, qObj.keyOrder, qObj.qTable,
+                                                            qObj.resultDict[0], qObj.queryVocab,
+                                                            qObj.sessionStreamDict,
+                                                            qObj.configDict))
+    elif numThreads > 1:
+        # sharedMtx = svdObj.matrix
+        # manager = multiprocessing.Manager()
+        # sharedMtx = manager.list()
+        # for row in svdObj.matrix:
+        # sharedMtx.append(row)
+        pool = multiprocessing.Pool()
+        argsList = []
+        for threadID in range(numThreads):
+            (t_lo, t_hi) = t_loHiDict[threadID]
+            argsList.append((threadID, t_lo, t_hi, qObj.keyOrder, qObj.qTable, qObj.resultDict[threadID],
+                             qObj.queryVocab, qObj.sessionStreamDict, qObj.configDict))
+            # threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
+            # threads[i].start()
+        pool.map(predictTopKIntentsPerThread, argsList)
+        pool.close()
+        pool.join()
+        for threadID in range(numThreads):
+            qObj.resultDict[threadID] = QR.readFromPickleFile(
+                getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "QLResList_" + str(threadID) + ".pickle")
+    return qObj.resultDict
+
+def saveModelToFile(qObj):
+    QR.writeToPickleFile(
+        getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle", qObj.qTable)
+    QR.writeToPickleFile(
+        getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle", qObj.queryVocab)
     return
 
 def trainTestBatchWise(qObj):
