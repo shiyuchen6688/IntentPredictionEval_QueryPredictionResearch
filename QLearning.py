@@ -84,9 +84,9 @@ def findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict):
 def findDistinctQuery(sessQueryID, qObj):
     return findDistinctQueryAllArgs(sessQueryID, qObj.queryVocab, qObj.sessionStreamDict)
 
-def updateQTableDims(prevDistinctSessQueryID, qObj):
-    if prevDistinctSessQueryID not in qObj.qTable:
-        qObj.qTable[prevDistinctSessQueryID] = [0.0] * len(qObj.queryVocab)
+def updateQTableDims(distinctSessQueryID, qObj):
+    if distinctSessQueryID not in qObj.qTable:
+        qObj.qTable[distinctSessQueryID] = [0.0] * len(qObj.queryVocab)
     for sessQueryID in qObj.queryVocab:
         if sessQueryID not in qObj.qTable:
             qObj.qTable[sessQueryID] = [0.0] * len(qObj.queryVocab)
@@ -112,7 +112,7 @@ def updateQTable(curSessQueryID, prevSessQueryID, qObj):
     if qObj.configDict['QTABLE_MEM_DISK'] == 'MEM':
             prevDistinctSessQueryID= findDistinctQuery(prevSessQueryID, qObj)
             if prevDistinctSessQueryID is not None:
-                updateQTableDims(prevDistinctSessQueryID, qObj)
+                #updateQTableDims(prevDistinctSessQueryID, qObj)
                 updateQValues(prevDistinctSessQueryID, curSessQueryID, qObj)
     return
 
@@ -133,6 +133,7 @@ def updateQueryVocabQTable(qObj):
             distinctQueries.append(sessQueryID)
             qObj.queryVocab.append(sessQueryID)
             retDistinctSessQueryID = sessQueryID
+            updateQTableDims(retDistinctSessQueryID, qObj)
         sessID = int(sessQueryID.split(",")[0])
         queryID = int(sessQueryID.split(",")[1])
         if queryID - 1 >= 0:
