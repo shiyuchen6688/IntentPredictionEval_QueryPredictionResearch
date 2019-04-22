@@ -212,16 +212,14 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj):
                                                             qObj.sessionStreamDict,
                                                             qObj.configDict))
     elif numThreads > 1:
-        # sharedMtx = svdObj.matrix
-        # manager = multiprocessing.Manager()
-        # sharedMtx = manager.list()
-        # for row in svdObj.matrix:
-        # sharedMtx.append(row)
+        sharedTable = qObj.manager.dict()
+        for key in qObj.qTable:
+            sharedTable[key]=qObj.qTable[key]
         pool = multiprocessing.Pool()
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, qObj.keyOrder, qObj.qTable, qObj.resultDict[threadID],
+            argsList.append((threadID, t_lo, t_hi, qObj.keyOrder, sharedTable, qObj.resultDict[threadID],
                              qObj.queryVocab, qObj.sessionStreamDict, qObj.configDict))
             # threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             # threads[i].start()
@@ -231,6 +229,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj):
         for threadID in range(numThreads):
             qObj.resultDict[threadID] = QR.readFromPickleFile(
                 getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "QLResList_" + str(threadID) + ".pickle")
+        del sharedTable
     return qObj.resultDict
 
 def saveModelToFile(qObj):
