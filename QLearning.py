@@ -150,7 +150,7 @@ def printQTable(qTable):
 
 def refineQTableUsingBellmanUpdate(qObj):
     print "Number of distinct queries: "+str(len(qObj.queryVocab))+", #cells in QTable: "+str(int(len(qObj.queryVocab)*len(qObj.queryVocab)))
-    print "Expected number of refinement iterations: "+str(len(qObj.queryVocab))
+    print "Expected number of refinement iterations: max("+str(len(qObj.queryVocab))+"),"+str(int(configDict['QL_REFINE_ITERS']))
     #if len(qObj.queryVocab) * len(qObj.queryVocab)/10 <= int(configDict['QL_REFINE_ITERS']):
     numRefineIters = max(len(qObj.queryVocab), int(configDict['QL_REFINE_ITERS']))
     #else:
@@ -184,7 +184,7 @@ def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamD
     topKSessQueryIndices = []
     for topKIndex in topKIndices:
         topKSessQueryIndices.append(queryVocab[topKIndex])
-    print "maxSimSessQueryID: "+str(maxSimSessQueryID)+", topKSessQueryIndices: "+str(topKSessQueryIndices)
+    print "maxSimSessQueryID: "+str(maxSimSessQueryID)+", topKIndices: "+str(topKIndices)+", topKSessQueryIndices: "+str(topKSessQueryIndices)
     return topKSessQueryIndices
 
 def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocab, sessionStreamDict, configDict)):
