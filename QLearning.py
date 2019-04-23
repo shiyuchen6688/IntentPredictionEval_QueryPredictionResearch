@@ -141,12 +141,20 @@ def updateQueryVocabQTable(qObj):
             updateQTable(retDistinctSessQueryID, prevSessQueryID, qObj)
     return
 
+def printQTable(qObj):
+    for key in qObj.qTable:
+        line = str(key)+":"
+        line += str(qObj.qTable[key])+"\n"
+        print line
+    return
+
 def refineQTableUsingBellmanUpdate(qObj):
     print "Number of distinct queries: "+str(len(qObj.queryVocab))
     print "Expected number of refinement iterations: "+str(len(qObj.queryVocab)*len(qObj.queryVocab))
-    numRefineIters = min(len(qObj.queryVocab)*len(qObj.queryVocab), int(configDict['QL_REFINE_ITERS']))
+    numRefineIters = min(len(qObj.queryVocab)*len(qObj.queryVocab)/10, int(configDict['QL_REFINE_ITERS']))
     for i in range(numRefineIters):
-        print "Refining using Bellman update, Iteration "+str(i)
+        if i%100 == 0:
+            print "Refining using Bellman update, Iteration "+str(i)
         # pick a random start and end sessQueryID pair within the vocabulary in sessionDict
         startSessID = random.choice(qObj.sessionDict.keys())
         startQueryID = random.randint(0, qObj.sessionDict[startSessID])
@@ -269,6 +277,7 @@ def trainTestBatchWise(qObj):
         if len(qObj.queryVocab) > 2:
             refineQTableUsingBellmanUpdate(qObj)
             saveModelToFile(qObj)
+            printQTable(qObj) # only enabled for debugging purposes
         totalTrainTime = float(time.time() - startTrainTime)
         print "Total Train Time: " + str(totalTrainTime)
         assert qObj.configDict['QL_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or qObj.configDict[
