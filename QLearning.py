@@ -141,10 +141,10 @@ def updateQueryVocabQTable(qObj):
             updateQTable(retDistinctSessQueryID, prevSessQueryID, qObj)
     return
 
-def printQTable(qObj):
-    for key in qObj.qTable:
+def printQTable(qTable):
+    for key in qTable:
         line = str(key)+":"
-        line += str(qObj.qTable[key])+"\n"
+        line += str(qTable[key])+"\n"
         print line
     return
 
@@ -176,6 +176,8 @@ def refineQTableUsingBellmanUpdate(qObj):
     return
 
 def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamDict, configDict):
+    print "Inside ThreadID:"+str(threadID)
+    printQTable(qTable)
     (maxCosineSim, maxSimSessQueryID) = findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict)
     qValues = qTable[maxSimSessQueryID]
     topK = int(configDict['TOP_K'])
@@ -280,7 +282,7 @@ def trainTestBatchWise(qObj):
         if len(qObj.queryVocab) > 2:
             refineQTableUsingBellmanUpdate(qObj)
             saveModelToFile(qObj)
-            #printQTable(qObj) # only enabled for debugging purposes
+            #printQTable(qObj.qTable) # only enabled for debugging purposes
         totalTrainTime = float(time.time() - startTrainTime)
         print "Total Train Time: " + str(totalTrainTime)
         assert qObj.configDict['QL_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or qObj.configDict[
