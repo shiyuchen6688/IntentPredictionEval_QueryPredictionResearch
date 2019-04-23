@@ -64,7 +64,7 @@ def findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict):
     maxSimSessQueryID = None
     for oldSessQueryID in queryVocab:
         if oldSessQueryID == sessQueryID:
-            return oldSessQueryID
+            return (1.0, oldSessQueryID)
         cosineSim = CFCosineSim_Parallel.computeBitCosineSimilarity(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID])
         if cosineSim >= 1.0:
             return (1.0, oldSessQueryID)
