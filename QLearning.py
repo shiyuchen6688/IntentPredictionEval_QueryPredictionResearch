@@ -189,8 +189,8 @@ def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamD
     return topKSessQueryIndices
 
 def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocab, sessionStreamDict, configDict)):
-    printQTable(qTable, queryVocab)
-    print "QueryVocab:"+str(queryVocab)
+    #printQTable(qTable, queryVocab)
+    #print "QueryVocab:"+str(queryVocab)
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
@@ -285,7 +285,7 @@ def trainTestBatchWise(qObj):
         if len(qObj.queryVocab) > 2:
             refineQTableUsingBellmanUpdate(qObj)
             saveModelToFile(qObj)
-            #printQTable(qObj.qTable, qObj.queryVocab) # only enabled for debugging purposes
+            printQTable(qObj.qTable, qObj.queryVocab) # only enabled for debugging purposes
         totalTrainTime = float(time.time() - startTrainTime)
         print "Total Train Time: " + str(totalTrainTime)
         assert qObj.configDict['QL_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or qObj.configDict[
