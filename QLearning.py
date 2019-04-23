@@ -157,7 +157,7 @@ def refineQTableUsingBellmanUpdate(qObj):
         #numRefineIters = min(len(qObj.queryVocab) * len(qObj.queryVocab) / 100, int(configDict['QL_REFINE_ITERS']))
     for i in range(numRefineIters):
         if i%100 == 0:
-            print "Refining using Bellman update, Iteration "+str(i)
+            print "Refining using Bellman update, Iteration:"+str(i)
         # pick a random start and end sessQueryID pair within the vocabulary in sessionDict
         startSessID = random.choice(qObj.sessionDict.keys())
         startQueryID = random.randint(0, qObj.sessionDict[startSessID])
