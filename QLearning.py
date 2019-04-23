@@ -151,7 +151,10 @@ def printQTable(qObj):
 def refineQTableUsingBellmanUpdate(qObj):
     print "Number of distinct queries: "+str(len(qObj.queryVocab))
     print "Expected number of refinement iterations: "+str(len(qObj.queryVocab)*len(qObj.queryVocab))
-    numRefineIters = min(len(qObj.queryVocab)*len(qObj.queryVocab)/10, int(configDict['QL_REFINE_ITERS']))
+    if len(qObj.queryVocab) * len(qObj.queryVocab)/10 <= int(configDict['QL_REFINE_ITERS']):
+        numRefineIters = min(len(qObj.queryVocab)*len(qObj.queryVocab)/10, int(configDict['QL_REFINE_ITERS']))
+    else:
+        numRefineIters = min(len(qObj.queryVocab) * len(qObj.queryVocab) / 100, int(configDict['QL_REFINE_ITERS']))
     for i in range(numRefineIters):
         if i%100 == 0:
             print "Refining using Bellman update, Iteration "+str(i)
