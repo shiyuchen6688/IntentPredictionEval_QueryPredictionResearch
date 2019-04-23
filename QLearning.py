@@ -148,7 +148,7 @@ def refineQTableUsingBellmanUpdate(qObj):
         startSessID = random.choice(qObj.sessionDict.keys())
         startQueryID = random.randint(0, qObj.sessionDict[startSessID])
         endSessID = random.choice(qObj.sessionDict.keys())
-        endQueryID = random.randint(0, qObj.sessionDict[startSessID])
+        endQueryID = random.randint(0, qObj.sessionDict[endSessID])
         startSessQueryID = str(startSessID)+","+str(startQueryID)
         endSessQueryID = str(endSessID)+","+str(endQueryID)
         if startSessID == endSessID and endQueryID == startQueryID+1:
