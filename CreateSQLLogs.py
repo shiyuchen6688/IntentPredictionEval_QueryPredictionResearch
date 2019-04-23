@@ -98,7 +98,7 @@ def createSQLLogsFromConfigDict(configDict, args):
                            configDict['CF_COSINESIM_MF'] + "_" + \
                            configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
-    elif configDict['ALGORITHM'] == 'SVD':
+    elif configDict['ALGORITHM'] == 'SVD' or configDict['ALGORITHM'] == 'QLEARNING':
         outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
             'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
         configDict[
