@@ -144,7 +144,8 @@ def updateQueryVocabQTable(qObj):
 def refineQTableUsingBellmanUpdate(qObj):
     print "Number of distinct queries: "+str(len(qObj.queryVocab))
     print "Expected number of refinement iterations: "+str(len(qObj.queryVocab)*len(qObj.queryVocab))
-    for i in range(int(configDict['QL_REFINE_ITERS'])):
+    numRefineIters = min(len(qObj.queryVocab)*len(qObj.queryVocab), int(configDict['QL_REFINE_ITERS']))
+    for i in range(numRefineIters):
         print "Refining using Bellman update, Iteration "+str(i)
         # pick a random start and end sessQueryID pair within the vocabulary in sessionDict
         startSessID = random.choice(qObj.sessionDict.keys())
