@@ -177,7 +177,6 @@ def refineQTableUsingBellmanUpdate(qObj):
 
 def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamDict, configDict):
     print "Inside ThreadID:"+str(threadID)
-    printQTable(qTable)
     (maxCosineSim, maxSimSessQueryID) = findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict)
     qValues = qTable[maxSimSessQueryID]
     topK = int(configDict['TOP_K'])
@@ -189,6 +188,7 @@ def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamD
     return topKSessQueryIndices
 
 def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocab, sessionStreamDict, configDict)):
+    printQTable(qTable)
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
