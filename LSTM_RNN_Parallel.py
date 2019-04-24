@@ -689,7 +689,7 @@ def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside
     return sampledQueryHistory
 
 def saveModel(modelRNN, configDict):
-    modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/modelRNN'+ configDict['RNN_BACKPROP_LSTM_GRU'] +'.h5'
+    modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/modelRNN_'+ configDict['RNN_BACKPROP_LSTM_GRU'] +'.h5'
     modelRNN.save(modelRNNFileName, overwrite=True)
     return
 
