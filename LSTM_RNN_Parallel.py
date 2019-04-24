@@ -726,7 +726,8 @@ def trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, 
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict,
                                                                               sessionDictGlobal,
                                                                               modelRNN, max_lookback, sessionStreamDict)
-        saveModel(modelRNN, configDict)
+        if modelRNN is not None:
+            saveModel(modelRNN, configDict)
         assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
                                                                                    'RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the RNN at the end of each episode
@@ -806,7 +807,8 @@ def trainTestBatchWise(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetA
             sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside, sessionStreamDict)
         (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal,
                                                                         modelRNN, max_lookback, sessionStreamDict)
-        saveModel(modelRNN, configDict)
+        if modelRNN is not None:
+            saveModel(modelRNN, configDict)
         assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
                                                                                    'RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the RNN at the end of each episode
