@@ -693,6 +693,92 @@ def saveModel(modelRNN, configDict):
     modelRNN.save(modelRNNFileName, overwrite=True)
     return
 
+def splitIntoTrainTestSets(keyOrder, configDict):
+    keyCount = 0
+    trainKeyOrder = []
+    testKeyOrder = []
+    for key in keyOrder:
+        if keyCount <= int(configDict['RNN_SUSTENANCE_TRAIN_LIMIT']):
+            trainKeyOrder.append(key)
+        else:
+            testKeyOrder.append(key)
+        keyCount+=1
+    return (trainKeyOrder, testKeyOrder)
+
+def trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict):
+    batchSize = int(configDict['EPISODE_IN_QUERIES'])
+    lo = 0
+    hi = -1
+    numTrainEpisodes = 0
+    while hi < len(trainKeyOrder) - 1:
+        lo = hi + 1
+        if len(trainKeyOrder) - lo < batchSize:
+            batchSize = len(trainKeyOrder) - lo
+        hi = lo + batchSize - 1
+
+        print "Starting training in Episode " + str(numTrainEpisodes)
+        # update SessionDictGlobal and train with the new batch
+        (sessionDictGlobal, queryKeysSetAside) = updateGlobalSessionDict(lo, hi, trainKeyOrder, queryKeysSetAside,
+                                                                         sessionDictGlobal)
+        if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+            sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside,
+                                                            sessionStreamDict)
+        (modelRNN, sessionDictGlobal, max_lookback) = refineTemporalPredictor(queryKeysSetAside, configDict,
+                                                                              sessionDictGlobal,
+                                                                              modelRNN, max_lookback, sessionStreamDict)
+        saveModel(modelRNN, configDict)
+        assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
+                                                                                   'RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+        # we have empty queryKeysSetAside because we want to incrementally train the RNN at the end of each episode
+        if configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+            del queryKeysSetAside
+            queryKeysSetAside = []
+        numTrainEpisodes += 1
+    return (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback)
+
+def testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
+    batchSize = int(configDict['EPISODE_IN_QUERIES'])
+    lo = 0
+    hi = -1
+    while hi < len(testKeyOrder) - 1:
+        lo = hi + 1
+        if len(testKeyOrder) - lo < batchSize:
+            batchSize = len(testKeyOrder) - lo
+        hi = lo + batchSize - 1
+        elapsedAppendTime = 0.0
+
+        # test first for each query in the batch if the classifier is not None
+        print "Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(keyOrder): " + str(len(testKeyOrder))
+        if modelRNN is not None:
+            assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
+            if configDict['INCLUDE_CUR_SESS'] == 'True':
+                resultDict = predictIntentsIncludeCurrentBatch(lo, hi, testKeyOrder, schemaDicts, resultDict,
+                                                               sessionDictGlobal, sessionDictsThreads,
+                                                               sampledQueryHistory, sessionStreamDict,
+                                                               sessionLengthDict, modelRNN, max_lookback, configDict)
+            else:
+                resultDict = predictIntentsWithoutCurrentBatch(lo, hi, testKeyOrder, schemaDicts, resultDict,
+                                                               sessionDictGlobal, sampledQueryHistory,
+                                                               sessionStreamDict, sessionLengthDict, modelRNN,
+                                                               max_lookback, configDict)
+        # we record the test times
+        numEpisodes += 1
+        if len(resultDict) > 0:
+            elapsedAppendTime = appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName,
+                                                    configDict, -1)
+            (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(
+                episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+            resultDict = clear(resultDict)
+    updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+
+
+def evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
+    (trainKeyOrder, testKeyOrder) = splitIntoTrainTestSets(keyOrder, configDict)
+    (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict)
+    testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
+    return
+
 def trainTestBatchWise(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
     batchSize = int(configDict['EPISODE_IN_QUERIES'])
     lo = 0
@@ -827,7 +913,11 @@ def initRNNSingularity(configDict):
 def runRNNSingularityExp(configDict):
     (schemaDicts, sampledQueryHistory, queryKeysSetAside, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, numQueries, resultDict, sessionDictGlobal, sessionDictsThreads, sessionLengthDict,
      sessionStreamDict, keyOrder, startEpisode, outputIntentFileName, modelRNN, max_lookback, predictedY) = initRNNSingularity(configDict)
-    trainTestBatchWise(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
+    assert configDict['RNN_SUSTENANCE'] == 'True' or configDict['RNN_SUSTENANCE'] == 'False'
+    if configDict['RNN_SUSTENANCE'] == 'False':
+        trainTestBatchWise(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
+    elif configDict['RNN_SUSTENANCE'] == 'True':
+        evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
 def initRNNOneFoldTest(sessionStreamDict, testIntentSessionFile, configDict):
