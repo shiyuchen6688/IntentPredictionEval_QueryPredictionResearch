@@ -771,7 +771,8 @@ def testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpi
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(
                 episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = clear(resultDict)
-    updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+    if modelRNN is not None:
+        updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
 
 def evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
