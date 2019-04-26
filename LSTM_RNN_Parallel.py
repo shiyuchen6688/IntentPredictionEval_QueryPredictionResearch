@@ -34,6 +34,7 @@ import multiprocessing
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 import ReverseEnggQueries
+from keras.models import load_model
 
 
 class ThreadSafeDict(dict) :
@@ -196,6 +197,7 @@ def refineTemporalPredictor(queryKeysSetAside, configDict, sessionDictGlobal, mo
     if len(dataX) > 0:
         (modelRNN, max_lookback) = trainRNN(dataX, dataY, modelRNN, max_lookback, configDict)
     return (modelRNN, sessionDictGlobal, max_lookback)
+
 
 def predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict):
     # predicts the next query to the query indexed by queryID in the sessID session
@@ -502,6 +504,17 @@ def predictIntentsIncludeCurrentBatch(lo, hi, keyOrder, schemaDicts, resultDict,
         #pool.join()
     return resultDict
 
+def updateGlobalSessionDictSustenance(lo, hi, keyOrder, sessionDictGlobal):
+    cur = lo
+    while(cur<hi+1):
+        sessQueryID = keyOrder[cur]
+        sessID = int(sessQueryID.split(",")[0])
+        queryID = int(sessQueryID.split(",")[1])
+        sessionDictGlobal[sessID]= queryID # key is sessID and value is the latest queryID
+        cur+=1
+    #print "updated Global Session Dict"
+    return sessionDictGlobal
+
 def updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal):
     cur = lo
     while(cur<hi+1):
@@ -705,6 +718,20 @@ def splitIntoTrainTestSets(keyOrder, configDict):
         keyCount+=1
     return (trainKeyOrder, testKeyOrder)
 
+def loadModelSustenance(trainKeyOrder, sampledQueryHistory, sessionDictGlobal, sessionStreamDict, configDict):
+    modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/modelRNN_'+ configDict['RNN_BACKPROP_LSTM_GRU'] +'.h5'
+    modelRNN = load_model(modelRNNFileName)
+    lo = 0
+    hi = len(trainKeyOrder) - 1
+    sessionDictGlobal = updateGlobalSessionDictSustenance(lo, hi, trainKeyOrder, sessionDictGlobal)
+    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, trainKeyOrder, sessionStreamDict)
+    (dataX, dataY) = createTemporalPairs(trainKeyOrder, configDict, sessionDictGlobal, sessionStreamDict)
+    (dataX, max_lookback) = perform_input_padding(dataX)
+    del dataX
+    del dataY
+    return (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback)
+
 def trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict):
     batchSize = int(configDict['EPISODE_IN_QUERIES'])
     lo = 0
@@ -777,7 +804,11 @@ def testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpi
 
 def evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
     (trainKeyOrder, testKeyOrder) = splitIntoTrainTestSets(keyOrder, configDict)
-    (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict)
+    assert configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
+    if configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
+        (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict)
+    elif configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
+        (modelRNN, sessionLengthDict, sampledQueryHistory, max_lookback) = loadModelSustenance(trainKeyOrder, sampledQueryHistory, sessionDictGlobal, sessionStreamDict, configDict)
     testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
