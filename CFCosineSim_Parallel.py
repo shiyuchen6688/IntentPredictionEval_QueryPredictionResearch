@@ -503,6 +503,14 @@ def predictTopKIntentsOld(threadID, curQueryIntent, sessionSummaries, sessionSam
     '''
     return topKSessQueryIndices
 
+def loadModel(configDict):
+    sessionSummaryFile =  getConfig(configDict['OUTPUT_DIR']) + "/SessionSummaries_" + configDict[
+        'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
+                                  configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                      'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
+    sessionSummaries = QR.readFromPickleFile(sessionSummaryFile)
+    return sessionSummaries
+
 def saveModel(configDict, sessionSummaries):
     sessionSummaryFile =  getConfig(configDict['OUTPUT_DIR']) + "/SessionSummaries_" + configDict[
         'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
@@ -864,12 +872,72 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
         print "Total Train Time: "+str(totalTrainTime)
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
+def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, sessionSummaries, configDict):
+    assert configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
+    print "Starting full training"
+    startTrainTime = time.time()
+    sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, trainKeyOrder, sessionStreamDict)
+    assert configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
+                                                                            'CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
+    if configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
+        sessionSummaries = refineSessionSummariesForAllQueriesSetAside(trainKeyOrder, configDict, sessionSummaries, sessionStreamDict)
+    elif configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
+        sessionSummaries = loadModel(configDict)
+    totalTrainTime = float(time.time() - startTrainTime)
+    print "Total Train Time: " + str(totalTrainTime)
+    return (sessionSampleDict, sessionSummaries)
+
+def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,
+     episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName):
+    batchSize = int(configDict['EPISODE_IN_QUERIES'])
+    lo = 0
+    hi = -1
+    assert configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
+    while hi < len(keyOrder) - 1:
+        lo = hi + 1
+        if len(keyOrder) - lo < batchSize:
+            batchSize = len(keyOrder) - lo
+        hi = lo + batchSize - 1
+        elapsedAppendTime = 0.0
+        # test first for each query in the batch if the classifier is not None
+        print "Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(keyOrder): " + str(len(keyOrder))
+        # model is the sessionSummaries
+        if len(sessionSummaries) > 0:
+            # predict queries for the batch
+            sessionSummarySample = sampleSessionSummaries(sessionSummaries, float(configDict['CF_SAMPLE_SESSION_FRACTION']))
+            resultDict = predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict)
+            del sessionSummarySample
+        # we record the times including train and test
+        numEpisodes += 1
+        if len(resultDict) > 0:
+            elapsedAppendTime = appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, -1)
+            (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
+            resultDict = LSTM_RNN_Parallel.clear(resultDict)
+    updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+    return
+
+def evalSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,
+     episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName):
+    (trainKeyOrder, testKeyOrder) = LSTM_RNN_Parallel.splitIntoTrainTestSets(keyOrder, configDict)
+    (sessionSampleDict, sessionSummaries) = trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, sessionSummaries, configDict)
+    testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,
+                        episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName)
+    return
+
 
 def runCFCosineSimSingularityExp(configDict):
     (sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict, numEpisodes,
      episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName) = initCFCosineSimSingularity(configDict)
-    trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict, numEpisodes,
-     episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName)
+    assert configDict['CF_SUSTENANCE'] == 'True' or configDict['CF_SUSTENANCE'] == 'False'
+    if configDict['CF_SUSTENANCE'] == 'False':
+        trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict,
+                           numEpisodes, episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode,
+                           outputIntentFileName)
+    elif configDict['CF_SUSTENANCE'] == 'True':
+        evalSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict,
+                           numEpisodes, episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode,
+                           outputIntentFileName)
 
 
 
