@@ -350,7 +350,7 @@ def testModelSustenance(testKeyOrder, qObj):
         print "Starting prediction in Episode " + str(qObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(testKeyOrder): " + str(len(testKeyOrder))+ ", len(queryVocab): " +str(len(qObj.queryVocab))
         if len(qObj.queryVocab) > 2:  # unless at least two rows hard to recommend
-            qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj)
+            qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj, testKeyOrder)
             # we record the times including train and test
             qObj.numEpisodes += 1
             if len(qObj.resultDict) > 0:
