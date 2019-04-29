@@ -314,7 +314,7 @@ def trainTestBatchWise(qObj):
 def loadModel(qObj):
     qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle")
     qObj.qTable = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle")
-    qObj.sessionDict = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLSessionDict.pickle")
+    #qObj.sessionDict = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLSessionDict.pickle")
     print "Loaded len(queryVocab): "+str(len(qObj.queryVocab))+", len(qObj.qTable): "+str(len(qObj.qTable))+", len(qObj.sessionDict): "+str(len(qObj.sessionDict))
     return
 
@@ -324,10 +324,10 @@ def trainModelSustenance(trainKeyOrder, qObj):
     startTrainTime = time.time()
     lo = 0
     hi = len(trainKeyOrder) - 1
+    (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, trainKeyOrder,
+                                                                                           qObj.queryKeysSetAside,
+                                                                                           qObj.sessionDict)
     if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, trainKeyOrder,
-                                                                                               qObj.queryKeysSetAside,
-                                                                                               qObj.sessionDict)
         updateQueryVocabQTable(qObj)
         if len(qObj.queryVocab) > 2:
             refineQTableUsingBellmanUpdate(qObj)
