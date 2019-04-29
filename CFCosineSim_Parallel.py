@@ -911,6 +911,7 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
         # we record the times including train and test
         numEpisodes += 1
         if len(resultDict) > 0:
+            print "appending results"
             elapsedAppendTime = appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, -1)
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = LSTM_RNN_Parallel.clear(resultDict)
