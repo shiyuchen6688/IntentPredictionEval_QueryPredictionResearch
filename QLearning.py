@@ -212,7 +212,7 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, qTable, resList
         getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "QLResList_" + str(threadID) + ".pickle", resList)
     return resList
 
-def predictIntentsWithoutCurrentBatch(lo, hi, qObj):
+def predictIntentsWithoutCurrentBatch(lo, hi, qObj, keyOrder):
     numThreads = min(int(configDict['QL_THREADS']), hi - lo + 1)
     numKeysPerThread = int(float(hi - lo + 1) / float(numThreads))
     # threads = {}
@@ -229,7 +229,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj):
         # print "Set tuple boundaries for Threads"
     # sortedSessKeys = svdObj.sessAdjList.keys().sort()
     if numThreads == 1:
-        qObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, qObj.keyOrder, qObj.qTable,
+        qObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, keyOrder, qObj.qTable,
                                                             qObj.resultDict[0], qObj.queryVocab,
                                                             qObj.sessionStreamDict,
                                                             qObj.configDict))
@@ -241,7 +241,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj):
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, qObj.keyOrder, sharedTable, qObj.resultDict[threadID],
+            argsList.append((threadID, t_lo, t_hi, keyOrder, sharedTable, qObj.resultDict[threadID],
                              qObj.queryVocab, qObj.sessionStreamDict, qObj.configDict))
             # threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             # threads[i].start()
@@ -260,6 +260,8 @@ def saveModelToFile(qObj):
         getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle", qObj.qTable)
     QR.writeToPickleFile(
         getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle", qObj.queryVocab)
+    QR.writeToPickleFile(
+        getConfig(configDict['OUTPUT_DIR']) + "QLSessionDict.pickle", qObj.sessionDict)
     return
 
 def trainTestBatchWise(qObj):
@@ -277,7 +279,7 @@ def trainTestBatchWise(qObj):
         print "Starting prediction in Episode " + str(qObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(keyOrder): " + str(len(qObj.keyOrder))
         if len(qObj.queryVocab) > 2:  # unless at least two rows hard to recommend
-            qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj)
+            qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj, qObj.keyOrder)
         print "Starting training in Episode " + str(qObj.numEpisodes)
         startTrainTime = time.time()
         (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, qObj.keyOrder,
@@ -320,14 +322,14 @@ def trainModelSustenance(trainKeyOrder, qObj):
     startTrainTime = time.time()
     lo = 0
     hi = len(trainKeyOrder) - 1
-    qObj.sessionDict = LSTM_RNN_Parallel.updateGlobalSessionDictSustenance(lo, hi, trainKeyOrder, qObj.sessionDict)
+    (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, trainKeyOrder, qObj.queryKeysSetAside, qObj.sessionDict)
     if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
         updateQueryVocabQTable(qObj)
         if len(qObj.queryVocab) > 2:
             refineQTableUsingBellmanUpdate(qObj)
             saveModelToFile(qObj)
             # printQTable(qObj.qTable, qObj.queryVocab) # only enabled for debugging purposes
-    elif configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
+    elif configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         loadModel(qObj)
     totalTrainTime = float(time.time() - startTrainTime)
     print "Total Train Time: " + str(totalTrainTime)
