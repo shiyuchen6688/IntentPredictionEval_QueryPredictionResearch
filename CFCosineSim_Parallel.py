@@ -935,7 +935,7 @@ def evalSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStrea
     (trainKeyOrder, testKeyOrder) = LSTM_RNN_Parallel.splitIntoTrainTestSets(keyOrder, configDict)
     (sessionSampleDict, sessionSummaries) = trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, sessionSummaries, configDict)
     testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,
-                        episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName)
+                        episodeResponseTimeDictName, episodeResponseTime, testKeyOrder, startEpisode, outputIntentFileName)
     return
 
 
