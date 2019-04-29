@@ -508,15 +508,25 @@ def loadModel(configDict):
         'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
                                   configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
+    sessionSampleDictFile = getConfig(configDict['OUTPUT_DIR']) + "/SessionSampleDictFile_" + configDict[
+        'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
+                            configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     sessionSummaries = QR.readFromPickleFile(sessionSummaryFile)
-    return sessionSummaries
+    sessionSampleDict = QR.readFromPickleFile(sessionSampleDictFile)
+    return (sessionSummaries, sessionSampleDict)
 
-def saveModel(configDict, sessionSummaries):
+def saveModel(configDict, sessionSummaries, sessionSampleDict):
     sessionSummaryFile =  getConfig(configDict['OUTPUT_DIR']) + "/SessionSummaries_" + configDict[
         'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
                                   configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
+    sessionSampleDictFile = getConfig(configDict['OUTPUT_DIR']) + "/SessionSampleDictFile_" + configDict[
+        'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
+                         configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                             'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     QR.writeToPickleFile(sessionSummaryFile, sessionSummaries)
+    QR.writeToPickleFile(sessionSampleDictFile, sessionSampleDict)
     return
 
 def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionSummaries, sessionStreamDict):
@@ -525,7 +535,6 @@ def refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, s
         queryID = int(key.split(",")[1])
         curQueryIntent = sessionStreamDict[key]
         sessionSummaries = refineSessionSummaries(sessID, configDict, curQueryIntent, sessionSummaries)
-    saveModel(configDict, sessionSummaries)
     return sessionSummaries
 
 def runCFCosineSimKFoldExp(configDict):
@@ -858,6 +867,7 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
         sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict)
         # -- Refinement and prediction is done at every query, episode update alone is done at end of the episode --
         sessionSummaries = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionSummaries, sessionStreamDict)
+        saveModel(configDict, sessionSummaries, sessionSampleDict)
         assert configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
         if configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
@@ -877,13 +887,14 @@ def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, se
     assert configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
     print "Starting full training"
     startTrainTime = time.time()
-    sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, trainKeyOrder, sessionStreamDict)
     assert configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
+        sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, trainKeyOrder, sessionStreamDict)
         sessionSummaries = refineSessionSummariesForAllQueriesSetAside(trainKeyOrder, configDict, sessionSummaries, sessionStreamDict)
+        saveModel(configDict, sessionSummaries, sessionSampleDict)
     elif configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
-        sessionSummaries = loadModel(configDict)
+        (sessionSummaries, sessionSampleDict) = loadModel(configDict)
     totalTrainTime = float(time.time() - startTrainTime)
     print "Total Train Time: " + str(totalTrainTime)
     return (sessionSampleDict, sessionSummaries)

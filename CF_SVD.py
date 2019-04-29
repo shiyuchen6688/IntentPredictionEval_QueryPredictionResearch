@@ -324,12 +324,18 @@ def trainTestBatchWise(svdObj):
             svdObj.resultDict = LSTM_RNN_Parallel.clear(svdObj.resultDict)
     updateResultsToExcel(svdObj.configDict, svdObj.episodeResponseTimeDictName, svdObj.outputIntentFileName)
 
+def evalSustenance(svdObj):
+
 
 def runSVD(configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY'
     assert configDict['ALGORITHM'] == 'SVD'
     svdObj = SVD_Obj(configDict)
-    trainTestBatchWise(svdObj)
+    assert configDict['SVD_SUSTENANCE'] == 'True' or configDict['SVD_SUSTENANCE'] == 'False'
+    if configDict['SVD_SUSTENANCE'] == 'False':
+        trainTestBatchWise(svdObj)
+    elif configDict['SVD_SUSTENANCE'] == 'True':
+        evalSustenance(svdObj)
 
 if __name__ == "__main__":
     # configDict = parseConfig.parseConfigFile("configFile.txt")
