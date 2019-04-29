@@ -252,7 +252,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj, keyOrder):
             qObj.resultDict[threadID] = QR.readFromPickleFile(
                 getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "QLResList_" + str(threadID) + ".pickle")
         del sharedTable
-    print "len(resultDict): " + str(len(qObj.resultDict))
+    #print "len(resultDict): " + str(len(qObj.resultDict))
     return qObj.resultDict
 
 def saveModelToFile(qObj):
