@@ -308,11 +308,75 @@ def trainTestBatchWise(qObj):
             qObj.resultDict = LSTM_RNN_Parallel.clear(qObj.resultDict)
     CF_SVD.updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
 
+def loadModel(qObj):
+    qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle")
+    qObj.qTable = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle")
+    return
+
+def trainModelSustenance(trainKeyOrder, qObj):
+    assert configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
+    print "Starting training in Episode " + str(qObj.numEpisodes)
+    startTrainTime = time.time()
+    lo = 0
+    hi = len(trainKeyOrder) - 1
+    qObj.sessionDict = LSTM_RNN_Parallel.updateGlobalSessionDictSustenance(lo, hi, trainKeyOrder, qObj.sessionDict)
+    if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
+        updateQueryVocabQTable(qObj)
+        if len(qObj.queryVocab) > 2:
+            refineQTableUsingBellmanUpdate(qObj)
+            saveModelToFile(qObj)
+            # printQTable(qObj.qTable, qObj.queryVocab) # only enabled for debugging purposes
+    elif configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
+        loadModel(qObj)
+    totalTrainTime = float(time.time() - startTrainTime)
+    print "Total Train Time: " + str(totalTrainTime)
+    return
+
+def testModelSustenance(testKeyOrder, qObj):
+    batchSize = int(qObj.configDict['EPISODE_IN_QUERIES'])
+    lo = 0
+    hi = -1
+    # assert qObj.configDict['INCLUDE_CUR_SESS'] == "False"
+    while hi < len(testKeyOrder) - 1:
+        lo = hi + 1
+        if len(testKeyOrder) - lo < batchSize:
+            batchSize = len(testKeyOrder) - lo
+        hi = lo + batchSize - 1
+        elapsedAppendTime = 0.0
+        # test first for each query in the batch if the classifier is not None
+        print "Starting prediction in Episode " + str(qObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(testKeyOrder): " + str(len(testKeyOrder))
+        if len(qObj.queryVocab) > 2:  # unless at least two rows hard to recommend
+            qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj)
+            # we record the times including train and test
+            qObj.numEpisodes += 1
+            if len(qObj.resultDict) > 0:
+                elapsedAppendTime = CFCosineSim_Parallel.appendResultsToFile(qObj.sessionStreamDict, qObj.resultDict,
+                                                                             elapsedAppendTime, qObj.numEpisodes,
+                                                                             qObj.outputIntentFileName, qObj.configDict,
+                                                                             -1)
+                (qObj.episodeResponseTimeDictName, qObj.episodeResponseTime, qObj.startEpisode,
+                 qObj.elapsedAppendTime) = QR.updateResponseTime(
+                    qObj.episodeResponseTimeDictName, qObj.episodeResponseTime, qObj.numEpisodes, qObj.startEpisode,
+                    elapsedAppendTime)
+                qObj.resultDict = LSTM_RNN_Parallel.clear(qObj.resultDict)
+        CF_SVD.updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
+    return
+
+def evalSustenance(qObj):
+    (trainKeyOrder, testKeyOrder) = LSTM_RNN_Parallel.splitIntoTrainTestSets(qObj.keyOrder, qObj.configDict)
+    trainModelSustenance(trainKeyOrder, qObj)
+    testModelSustenance(testKeyOrder, qObj)
+
 def runQLearning(configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY'
     assert configDict['ALGORITHM'] == 'QLEARNING'
     qObj = Q_Obj(configDict)
-    trainTestBatchWise(qObj)
+    assert configDict['QL_SUSTENANCE'] == 'True' or configDict['QL_SUSTENANCE'] == 'False'
+    if configDict['QL_SUSTENANCE'] == 'False':
+        trainTestBatchWise(qObj)
+    elif configDict['QL_SUSTENANCE'] == 'True':
+        evalSustenance(qObj)
 
 if __name__ == "__main__":
     # configDict = parseConfig.parseConfigFile("configFile.txt")
