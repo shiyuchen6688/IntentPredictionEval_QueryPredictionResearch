@@ -314,6 +314,7 @@ def trainTestBatchWise(qObj):
 def loadModel(qObj):
     qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle")
     qObj.qTable = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle")
+    print "Loaded len(queryVocab): "+str(len(qObj.queryVocab))+", len(qObj.qTable): "+str(len(qObj.qTable))
     return
 
 def trainModelSustenance(trainKeyOrder, qObj):
