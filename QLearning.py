@@ -351,6 +351,7 @@ def testModelSustenance(testKeyOrder, qObj):
             # we record the times including train and test
             qObj.numEpisodes += 1
             if len(qObj.resultDict) > 0:
+                print "appending results"
                 elapsedAppendTime = CFCosineSim_Parallel.appendResultsToFile(qObj.sessionStreamDict, qObj.resultDict,
                                                                              elapsedAppendTime, qObj.numEpisodes,
                                                                              qObj.outputIntentFileName, qObj.configDict,
