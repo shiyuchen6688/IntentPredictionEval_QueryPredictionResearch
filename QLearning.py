@@ -346,7 +346,7 @@ def testModelSustenance(testKeyOrder, qObj):
         elapsedAppendTime = 0.0
         # test first for each query in the batch if the classifier is not None
         print "Starting prediction in Episode " + str(qObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
-            hi) + ", len(testKeyOrder): " + str(len(testKeyOrder))
+            hi) + ", len(testKeyOrder): " + str(len(testKeyOrder))+ ", len(queryVocab): " +str(len(qObj.queryVocab))
         if len(qObj.queryVocab) > 2:  # unless at least two rows hard to recommend
             qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj)
             # we record the times including train and test
