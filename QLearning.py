@@ -360,7 +360,7 @@ def testModelSustenance(testKeyOrder, qObj):
                     qObj.episodeResponseTimeDictName, qObj.episodeResponseTime, qObj.numEpisodes, qObj.startEpisode,
                     elapsedAppendTime)
                 qObj.resultDict = LSTM_RNN_Parallel.clear(qObj.resultDict)
-        CF_SVD.updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
+    CF_SVD.updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
     return
 
 def evalSustenance(qObj):
