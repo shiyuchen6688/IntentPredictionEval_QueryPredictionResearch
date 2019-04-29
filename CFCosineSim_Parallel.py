@@ -803,7 +803,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
         for threadID in range(numThreads):
             resultDict[threadID] = QR.readFromPickleFile(
                 getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle")
-    print "len(resultDict): "+str(len(resultDict))
+    #print "len(resultDict): "+str(len(resultDict))
     return resultDict
 
 def appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, foldID):
@@ -912,7 +912,7 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
         # we record the times including train and test
         numEpisodes += 1
         if len(resultDict) > 0:
-            print "appending results"
+            #print "appending results"
             elapsedAppendTime = appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, -1)
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = LSTM_RNN_Parallel.clear(resultDict)
