@@ -325,7 +325,7 @@ def trainTestBatchWise(svdObj):
     updateResultsToExcel(svdObj.configDict, svdObj.episodeResponseTimeDictName, svdObj.outputIntentFileName)
 
 def evalSustenance(svdObj):
-
+    print "hi"
 
 def runSVD(configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY'
