@@ -513,8 +513,8 @@ def loadModel(configDict):
                             configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                 'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     sessionSummaries = QR.readFromPickleFile(sessionSummaryFile)
-    sessionSampleDict = QR.readFromPickleFile(sessionSampleDictFile)
-    return (sessionSummaries, sessionSampleDict)
+    #sessionSampleDict = QR.readFromPickleFile(sessionSampleDictFile)
+    return sessionSummaries
 
 def saveModel(configDict, sessionSummaries, sessionSampleDict):
     sessionSummaryFile =  getConfig(configDict['OUTPUT_DIR']) + "/SessionSummaries_" + configDict[
@@ -889,12 +889,13 @@ def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, se
     startTrainTime = time.time()
     assert configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
+    sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, trainKeyOrder, sessionStreamDict)
     if configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, trainKeyOrder, sessionStreamDict)
-        sessionSummaries = refineSessionSummariesForAllQueriesSetAside(trainKeyOrder, configDict, sessionSummaries, sessionStreamDict)
+        sessionSummaries = refineSessionSummariesForAllQueriesSetAside(trainKeyOrder, configDict, sessionSummaries,
+                                                                       sessionStreamDict)
         saveModel(configDict, sessionSummaries, sessionSampleDict)
     elif configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
-        (sessionSummaries, sessionSampleDict) = loadModel(configDict)
+        sessionSummaries = loadModel(configDict)
     totalTrainTime = float(time.time() - startTrainTime)
     print "Total Train Time: " + str(totalTrainTime)
     return (sessionSampleDict, sessionSummaries)
@@ -923,7 +924,7 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
         # we record the times including train and test
         numEpisodes += 1
         if len(resultDict) > 0:
-            #print "appending results"
+            print "appending results"
             elapsedAppendTime = appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, -1)
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = LSTM_RNN_Parallel.clear(resultDict)
