@@ -260,8 +260,6 @@ def saveModelToFile(qObj):
         getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle", qObj.qTable)
     QR.writeToPickleFile(
         getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle", qObj.queryVocab)
-    QR.writeToPickleFile(
-        getConfig(configDict['OUTPUT_DIR']) + "QLSessionDict.pickle", qObj.sessionDict)
     return
 
 def trainTestBatchWise(qObj):
@@ -314,8 +312,7 @@ def trainTestBatchWise(qObj):
 def loadModel(qObj):
     qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle")
     qObj.qTable = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle")
-    qObj.sessionDict = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLSessionDict.pickle")
-    print "Loaded len(queryVocab): "+str(len(qObj.queryVocab))+", len(qObj.qTable): "+str(len(qObj.qTable))+", len(qObj.sessionDict): "+str(len(qObj.sessionDict))
+    print "Loaded len(queryVocab): "+str(len(qObj.queryVocab))+", len(qObj.qTable): "+str(len(qObj.qTable))
     return
 
 def trainEpisodicModelSustenance(trainKeyOrder, qObj):
@@ -379,7 +376,7 @@ def testModelSustenance(testKeyOrder, qObj):
             # we record the times including train and test
             qObj.numEpisodes += 1
             if len(qObj.resultDict) > 0:
-                #print "appending results"
+                print "appending results"
                 elapsedAppendTime = CFCosineSim_Parallel.appendResultsToFile(qObj.sessionStreamDict, qObj.resultDict,
                                                                              elapsedAppendTime, qObj.numEpisodes,
                                                                              qObj.outputIntentFileName, qObj.configDict,
