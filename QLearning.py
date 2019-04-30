@@ -65,13 +65,13 @@ def findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict):
     for oldSessQueryID in queryVocab:
         if oldSessQueryID == sessQueryID:
             return (1.0, oldSessQueryID)
-        if oldSessQueryID in sessionStreamDict:
-            cosineSim = CFCosineSim_Parallel.computeBitCosineSimilarity(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID])
-            if cosineSim >= 1.0:
-                return (1.0, oldSessQueryID)
-            elif cosineSim >= maxCosineSim:
-                maxCosineSim = cosineSim
-                maxSimSessQueryID = oldSessQueryID
+        #if oldSessQueryID in sessionStreamDict:
+        cosineSim = CFCosineSim_Parallel.computeBitCosineSimilarity(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID])
+        if cosineSim >= 1.0:
+            return (1.0, oldSessQueryID)
+        elif cosineSim >= maxCosineSim:
+            maxCosineSim = cosineSim
+            maxSimSessQueryID = oldSessQueryID
     return (maxCosineSim, maxSimSessQueryID)
 
 def findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict):
