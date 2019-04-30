@@ -65,12 +65,13 @@ def findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict):
     for oldSessQueryID in queryVocab:
         if oldSessQueryID == sessQueryID:
             return (1.0, oldSessQueryID)
-        cosineSim = CFCosineSim_Parallel.computeBitCosineSimilarity(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID])
-        if cosineSim >= 1.0:
-            return (1.0, oldSessQueryID)
-        elif cosineSim >= maxCosineSim:
-            maxCosineSim = cosineSim
-            maxSimSessQueryID = oldSessQueryID
+        if oldSessQueryID in sessionStreamDict:
+            cosineSim = CFCosineSim_Parallel.computeBitCosineSimilarity(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID])
+            if cosineSim >= 1.0:
+                return (1.0, oldSessQueryID)
+            elif cosineSim >= maxCosineSim:
+                maxCosineSim = cosineSim
+                maxSimSessQueryID = oldSessQueryID
     return (maxCosineSim, maxSimSessQueryID)
 
 def findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict):
@@ -313,6 +314,16 @@ def loadModel(qObj):
     qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle")
     qObj.qTable = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle")
     print "Loaded len(queryVocab): "+str(len(qObj.queryVocab))+", len(qObj.qTable): "+str(len(qObj.qTable))
+    notInQT = 0
+    notInSessionStreamDict = 0
+    for key in qObj.queryVocab:
+        if key not in qObj.qTable or key not in qObj.sessionStreamDict:
+            print "key: "+key+" not in qObj.qTable"
+            notInQT += 1
+        if key not in qObj.sessionStreamDict:
+            print "key: "+key+" not in qObj.sessionStreamDict"
+            notInSessionStreamDict += 1
+    print "notInQT: "+str(notInQT)+", notInSessionStreamDict: "+str(notInSessionStreamDict)
     return
 
 def trainEpisodicModelSustenance(trainKeyOrder, qObj):
