@@ -317,7 +317,7 @@ def loadModel(qObj):
     notInQT = 0
     notInSessionStreamDict = 0
     for key in qObj.queryVocab:
-        if key not in qObj.qTable or key not in qObj.sessionStreamDict:
+        if key not in qObj.qTable:
             print "key: "+key+" not in qObj.qTable"
             notInQT += 1
         if key not in qObj.sessionStreamDict:
