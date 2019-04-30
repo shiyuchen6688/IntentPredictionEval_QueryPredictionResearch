@@ -911,6 +911,8 @@ def trainEpisodicModelSustenance(trainKeyOrder, sessionSampleDict, sessionStream
             del queryKeysSetAside
             queryKeysSetAside = []
         numTrainEpisodes += 1
+        totalTrainTime = float(time.time() - startTrainTime)
+        print "Total Train Time: " + str(totalTrainTime)
     return
 
 def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict):
