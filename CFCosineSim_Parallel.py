@@ -513,8 +513,8 @@ def loadModel(configDict):
                             configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                 'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     sessionSummaries = QR.readFromPickleFile(sessionSummaryFile)
-    #sessionSampleDict = QR.readFromPickleFile(sessionSampleDictFile)
-    return sessionSummaries
+    sessionSampleDict = QR.readFromPickleFile(sessionSampleDictFile)
+    return (sessionSummaries, sessionSampleDict)
 
 def saveModel(configDict, sessionSummaries, sessionSampleDict):
     sessionSummaryFile =  getConfig(configDict['OUTPUT_DIR']) + "/SessionSummaries_" + configDict[
@@ -883,22 +883,44 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
         print "Total Train Time: "+str(totalTrainTime)
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
-def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, sessionSummaries, configDict):
-    assert configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
-    print "Starting full training"
-    startTrainTime = time.time()
-    assert configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
-                                                                            'CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
-    sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, trainKeyOrder, sessionStreamDict)
-    if configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        sessionSummaries = refineSessionSummariesForAllQueriesSetAside(trainKeyOrder, configDict, sessionSummaries,
+def trainEpisodicModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict):
+    batchSize = int(configDict['EPISODE_IN_QUERIES'])
+    lo = 0
+    hi = -1
+    assert configDict[
+               'INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
+    numTrainEpisodes = 0
+    while hi < len(trainKeyOrder) - 1:
+        lo = hi + 1
+        if len(trainKeyOrder) - lo < batchSize:
+            batchSize = len(trainKeyOrder) - lo
+        hi = lo + batchSize - 1
+        print "Starting training in Episode " + str(numTrainEpisodes)
+        startTrainTime = time.time()
+        # update SessionDictGlobal and train with the new batch
+        queryKeysSetAside = updateQueriesSetAside(lo, hi, trainKeyOrder, queryKeysSetAside)
+        sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict)
+        # -- Refinement and prediction is done at every query, episode update alone is done at end of the episode --
+        sessionSummaries = refineSessionSummariesForAllQueriesSetAside(queryKeysSetAside, configDict, sessionSummaries,
                                                                        sessionStreamDict)
         saveModel(configDict, sessionSummaries, sessionSampleDict)
+        assert configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
+                                                                                  'CF_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+        # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
+        if configDict['CF_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+            del queryKeysSetAside
+            queryKeysSetAside = []
+        numTrainEpisodes += 1
+    return
+
+def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict):
+    assert configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
+                                                                            'CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
+    if configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
+        trainEpisodicModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict)
     elif configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
-        sessionSummaries = loadModel(configDict)
-    totalTrainTime = float(time.time() - startTrainTime)
-    print "Total Train Time: " + str(totalTrainTime)
-    return (sessionSampleDict, sessionSummaries)
+        (sessionSummaries, sessionSampleDict) = loadModel(configDict)
+    return (sessionSummaries, sessionSampleDict)
 
 def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,
      episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName):
@@ -931,10 +953,10 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
     return
 
-def evalSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,
+def evalSustenance(sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict, numEpisodes,
      episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName):
     (trainKeyOrder, testKeyOrder) = LSTM_RNN_Parallel.splitIntoTrainTestSets(keyOrder, configDict)
-    (sessionSampleDict, sessionSummaries) = trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, sessionSummaries, configDict)
+    (sessionSummaries, sessionSampleDict) = trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict)
     testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,
                         episodeResponseTimeDictName, episodeResponseTime, testKeyOrder, startEpisode, outputIntentFileName)
     return
@@ -949,7 +971,7 @@ def runCFCosineSimSingularityExp(configDict):
                            numEpisodes, episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode,
                            outputIntentFileName)
     elif configDict['CF_SUSTENANCE'] == 'True':
-        evalSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict,
+        evalSustenance(sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict,
                            numEpisodes, episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode,
                            outputIntentFileName)
 

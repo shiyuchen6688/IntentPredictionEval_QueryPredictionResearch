@@ -314,29 +314,50 @@ def trainTestBatchWise(qObj):
 def loadModel(qObj):
     qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle")
     qObj.qTable = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle")
-    #qObj.sessionDict = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLSessionDict.pickle")
+    qObj.sessionDict = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLSessionDict.pickle")
     print "Loaded len(queryVocab): "+str(len(qObj.queryVocab))+", len(qObj.qTable): "+str(len(qObj.qTable))+", len(qObj.sessionDict): "+str(len(qObj.sessionDict))
     return
 
-def trainModelSustenance(trainKeyOrder, qObj):
-    assert configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
-    print "Starting training in Episode " + str(qObj.numEpisodes)
-    startTrainTime = time.time()
+def trainEpisodicModelSustenance(trainKeyOrder, qObj):
+    batchSize = int(qObj.configDict['EPISODE_IN_QUERIES'])
     lo = 0
-    hi = len(trainKeyOrder) - 1
-    (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, trainKeyOrder,
-                                                                                           qObj.queryKeysSetAside,
-                                                                                           qObj.sessionDict)
+    hi = -1
+    # assert qObj.configDict['INCLUDE_CUR_SESS'] == "False"
+    numTrainEpisodes = 0
+    while hi < len(trainKeyOrder) - 1:
+        lo = hi + 1
+        if len(qObj.keyOrder) - lo < batchSize:
+            batchSize = len(trainKeyOrder) - lo
+        hi = lo + batchSize - 1
+        print "Starting training in Episode " + str(numTrainEpisodes)
+        startTrainTime = time.time()
+        if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
+            (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, qObj.keyOrder,
+                                                                                                   qObj.queryKeysSetAside,
+                                                                                                   qObj.sessionDict)
+            updateQueryVocabQTable(qObj)
+            if len(qObj.queryVocab) > 2:
+                refineQTableUsingBellmanUpdate(qObj)
+                saveModelToFile(qObj)
+                # printQTable(qObj.qTable, qObj.queryVocab) # only enabled for debugging purposes
+        totalTrainTime = float(time.time() - startTrainTime)
+        print "Total Train Time: " + str(totalTrainTime)
+        assert qObj.configDict['QL_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or qObj.configDict[
+                                                                                       'QL_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+        # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
+        if qObj.configDict['QL_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+            del qObj.queryKeysSetAside
+            qObj.queryKeysSetAside = []
+        numTrainEpisodes += 1
+    return
+
+def trainModelSustenance(trainKeyOrder, qObj):
+    assert configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
+                                                                            'QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        updateQueryVocabQTable(qObj)
-        if len(qObj.queryVocab) > 2:
-            refineQTableUsingBellmanUpdate(qObj)
-            saveModelToFile(qObj)
-            # printQTable(qObj.qTable, qObj.queryVocab) # only enabled for debugging purposes
+        trainEpisodicModelSustenance(trainKeyOrder, qObj)
     elif configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         loadModel(qObj)
-    totalTrainTime = float(time.time() - startTrainTime)
-    print "Total Train Time: " + str(totalTrainTime)
     return
 
 def testModelSustenance(testKeyOrder, qObj):
