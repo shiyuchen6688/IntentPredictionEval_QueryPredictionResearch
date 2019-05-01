@@ -34,15 +34,11 @@ def concatenateSeqIntentVectorFilesConcat(configDict):
                 sessName = tokens[0].split(", ")[0].split(" ")[1]
                 if sessName != prevSessName:
                     sessID+=1
-                    if relSessID != -1:
-                        relSessID+=1
                     prevSessName = sessName
-                if sessID == int(configDict['BIT_FRAGMENT_NUM_SESS_SKIPPED']):
-                    relSessID = int(configDict['BIT_FRAGMENT_START_SESS_INDEX'])
-                if sessID >= int(configDict['BIT_FRAGMENT_NUM_SESS_SKIPPED']):
+                if sessID >= int(configDict['BIT_FRAGMENT_START_SESS_INDEX']):
                     if sessID not in sessionQueryDict:
-                        sessionQueryDict[relSessID] = []
-                    sessionQueryDict[relSessID].append(line)
+                        sessionQueryDict[sessID] = []
+                    sessionQueryDict[sessID].append(line)
                     queryCount +=1
                     #if queryCount >20000:
                         #break
