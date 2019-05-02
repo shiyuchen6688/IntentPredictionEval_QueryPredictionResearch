@@ -306,7 +306,7 @@ def trainTestBatchWise(svdObj):
         # test first for each query in the batch if the classifier is not None
         print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(keyOrder): " + str(len(svdObj.keyOrder))
-        if len(svdObj.sessAdjList) > 1 and len(svdObj.queryVocab) > 2: # unless at least two rows hard to recommend
+        if len(svdObj.matrix) > 1 and len(svdObj.queryVocab) > 2: # unless at least two rows hard to recommend
             svdObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, svdObj, svdObj.keyOrder)
         print "Starting training in Episode " + str(svdObj.numEpisodes)
         startTrainTime = time.time()
@@ -393,7 +393,7 @@ def testModelSustenance(testKeyOrder, svdObj):
         # test first for each query in the batch if the classifier is not None
         print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(testKeyOrder): " + str(len(testKeyOrder))
-        if len(svdObj.sessAdjList) > 1 and len(svdObj.queryVocab) > 2:  # unless at least two rows hard to recommend
+        if len(svdObj.matrix) > 1 and len(svdObj.queryVocab) > 2:  # unless at least two rows hard to recommend
             svdObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, svdObj, testKeyOrder)
         # we record the times including train and test
         svdObj.numEpisodes += 1
