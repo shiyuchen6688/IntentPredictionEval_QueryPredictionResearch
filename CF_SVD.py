@@ -398,6 +398,7 @@ def testModelSustenance(testKeyOrder, svdObj):
         # we record the times including train and test
         svdObj.numEpisodes += 1
         if len(svdObj.resultDict) > 0:
+            print "appending results"
             elapsedAppendTime = CFCosineSim_Parallel.appendResultsToFile(svdObj.sessionStreamDict, svdObj.resultDict,
                                                                          elapsedAppendTime, svdObj.numEpisodes,
                                                                          svdObj.outputIntentFileName, svdObj.configDict,
