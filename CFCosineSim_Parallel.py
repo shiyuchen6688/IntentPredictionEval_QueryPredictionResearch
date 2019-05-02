@@ -508,14 +508,13 @@ def loadModel(configDict):
         'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
                                   configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                       'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
-   # sessionSampleDictFile = getConfig(configDict['OUTPUT_DIR']) + "/SessionSampleDictFile_" + configDict[
-   #     'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
-   #                         configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-   #                             'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
+    sessionSampleDictFile = getConfig(configDict['OUTPUT_DIR']) + "/SessionSampleDictFile_" + configDict[
+        'ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'] + "_" + configDict['INTENT_REP'] + "_" + \
+                            configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + ".pickle"
     sessionSummaries = QR.readFromPickleFile(sessionSummaryFile)
-   # sessionSampleDict = QR.readFromPickleFile(sessionSampleDictFile)
-   # return (sessionSummaries, sessionSampleDict)
-    return sessionSummaries
+    sessionSampleDict = QR.readFromPickleFile(sessionSampleDictFile)
+    return (sessionSummaries, sessionSampleDict)
 
 def saveModel(configDict, sessionSummaries, sessionSampleDict):
     sessionSummaryFile =  getConfig(configDict['OUTPUT_DIR']) + "/SessionSummaries_" + configDict[
@@ -919,12 +918,10 @@ def trainEpisodicModelSustenance(trainKeyOrder, sessionSampleDict, sessionStream
 def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict):
     assert configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
-    sessionSampleDict = updateSampledQueryDict(configDict, sessionSampleDict, queryKeysSetAside, sessionStreamDict)
     if configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
         trainEpisodicModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict)
     elif configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
-        #(sessionSummaries, sessionSampleDict) = loadModel(configDict)
-        sessionSummaries = loadModel(configDict)
+        (sessionSummaries, sessionSampleDict) = loadModel(configDict)
     return (sessionSummaries, sessionSampleDict)
 
 def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,

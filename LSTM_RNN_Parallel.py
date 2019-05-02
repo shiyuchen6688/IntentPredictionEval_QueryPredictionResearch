@@ -701,10 +701,54 @@ def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside
     print "len(distinctQueries): "+str(len(distinctQueries))+", len(sampledQueryHistory): "+str(len(sampledQueryHistory))
     return sampledQueryHistory
 
-def saveModel(modelRNN, configDict):
-    modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/modelRNN_'+ configDict['RNN_BACKPROP_LSTM_GRU'] +'.h5'
+def saveModel(modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback, configDict):
+    modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/model_'+ configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES'] +'.h5'
     modelRNN.save(modelRNNFileName, overwrite=True)
+    sessionDictGlobalFileName = getConfig(configDict['OUTPUT_DIR']) + "/sessionDictGlobal_" + configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES']
+    QR.writeToPickleFile(sessionDictGlobalFileName, sessionDictGlobal)
+    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        sampledQueryHistoryFileName = getConfig(configDict['OUTPUT_DIR']) + "/sampledQueryHistory_" + configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES']
+        QR.writeToPickleFile(sampledQueryHistoryFileName, sampledQueryHistory)
+    max_lookbackFileName = getConfig(configDict['OUTPUT_DIR']) + "/max_lookback_" + configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES']
+    QR.writeToPickleFile(max_lookbackFileName, max_lookback)
     return
+
+def loadModelSustenance(configDict):
+    sampledQueryHistory = None
+    modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/model_'+ configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES'] +'.h5'
+    modelRNN = load_model(modelRNNFileName)
+    sessionDictGlobalFileName = getConfig(configDict['OUTPUT_DIR']) + "/sessionDictGlobal_" + configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                    'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                                configDict['EPISODE_IN_QUERIES']
+    sessionDictGlobal = QR.readFromPickleFile(sessionDictGlobalFileName)
+    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        sampledQueryHistoryFileName = getConfig(configDict['OUTPUT_DIR']) + "/sampledQueryHistory_" + configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES']
+        sampledQueryHistory = QR.readFromPickleFile(sampledQueryHistoryFileName)
+    max_lookbackFileName = getConfig(configDict['OUTPUT_DIR']) + "/max_lookback_" + configDict[
+        'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES']
+    max_lookback = QR.readFromPickleFile(max_lookbackFileName)
+    return (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback)
 
 def splitIntoTrainTestSets(keyOrder, configDict):
     keyCount = 0
@@ -718,19 +762,6 @@ def splitIntoTrainTestSets(keyOrder, configDict):
         keyCount+=1
     return (trainKeyOrder, testKeyOrder)
 
-def loadModelSustenance(trainKeyOrder, sampledQueryHistory, sessionDictGlobal, sessionStreamDict, configDict):
-    modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/modelRNN_'+ configDict['RNN_BACKPROP_LSTM_GRU'] +'.h5'
-    modelRNN = load_model(modelRNNFileName)
-    lo = 0
-    hi = len(trainKeyOrder) - 1
-    sessionDictGlobal = updateGlobalSessionDictSustenance(lo, hi, trainKeyOrder, sessionDictGlobal)
-    if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
-        sampledQueryHistory = updateSampledQueryHistory(configDict, sampledQueryHistory, trainKeyOrder, sessionStreamDict)
-    (dataX, dataY) = createTemporalPairs(trainKeyOrder, configDict, sessionDictGlobal, sessionStreamDict)
-    (dataX, max_lookback) = perform_input_padding(dataX)
-    del dataX
-    del dataY
-    return (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback)
 
 def trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict):
     batchSize = int(configDict['EPISODE_IN_QUERIES'])
@@ -754,7 +785,7 @@ def trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, 
                                                                               sessionDictGlobal,
                                                                               modelRNN, max_lookback, sessionStreamDict)
         if modelRNN is not None:
-            saveModel(modelRNN, configDict)
+            saveModel(modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback, configDict)
         assert configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or configDict[
                                                                                    'RNN_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the RNN at the end of each episode
@@ -808,7 +839,7 @@ def evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside
     if configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
         (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict)
     elif configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
-        (modelRNN, sessionLengthDict, sampledQueryHistory, max_lookback) = loadModelSustenance(trainKeyOrder, sampledQueryHistory, sessionDictGlobal, sessionStreamDict, configDict)
+        (modelRNN, sessionLengthDict, sampledQueryHistory, max_lookback) = loadModelSustenance(configDict)
     testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
