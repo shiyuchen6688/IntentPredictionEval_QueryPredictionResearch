@@ -9,6 +9,128 @@ import TupleIntent as ti
 import ParseConfigFile as parseConfig
 import pickle
 import argparse
+from pandas import DataFrame
+
+def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex):
+    try:
+        arr.append(evalOpsObjDict[epIndex])
+    except:
+        arr.append("")
+    return
+
+def plotEvalMetricsOpWise(evalOpsObj):
+    episodes = []
+    meanReciprocalRank = []
+    queryTypeP= []
+    queryTypeR = []
+    queryTypeF = []
+    tablesP = []
+    tablesR = []
+    tablesF = []
+    projColsP = []
+    projColsR = []
+    projColsF = []
+    avgColsP = []
+    avgColsR = []
+    avgColsF = []
+    minColsP = []
+    minColsR = []
+    minColsF = []
+    maxColsP = []
+    maxColsR = []
+    maxColsF = []
+    sumColsP = []
+    sumColsR = []
+    sumColsF = []
+    countColsP = []
+    countColsR = []
+    countColsF = []
+    selColsP = []
+    selColsR = []
+    selColsF = []
+    condSelColsP = []
+    condSelColsR = []
+    condSelColsF = []
+    groupByColsP = []
+    groupByColsR = []
+    groupByColsF = []
+    orderByColsP = []
+    orderByColsR = []
+    orderByColsF = []
+    havingColsP = []
+    havingColsR = []
+    havingColsF = []
+    limitP = []
+    limitR = []
+    limitF = []
+    joinPredsP = []
+    joinPredsR = []
+    joinPredsF = []
+    for i in range(evalOpsObj.curEpisode + 1):
+        episodes.append(i)
+        updateArrWithDictEntry(meanReciprocalRank, evalOpsObj.meanReciprocalRank, i)
+        updateArrWithDictEntry(queryTypeP, evalOpsObj.queryTypeP, i)
+        updateArrWithDictEntry(queryTypeR, evalOpsObj.queryTypeR, i)
+        updateArrWithDictEntry(queryTypeF, evalOpsObj.queryTypeF, i)
+        updateArrWithDictEntry(tablesP, evalOpsObj.tablesP, i)
+        updateArrWithDictEntry(tablesR, evalOpsObj.tablesR, i)
+        updateArrWithDictEntry(tablesF, evalOpsObj.tablesF, i)
+        updateArrWithDictEntry(projColsP, evalOpsObj.projColsP, i)
+        updateArrWithDictEntry(projColsR, evalOpsObj.projColsR, i)
+        updateArrWithDictEntry(projColsF, evalOpsObj.projColsF, i)
+        updateArrWithDictEntry(avgColsP, evalOpsObj.avgColsP, i)
+        updateArrWithDictEntry(avgColsR, evalOpsObj.avgColsR, i)
+        updateArrWithDictEntry(avgColsF, evalOpsObj.avgColsF, i)
+        updateArrWithDictEntry(minColsP, evalOpsObj.minColsP, i)
+        updateArrWithDictEntry(minColsR, evalOpsObj.minColsR, i)
+        updateArrWithDictEntry(minColsF, evalOpsObj.minColsF, i)
+        updateArrWithDictEntry(maxColsP, evalOpsObj.maxColsP, i)
+        updateArrWithDictEntry(maxColsR, evalOpsObj.maxColsR, i)
+        updateArrWithDictEntry(maxColsF, evalOpsObj.maxColsF, i)
+        updateArrWithDictEntry(sumColsP, evalOpsObj.sumColsP, i)
+        updateArrWithDictEntry(sumColsR, evalOpsObj.sumColsR, i)
+        updateArrWithDictEntry(sumColsF, evalOpsObj.sumColsF, i)
+        updateArrWithDictEntry(countColsP, evalOpsObj.countColsP, i)
+        updateArrWithDictEntry(countColsR, evalOpsObj.countColsR, i)
+        updateArrWithDictEntry(countColsF, evalOpsObj.countColsF, i)
+        updateArrWithDictEntry(selColsP, evalOpsObj.selColsP, i)
+        updateArrWithDictEntry(selColsR, evalOpsObj.selColsR, i)
+        updateArrWithDictEntry(selColsF, evalOpsObj.selColsF, i)
+        updateArrWithDictEntry(condSelColsP, evalOpsObj.condSelColsP, i)
+        updateArrWithDictEntry(condSelColsR, evalOpsObj.condSelColsR, i)
+        updateArrWithDictEntry(condSelColsF, evalOpsObj.condSelColsF, i)
+        updateArrWithDictEntry(groupByColsP, evalOpsObj.groupByColsP, i)
+        updateArrWithDictEntry(groupByColsR, evalOpsObj.groupByColsR, i)
+        updateArrWithDictEntry(groupByColsF, evalOpsObj.groupByColsF, i)
+        updateArrWithDictEntry(orderByColsP, evalOpsObj.orderByColsP, i)
+        updateArrWithDictEntry(orderByColsR, evalOpsObj.orderByColsR, i)
+        updateArrWithDictEntry(orderByColsF, evalOpsObj.orderByColsF, i)
+        updateArrWithDictEntry(havingColsP, evalOpsObj.havingColsP, i)
+        updateArrWithDictEntry(havingColsR, evalOpsObj.havingColsR, i)
+        updateArrWithDictEntry(havingColsF, evalOpsObj.havingColsF, i)
+        updateArrWithDictEntry(limitP, evalOpsObj.limitP, i)
+        updateArrWithDictEntry(limitR, evalOpsObj.limitR, i)
+        updateArrWithDictEntry(limitF, evalOpsObj.limitF, i)
+        updateArrWithDictEntry(joinPredsP, evalOpsObj.joinPredsP, i)
+        updateArrWithDictEntry(joinPredsR, evalOpsObj.joinPredsR, i)
+        updateArrWithDictEntry(joinPredsF, evalOpsObj.joinPredsF, i)
+    df = DataFrame(
+        {'episodes': episodes, 'queryTypeP': queryTypeP, 'queryTypeR': queryTypeR, 'queryTypeF': queryTypeF,
+         'tablesP': tablesP, 'tablesR': tablesR, 'tablesF': tablesF,
+         'projColsP': projColsP, 'projColsR': projColsR, 'projColsF': projColsF,
+         'avgColsP': avgColsP, 'avgColsR': avgColsR, 'avgColsF': avgColsF,
+         'minColsP': minColsP, 'minColsR': minColsR, 'minColsF': minColsF,
+         'maxColsP': maxColsP, 'maxColsR': maxColsR, 'maxColsF': maxColsF,
+         'sumColsP': sumColsP, 'sumColsR': sumColsR, 'sumColsF': sumColsF,
+         'countColsP': countColsP, 'countColsR': countColsR, 'countColsF': countColsF,
+         'selColsP': selColsP, 'selColsR': selColsR, 'selColsF': selColsF,
+         'condSelColsP': condSelColsP, 'condSelColsR': condSelColsR, 'condSelColsF': condSelColsF,
+         'groupByColsP': groupByColsP, 'groupByColsR': groupByColsR, 'groupByColsF': groupByColsF,
+         'orderByColsP': orderByColsP, 'orderByColsR': orderByColsR, 'orderByColsF': orderByColsF,
+         'havingColsP': havingColsP, 'havingColsR': havingColsR, 'havingColsF': havingColsF,
+         'limitP': limitP, 'limitR': limitR, 'limitF': limitF,
+         'joinPredsP': joinPredsP, 'joinPredsR': joinPredsR, 'joinPredsF': joinPredsF,})
+    df.to_excel("1.xlsx", sheet_name='sheet1', index=False)
 
 class evalOps:
     def __init__(self, configDict, logFile):
@@ -136,7 +258,7 @@ def computeOpF1(predOpList, actualOpList):
             F = 2*P*R / float(P+R)
         return (P, R, F)
     else:
-        return (None, None, None)
+        return (1.0, 1.0, 1.0)
 
 def updateOpMetrics(P, R, F, evalOpsP, evalOpsR, evalOpsF, evalOpsObj):
     if P is not None and R is not None and F is not None:
@@ -231,7 +353,7 @@ def createEvalMetricsOpWise(evalOpsObj):
             elif line.startswith("---") and predOpsObj is not None and evalOpsObj is not None:
                 computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
             prevEpisode = evalOpsObj.curEpisode
-
+    return evalOpsObj
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -240,4 +362,5 @@ if __name__ == "__main__":
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
     evalOpsObj = evalOps(args.configDict, args.log)
-    createEvalMetricsOpWise(evalOpsObj)
+    evalOpsObj = createEvalMetricsOpWise(evalOpsObj)
+    plotEvalMetricsOpWise(evalOpsObj)
