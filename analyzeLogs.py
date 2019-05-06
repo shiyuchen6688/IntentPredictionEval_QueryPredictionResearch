@@ -7,6 +7,7 @@ from bitmap import BitMap
 import CFCosineSim
 import TupleIntent as ti
 import ParseConfigFile as parseConfig
+from ParseConfigFile import getConfig
 import pickle
 import argparse
 from pandas import DataFrame
@@ -130,7 +131,9 @@ def plotEvalMetricsOpWise(evalOpsObj):
          'havingColsP': havingColsP, 'havingColsR': havingColsR, 'havingColsF': havingColsF,
          'limitP': limitP, 'limitR': limitR, 'limitF': limitF,
          'joinPredsP': joinPredsP, 'joinPredsR': joinPredsR, 'joinPredsF': joinPredsF,})
-    df.to_excel("1.xlsx", sheet_name='sheet1', index=False)
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OutputOpWiseQuality_" + evalOpsObj.configDict[
+        'ALGORITHM'] + ".xlsx"
+    df.to_excel(outputOpWiseQualityFileName+".xlsx", sheet_name='sheet1', index=False)
 
 class evalOps:
     def __init__(self, configDict, logFile):
@@ -272,7 +275,11 @@ def compUpdateCondSelMetrics(evalOpsObj):
         if evalOpsObj.tablesF[evalOpsObj.curEpisode] == 1.0 and evalOpsObj.curEpisode in evalOpsObj.selColsP \
                 and evalOpsObj.curEpisode in evalOpsObj.selColsR and evalOpsObj.curEpisode in evalOpsObj.selColsF:
             updateOpMetrics(evalOpsObj.selColsP, evalOpsObj.selColsR, evalOpsObj.selColsF, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF, evalOpsObj)
+        else:
+            updateOpMetrics(0.0, 0.0, 0.0, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF, evalOpsObj)
     except:
+        updateOpMetrics(0.0, 0.0, 0.0, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF,
+                        evalOpsObj)
         pass
 
 def compUpdateOpMetrics(predOpList, actualOpList, evalOpsP, evalOpsR, evalOpsF, evalOpsObj):
