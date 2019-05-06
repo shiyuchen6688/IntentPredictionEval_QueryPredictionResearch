@@ -12,15 +12,16 @@ import pickle
 import argparse
 from pandas import DataFrame
 
-def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex):
+def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, evalOpsObj):
     try:
-        arr.append(evalOpsObjDict[epIndex])
+        arr.append(float(evalOpsObjDict[epIndex])/float(evalOpsObj.numEpQueries[epIndex]))
     except:
         arr.append("")
     return
 
 def plotEvalMetricsOpWise(evalOpsObj):
     episodes = []
+    numEpQueries = []
     meanReciprocalRank = []
     queryTypeP= []
     queryTypeR = []
@@ -69,54 +70,54 @@ def plotEvalMetricsOpWise(evalOpsObj):
     joinPredsF = []
     for i in range(evalOpsObj.curEpisode + 1):
         episodes.append(i)
-        updateArrWithDictEntry(meanReciprocalRank, evalOpsObj.meanReciprocalRank, i)
-        updateArrWithDictEntry(queryTypeP, evalOpsObj.queryTypeP, i)
-        updateArrWithDictEntry(queryTypeR, evalOpsObj.queryTypeR, i)
-        updateArrWithDictEntry(queryTypeF, evalOpsObj.queryTypeF, i)
-        updateArrWithDictEntry(tablesP, evalOpsObj.tablesP, i)
-        updateArrWithDictEntry(tablesR, evalOpsObj.tablesR, i)
-        updateArrWithDictEntry(tablesF, evalOpsObj.tablesF, i)
-        updateArrWithDictEntry(projColsP, evalOpsObj.projColsP, i)
-        updateArrWithDictEntry(projColsR, evalOpsObj.projColsR, i)
-        updateArrWithDictEntry(projColsF, evalOpsObj.projColsF, i)
-        updateArrWithDictEntry(avgColsP, evalOpsObj.avgColsP, i)
-        updateArrWithDictEntry(avgColsR, evalOpsObj.avgColsR, i)
-        updateArrWithDictEntry(avgColsF, evalOpsObj.avgColsF, i)
-        updateArrWithDictEntry(minColsP, evalOpsObj.minColsP, i)
-        updateArrWithDictEntry(minColsR, evalOpsObj.minColsR, i)
-        updateArrWithDictEntry(minColsF, evalOpsObj.minColsF, i)
-        updateArrWithDictEntry(maxColsP, evalOpsObj.maxColsP, i)
-        updateArrWithDictEntry(maxColsR, evalOpsObj.maxColsR, i)
-        updateArrWithDictEntry(maxColsF, evalOpsObj.maxColsF, i)
-        updateArrWithDictEntry(sumColsP, evalOpsObj.sumColsP, i)
-        updateArrWithDictEntry(sumColsR, evalOpsObj.sumColsR, i)
-        updateArrWithDictEntry(sumColsF, evalOpsObj.sumColsF, i)
-        updateArrWithDictEntry(countColsP, evalOpsObj.countColsP, i)
-        updateArrWithDictEntry(countColsR, evalOpsObj.countColsR, i)
-        updateArrWithDictEntry(countColsF, evalOpsObj.countColsF, i)
-        updateArrWithDictEntry(selColsP, evalOpsObj.selColsP, i)
-        updateArrWithDictEntry(selColsR, evalOpsObj.selColsR, i)
-        updateArrWithDictEntry(selColsF, evalOpsObj.selColsF, i)
-        updateArrWithDictEntry(condSelColsP, evalOpsObj.condSelColsP, i)
-        updateArrWithDictEntry(condSelColsR, evalOpsObj.condSelColsR, i)
-        updateArrWithDictEntry(condSelColsF, evalOpsObj.condSelColsF, i)
-        updateArrWithDictEntry(groupByColsP, evalOpsObj.groupByColsP, i)
-        updateArrWithDictEntry(groupByColsR, evalOpsObj.groupByColsR, i)
-        updateArrWithDictEntry(groupByColsF, evalOpsObj.groupByColsF, i)
-        updateArrWithDictEntry(orderByColsP, evalOpsObj.orderByColsP, i)
-        updateArrWithDictEntry(orderByColsR, evalOpsObj.orderByColsR, i)
-        updateArrWithDictEntry(orderByColsF, evalOpsObj.orderByColsF, i)
-        updateArrWithDictEntry(havingColsP, evalOpsObj.havingColsP, i)
-        updateArrWithDictEntry(havingColsR, evalOpsObj.havingColsR, i)
-        updateArrWithDictEntry(havingColsF, evalOpsObj.havingColsF, i)
-        updateArrWithDictEntry(limitP, evalOpsObj.limitP, i)
-        updateArrWithDictEntry(limitR, evalOpsObj.limitR, i)
-        updateArrWithDictEntry(limitF, evalOpsObj.limitF, i)
-        updateArrWithDictEntry(joinPredsP, evalOpsObj.joinPredsP, i)
-        updateArrWithDictEntry(joinPredsR, evalOpsObj.joinPredsR, i)
-        updateArrWithDictEntry(joinPredsF, evalOpsObj.joinPredsF, i)
+        updateArrWithDictEntry(meanReciprocalRank, evalOpsObj.meanReciprocalRank, i, evalOpsObj)
+        updateArrWithDictEntry(queryTypeP, evalOpsObj.queryTypeP, i, evalOpsObj)
+        updateArrWithDictEntry(queryTypeR, evalOpsObj.queryTypeR, i, evalOpsObj)
+        updateArrWithDictEntry(queryTypeF, evalOpsObj.queryTypeF, i, evalOpsObj)
+        updateArrWithDictEntry(tablesP, evalOpsObj.tablesP, i, evalOpsObj)
+        updateArrWithDictEntry(tablesR, evalOpsObj.tablesR, i, evalOpsObj)
+        updateArrWithDictEntry(tablesF, evalOpsObj.tablesF, i, evalOpsObj)
+        updateArrWithDictEntry(projColsP, evalOpsObj.projColsP, i, evalOpsObj)
+        updateArrWithDictEntry(projColsR, evalOpsObj.projColsR, i, evalOpsObj)
+        updateArrWithDictEntry(projColsF, evalOpsObj.projColsF, i, evalOpsObj)
+        updateArrWithDictEntry(avgColsP, evalOpsObj.avgColsP, i, evalOpsObj)
+        updateArrWithDictEntry(avgColsR, evalOpsObj.avgColsR, i, evalOpsObj)
+        updateArrWithDictEntry(avgColsF, evalOpsObj.avgColsF, i, evalOpsObj)
+        updateArrWithDictEntry(minColsP, evalOpsObj.minColsP, i, evalOpsObj)
+        updateArrWithDictEntry(minColsR, evalOpsObj.minColsR, i, evalOpsObj)
+        updateArrWithDictEntry(minColsF, evalOpsObj.minColsF, i, evalOpsObj)
+        updateArrWithDictEntry(maxColsP, evalOpsObj.maxColsP, i, evalOpsObj)
+        updateArrWithDictEntry(maxColsR, evalOpsObj.maxColsR, i, evalOpsObj)
+        updateArrWithDictEntry(maxColsF, evalOpsObj.maxColsF, i, evalOpsObj)
+        updateArrWithDictEntry(sumColsP, evalOpsObj.sumColsP, i, evalOpsObj)
+        updateArrWithDictEntry(sumColsR, evalOpsObj.sumColsR, i, evalOpsObj)
+        updateArrWithDictEntry(sumColsF, evalOpsObj.sumColsF, i, evalOpsObj)
+        updateArrWithDictEntry(countColsP, evalOpsObj.countColsP, i, evalOpsObj)
+        updateArrWithDictEntry(countColsR, evalOpsObj.countColsR, i, evalOpsObj)
+        updateArrWithDictEntry(countColsF, evalOpsObj.countColsF, i, evalOpsObj)
+        updateArrWithDictEntry(selColsP, evalOpsObj.selColsP, i, evalOpsObj)
+        updateArrWithDictEntry(selColsR, evalOpsObj.selColsR, i, evalOpsObj)
+        updateArrWithDictEntry(selColsF, evalOpsObj.selColsF, i, evalOpsObj)
+        updateArrWithDictEntry(condSelColsP, evalOpsObj.condSelColsP, i, evalOpsObj)
+        updateArrWithDictEntry(condSelColsR, evalOpsObj.condSelColsR, i, evalOpsObj)
+        updateArrWithDictEntry(condSelColsF, evalOpsObj.condSelColsF, i, evalOpsObj)
+        updateArrWithDictEntry(groupByColsP, evalOpsObj.groupByColsP, i, evalOpsObj)
+        updateArrWithDictEntry(groupByColsR, evalOpsObj.groupByColsR, i, evalOpsObj)
+        updateArrWithDictEntry(groupByColsF, evalOpsObj.groupByColsF, i, evalOpsObj)
+        updateArrWithDictEntry(orderByColsP, evalOpsObj.orderByColsP, i, evalOpsObj)
+        updateArrWithDictEntry(orderByColsR, evalOpsObj.orderByColsR, i, evalOpsObj)
+        updateArrWithDictEntry(orderByColsF, evalOpsObj.orderByColsF, i, evalOpsObj)
+        updateArrWithDictEntry(havingColsP, evalOpsObj.havingColsP, i, evalOpsObj)
+        updateArrWithDictEntry(havingColsR, evalOpsObj.havingColsR, i, evalOpsObj)
+        updateArrWithDictEntry(havingColsF, evalOpsObj.havingColsF, i, evalOpsObj)
+        updateArrWithDictEntry(limitP, evalOpsObj.limitP, i, evalOpsObj)
+        updateArrWithDictEntry(limitR, evalOpsObj.limitR, i, evalOpsObj)
+        updateArrWithDictEntry(limitF, evalOpsObj.limitF, i, evalOpsObj)
+        updateArrWithDictEntry(joinPredsP, evalOpsObj.joinPredsP, i, evalOpsObj)
+        updateArrWithDictEntry(joinPredsR, evalOpsObj.joinPredsR, i, evalOpsObj)
+        updateArrWithDictEntry(joinPredsF, evalOpsObj.joinPredsF, i, evalOpsObj)
     df = DataFrame(
-        {'episodes': episodes, 'queryTypeP': queryTypeP, 'queryTypeR': queryTypeR, 'queryTypeF': queryTypeF,
+        {'episodes': episodes, 'meanReciprocalRank': meanReciprocalRank, 'queryTypeP': queryTypeP, 'queryTypeR': queryTypeR, 'queryTypeF': queryTypeF,
          'tablesP': tablesP, 'tablesR': tablesR, 'tablesF': tablesF,
          'projColsP': projColsP, 'projColsR': projColsR, 'projColsF': projColsF,
          'avgColsP': avgColsP, 'avgColsR': avgColsR, 'avgColsF': avgColsF,
@@ -132,15 +133,15 @@ def plotEvalMetricsOpWise(evalOpsObj):
          'limitP': limitP, 'limitR': limitR, 'limitF': limitF,
          'joinPredsP': joinPredsP, 'joinPredsR': joinPredsR, 'joinPredsF': joinPredsF,})
     outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OutputOpWiseQuality_" + evalOpsObj.configDict[
-        'ALGORITHM'] + ".xlsx"
+        'ALGORITHM']
     df.to_excel(outputOpWiseQualityFileName+".xlsx", sheet_name='sheet1', index=False)
 
 class evalOps:
-    def __init__(self, configDict, logFile):
-        self.configDict = configDict
+    def __init__(self, configFileName, logFile):
+        self.configDict = parseConfig.parseConfigFile(configFileName)
         self.logFile = logFile
         self.curEpisode = 0
-        self.numEpQueries = 0
+        self.numEpQueries = {}
         self.curQueryIndex = -1
         self.meanReciprocalRank = {}
         self.episode = {}
@@ -238,11 +239,11 @@ def parseLineAddOp(line, actualOrPredObj):
         actualOrPredObj.joinPreds = eval(line.strip().split(": ")[1])
     return
 
-def updateMetricDict(metricDict, key, val, numEpQueries):
+def updateMetricDict(metricDict, key, val):
     if key not in metricDict:
         metricDict[key] = val
     else:
-        metricDict[key] = float(metricDict[key]+val)/float(numEpQueries)
+        metricDict[key] = float(metricDict[key]+val)
     return
 
 def computeOpF1(predOpList, actualOpList):
@@ -265,16 +266,16 @@ def computeOpF1(predOpList, actualOpList):
 
 def updateOpMetrics(P, R, F, evalOpsP, evalOpsR, evalOpsF, evalOpsObj):
     if P is not None and R is not None and F is not None:
-        updateMetricDict(evalOpsP, evalOpsObj.curEpisode, P, evalOpsObj.numEpQueries)
-        updateMetricDict(evalOpsR, evalOpsObj.curEpisode, R, evalOpsObj.numEpQueries)
-        updateMetricDict(evalOpsF, evalOpsObj.curEpisode, F, evalOpsObj.numEpQueries)
+        updateMetricDict(evalOpsP, evalOpsObj.curEpisode, P)
+        updateMetricDict(evalOpsR, evalOpsObj.curEpisode, R)
+        updateMetricDict(evalOpsF, evalOpsObj.curEpisode, F)
     return
 
 def compUpdateCondSelMetrics(evalOpsObj):
     try:
         if evalOpsObj.tablesF[evalOpsObj.curEpisode] == 1.0 and evalOpsObj.curEpisode in evalOpsObj.selColsP \
                 and evalOpsObj.curEpisode in evalOpsObj.selColsR and evalOpsObj.curEpisode in evalOpsObj.selColsF:
-            updateOpMetrics(evalOpsObj.selColsP, evalOpsObj.selColsR, evalOpsObj.selColsF, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF, evalOpsObj)
+            updateOpMetrics(evalOpsObj.selColsP[evalOpsObj.curEpisode], evalOpsObj.selColsR[evalOpsObj.curEpisode], evalOpsObj.selColsF[evalOpsObj.curEpisode], evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF, evalOpsObj)
         else:
             updateOpMetrics(0.0, 0.0, 0.0, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF, evalOpsObj)
     except:
@@ -333,18 +334,19 @@ def createEvalMetricsOpWise(evalOpsObj):
         for line in f:
             if line.startswith("#Episodes"):
                 evalOpsObj.curEpisode = int(line.strip().split(";")[0].split(":")[1])
-                numTokens = len(line.strip().split(":"))
-                rank = int(line.split(";")[numTokens-1].split(":")[1])
-                assert rank >= 0 and rank < int(evalOpsObj.configDir['TOP_K'])
+                numTokens = len(line.strip().split(";"))
+                rank = int(line.strip().split(";")[numTokens-1].split(":")[1])
+                if rank == -1: # this can happen when all predicted queries are equally bad
+                    rank = 0
+                assert rank >= 0 and rank < int(evalOpsObj.configDict['TOP_K'])
                 MRR = float(1.0) / float(rank+1)
                 if evalOpsObj.curEpisode != prevEpisode:
-                    evalOpsObj.numEpQueries = 1
+                    evalOpsObj.numEpQueries[evalOpsObj.curEpisode] = 1
                     assert evalOpsObj.curEpisode not in evalOpsObj.meanReciprocalRank
                     evalOpsObj.meanReciprocalRank[evalOpsObj.curEpisode] = MRR
                 else:
-                    evalOpsObj.numEpQueries += 1
-                    evalOpsObj.meanReciprocalRank[evalOpsObj.curEpisode] = (evalOpsObj.meanReciprocalRank[evalOpsObj.curEpisode] + MRR) \
-                                                                           / float(evalOpsObj.numEpQueries)
+                    evalOpsObj.numEpQueries[evalOpsObj.curEpisode] += 1
+                    evalOpsObj.meanReciprocalRank[evalOpsObj.curEpisode] = (evalOpsObj.meanReciprocalRank[evalOpsObj.curEpisode] + MRR)
             elif line.startswith("Actual SQL"):
                 evalOpsObj.curQueryIndex = -1
                 nextActualOpsObj = nextActualOps()
@@ -368,6 +370,6 @@ if __name__ == "__main__":
     parser.add_argument("-log", help="log filename to analyze", type=str, required=True)
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
-    evalOpsObj = evalOps(args.configDict, args.log)
+    evalOpsObj = evalOps(args.config, args.log)
     evalOpsObj = createEvalMetricsOpWise(evalOpsObj)
     plotEvalMetricsOpWise(evalOpsObj)
