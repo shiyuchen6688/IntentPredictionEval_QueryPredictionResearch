@@ -12,74 +12,129 @@ import pickle
 import argparse
 from pandas import DataFrame
 
-def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, numOpQueryCountDict):
+def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, evalOpsObj):
     try:
-        arr.append(float(evalOpsObjDict[epIndex])/float(numOpQueryCountDict[epIndex]))
+        arr.append(float(evalOpsObjDict[epIndex])/float(evalOpsObj.numEpQueries[epIndex]))
     except:
         arr.append("")
     return
 
-def plotMeanReciprocalRank(evalOpsObj):
-    episodes = []
-    meanReciprocalRank = []
-    for key in sorted(evalOpsObj.meanReciprocalRank.keys()):
-        episodes.append(key)
-        updateArrWithDictEntry(meanReciprocalRank, evalOpsObj.meanReciprocalRank, key, evalOpsObj.numEpQueries)
-    df = DataFrame(
-        {'episodes': episodes, 'meanReciprocalRank': meanReciprocalRank})
-    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/Output_MRR_" + evalOpsObj.configDict['ALGORITHM']
-    df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
-
-def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opString):
-    episodes = []
-    resP = []
-    resR = []
-    resF = []
-    for key in sorted(evalOpsObj.queryTypeP.keys()):
-        episodes.append(key)
-        updateArrWithDictEntry(resP, evalOpsP, key, numOpQueryCountDict)
-        updateArrWithDictEntry(resR, evalOpsR, key, numOpQueryCountDict)
-        updateArrWithDictEntry(resF, evalOpsF, key, numOpQueryCountDict)
-    headerP = evalOpsObj.configDict['ALGORITHM']+"(P)"
-    headerR = evalOpsObj.configDict['ALGORITHM']+"(R)"
-    headerF = evalOpsObj.configDict['ALGORITHM'] + "(F)"
-    df = DataFrame(
-        {'episodes': episodes, headerP: resP, headerR: resR, headerF: resF})
-    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/Output_" + opString + "_" + \
-                                  evalOpsObj.configDict['ALGORITHM']
-    df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
-
 def plotEvalMetricsOpWise(evalOpsObj):
-    plotMeanReciprocalRank(evalOpsObj)
-    plotOp(evalOpsObj.queryTypeP, evalOpsObj.queryTypeR, evalOpsObj.queryTypeF, evalOpsObj.numQueryTypeQueries, evalOpsObj, "QUERYTYPE")
-    plotOp(evalOpsObj.tablesP, evalOpsObj.tablesR, evalOpsObj.tablesF, evalOpsObj.numTablesQueries, evalOpsObj, "TABLES")
-    plotOp(evalOpsObj.projColsP, evalOpsObj.projColsR, evalOpsObj.projColsF, evalOpsObj.numProjColsQueries, evalOpsObj,
-           "PROJ")
-    plotOp(evalOpsObj.avgColsP, evalOpsObj.avgColsR, evalOpsObj.avgColsF, evalOpsObj.numAvgColsQueries, evalOpsObj,
-           "AVG")
-    plotOp(evalOpsObj.minColsP, evalOpsObj.minColsR, evalOpsObj.minColsF, evalOpsObj.numMinColsQueries, evalOpsObj,
-           "MIN")
-    plotOp(evalOpsObj.maxColsP, evalOpsObj.maxColsR, evalOpsObj.maxColsF, evalOpsObj.numMaxColsQueries, evalOpsObj,
-           "MAX")
-    plotOp(evalOpsObj.sumColsP, evalOpsObj.sumColsR, evalOpsObj.sumColsF, evalOpsObj.numSumColsQueries, evalOpsObj,
-           "SUM")
-    plotOp(evalOpsObj.countColsP, evalOpsObj.countColsR, evalOpsObj.countColsFn, evalOpsObj.numCountColsQueries, evalOpsObj,
-           "COUNT")
-    plotOp(evalOpsObj.selColsP, evalOpsObj.selColsR, evalOpsObj.selColsF, evalOpsObj.numSelColsQueries, evalOpsObj,
-           "SEL")
-    plotOp(evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF, evalOpsObj.numCondSelColsQueries, evalOpsObj,
-           "CONDSEL")
-    plotOp(evalOpsObj.groupByColsP, evalOpsObj.groupByColsR, evalOpsObj.groupByColsF, evalOpsObj.numGroupByColsQueries, evalOpsObj,
-           "GROUPBY")
-    plotOp(evalOpsObj.orderByColsP, evalOpsObj.orderByColsR, evalOpsObj.orderByColsF, evalOpsObj.numOrderByColsQueries, evalOpsObj,
-           "ORDERBY")
-    plotOp(evalOpsObj.havingColsP, evalOpsObj.havingColsR, evalOpsObj.havingColsF, evalOpsObj.numHavingColsQueries, evalOpsObj,
-           "HAVING")
-    plotOp(evalOpsObj.limitP, evalOpsObj.limitR, evalOpsObj.limitF, evalOpsObj.numLimitColsQueries, evalOpsObj,
-           "LIMIT")
-    plotOp(evalOpsObj.joinPredsP, evalOpsObj.joinPredsR, evalOpsObj.joinPredsFn, evalOpsObj.numJoinPredsColsQueries, evalOpsObj,
-           "JOIN")
-    return
+    episodes = []
+    numEpQueries = []
+    meanReciprocalRank = []
+    queryTypeP= []
+    queryTypeR = []
+    queryTypeF = []
+    tablesP = []
+    tablesR = []
+    tablesF = []
+    projColsP = []
+    projColsR = []
+    projColsF = []
+    avgColsP = []
+    avgColsR = []
+    avgColsF = []
+    minColsP = []
+    minColsR = []
+    minColsF = []
+    maxColsP = []
+    maxColsR = []
+    maxColsF = []
+    sumColsP = []
+    sumColsR = []
+    sumColsF = []
+    countColsP = []
+    countColsR = []
+    countColsF = []
+    selColsP = []
+    selColsR = []
+    selColsF = []
+    condSelColsP = []
+    condSelColsR = []
+    condSelColsF = []
+    groupByColsP = []
+    groupByColsR = []
+    groupByColsF = []
+    orderByColsP = []
+    orderByColsR = []
+    orderByColsF = []
+    havingColsP = []
+    havingColsR = []
+    havingColsF = []
+    limitP = []
+    limitR = []
+    limitF = []
+    joinPredsP = []
+    joinPredsR = []
+    joinPredsF = []
+    for i in range(evalOpsObj.curEpisode + 1):
+        episodes.append(i)
+        updateArrWithDictEntry(meanReciprocalRank, evalOpsObj.meanReciprocalRank, i, evalOpsObj)
+        updateArrWithDictEntry(queryTypeP, evalOpsObj.queryTypeP, i, evalOpsObj)
+        updateArrWithDictEntry(queryTypeR, evalOpsObj.queryTypeR, i, evalOpsObj)
+        updateArrWithDictEntry(queryTypeF, evalOpsObj.queryTypeF, i, evalOpsObj)
+        updateArrWithDictEntry(tablesP, evalOpsObj.tablesP, i, evalOpsObj)
+        updateArrWithDictEntry(tablesR, evalOpsObj.tablesR, i, evalOpsObj)
+        updateArrWithDictEntry(tablesF, evalOpsObj.tablesF, i, evalOpsObj)
+        updateArrWithDictEntry(projColsP, evalOpsObj.projColsP, i, evalOpsObj)
+        updateArrWithDictEntry(projColsR, evalOpsObj.projColsR, i, evalOpsObj)
+        updateArrWithDictEntry(projColsF, evalOpsObj.projColsF, i, evalOpsObj)
+        updateArrWithDictEntry(avgColsP, evalOpsObj.avgColsP, i, evalOpsObj)
+        updateArrWithDictEntry(avgColsR, evalOpsObj.avgColsR, i, evalOpsObj)
+        updateArrWithDictEntry(avgColsF, evalOpsObj.avgColsF, i, evalOpsObj)
+        updateArrWithDictEntry(minColsP, evalOpsObj.minColsP, i, evalOpsObj)
+        updateArrWithDictEntry(minColsR, evalOpsObj.minColsR, i, evalOpsObj)
+        updateArrWithDictEntry(minColsF, evalOpsObj.minColsF, i, evalOpsObj)
+        updateArrWithDictEntry(maxColsP, evalOpsObj.maxColsP, i, evalOpsObj)
+        updateArrWithDictEntry(maxColsR, evalOpsObj.maxColsR, i, evalOpsObj)
+        updateArrWithDictEntry(maxColsF, evalOpsObj.maxColsF, i, evalOpsObj)
+        updateArrWithDictEntry(sumColsP, evalOpsObj.sumColsP, i, evalOpsObj)
+        updateArrWithDictEntry(sumColsR, evalOpsObj.sumColsR, i, evalOpsObj)
+        updateArrWithDictEntry(sumColsF, evalOpsObj.sumColsF, i, evalOpsObj)
+        updateArrWithDictEntry(countColsP, evalOpsObj.countColsP, i, evalOpsObj)
+        updateArrWithDictEntry(countColsR, evalOpsObj.countColsR, i, evalOpsObj)
+        updateArrWithDictEntry(countColsF, evalOpsObj.countColsF, i, evalOpsObj)
+        updateArrWithDictEntry(selColsP, evalOpsObj.selColsP, i, evalOpsObj)
+        updateArrWithDictEntry(selColsR, evalOpsObj.selColsR, i, evalOpsObj)
+        updateArrWithDictEntry(selColsF, evalOpsObj.selColsF, i, evalOpsObj)
+        updateArrWithDictEntry(condSelColsP, evalOpsObj.condSelColsP, i, evalOpsObj)
+        updateArrWithDictEntry(condSelColsR, evalOpsObj.condSelColsR, i, evalOpsObj)
+        updateArrWithDictEntry(condSelColsF, evalOpsObj.condSelColsF, i, evalOpsObj)
+        updateArrWithDictEntry(groupByColsP, evalOpsObj.groupByColsP, i, evalOpsObj)
+        updateArrWithDictEntry(groupByColsR, evalOpsObj.groupByColsR, i, evalOpsObj)
+        updateArrWithDictEntry(groupByColsF, evalOpsObj.groupByColsF, i, evalOpsObj)
+        updateArrWithDictEntry(orderByColsP, evalOpsObj.orderByColsP, i, evalOpsObj)
+        updateArrWithDictEntry(orderByColsR, evalOpsObj.orderByColsR, i, evalOpsObj)
+        updateArrWithDictEntry(orderByColsF, evalOpsObj.orderByColsF, i, evalOpsObj)
+        updateArrWithDictEntry(havingColsP, evalOpsObj.havingColsP, i, evalOpsObj)
+        updateArrWithDictEntry(havingColsR, evalOpsObj.havingColsR, i, evalOpsObj)
+        updateArrWithDictEntry(havingColsF, evalOpsObj.havingColsF, i, evalOpsObj)
+        updateArrWithDictEntry(limitP, evalOpsObj.limitP, i, evalOpsObj)
+        updateArrWithDictEntry(limitR, evalOpsObj.limitR, i, evalOpsObj)
+        updateArrWithDictEntry(limitF, evalOpsObj.limitF, i, evalOpsObj)
+        updateArrWithDictEntry(joinPredsP, evalOpsObj.joinPredsP, i, evalOpsObj)
+        updateArrWithDictEntry(joinPredsR, evalOpsObj.joinPredsR, i, evalOpsObj)
+        updateArrWithDictEntry(joinPredsF, evalOpsObj.joinPredsF, i, evalOpsObj)
+    df = DataFrame(
+        {'episodes': episodes, 'meanReciprocalRank': meanReciprocalRank, 'queryTypeP': queryTypeP, 'queryTypeR': queryTypeR, 'queryTypeF': queryTypeF,
+         'tablesP': tablesP, 'tablesR': tablesR, 'tablesF': tablesF,
+         'projColsP': projColsP, 'projColsR': projColsR, 'projColsF': projColsF,
+         'avgColsP': avgColsP, 'avgColsR': avgColsR, 'avgColsF': avgColsF,
+         'minColsP': minColsP, 'minColsR': minColsR, 'minColsF': minColsF,
+         'maxColsP': maxColsP, 'maxColsR': maxColsR, 'maxColsF': maxColsF,
+         'sumColsP': sumColsP, 'sumColsR': sumColsR, 'sumColsF': sumColsF,
+         'countColsP': countColsP, 'countColsR': countColsR, 'countColsF': countColsF,
+         'selColsP': selColsP, 'selColsR': selColsR, 'selColsF': selColsF,
+         'condSelColsP': condSelColsP, 'condSelColsR': condSelColsR, 'condSelColsF': condSelColsF,
+         'groupByColsP': groupByColsP, 'groupByColsR': groupByColsR, 'groupByColsF': groupByColsF,
+         'orderByColsP': orderByColsP, 'orderByColsR': orderByColsR, 'orderByColsF': orderByColsF,
+         'havingColsP': havingColsP, 'havingColsR': havingColsR, 'havingColsF': havingColsF,
+         'limitP': limitP, 'limitR': limitR, 'limitF': limitF,
+         'joinPredsP': joinPredsP, 'joinPredsR': joinPredsR, 'joinPredsF': joinPredsF,})
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OutputOpWiseQuality_" + evalOpsObj.configDict[
+        'ALGORITHM']
+    df.to_excel(outputOpWiseQualityFileName+".xlsx", sheet_name='sheet1', index=False)
 
 class evalOps:
     def __init__(self, configFileName, logFile):
@@ -93,63 +148,48 @@ class evalOps:
         self.queryTypeP = {}
         self.queryTypeR = {}
         self.queryTypeF = {}
-        self.numQueryTypeQueries = {}
         self.tablesP = {}
         self.tablesR = {}
         self.tablesF = {}
-        self.numTablesQueries = {}
         self.projColsP = {}
         self.projColsR = {}
         self.projColsF = {}
-        self.numProjColsQueries = {}
         self.avgColsP = {}
         self.avgColsR = {}
         self.avgColsF = {}
-        self.numAvgColsQueries = {}
         self.minColsP = {}
         self.minColsR = {}
         self.minColsF = {}
-        self.numMinColsQueries = {}
         self.maxColsP = {}
         self.maxColsR = {}
         self.maxColsF = {}
-        self.numMaxColsQueries = {}
         self.sumColsP = {}
         self.sumColsR = {}
         self.sumColsF = {}
-        self.numSumColsQueries = {}
         self.countColsP = {}
         self.countColsR = {}
         self.countColsF = {}
-        self.numCountColsQueries = {}
         self.selColsP = {}
         self.selColsR = {}
         self.selColsF = {}
-        self.numSelColsQueries = {}
         self.condSelColsP = {}
         self.condSelColsR = {}
         self.condSelColsF = {}
-        self.numCondSelColsQueries = {}
         self.groupByColsP = {}
         self.groupByColsR = {}
         self.groupByColsF = {}
-        self.numGroupByColsQueries = {}
         self.orderByColsP = {}
         self.orderByColsR = {}
         self.orderByColsF = {}
-        self.numOrderByColsQueries = {}
         self.havingColsP = {}
         self.havingColsR = {}
         self.havingColsF = {}
-        self.numHavingColsQueries = {}
         self.limitP = {}
         self.limitR = {}
         self.limitF = {}
-        self.numLimitColsQueries = {}
         self.joinPredsP = {}
         self.joinPredsR = {}
         self.joinPredsF = {}
-        self.numJoinPredsColsQueries = {}
 
 class nextActualOps:
     def __init__(self):
@@ -207,7 +247,8 @@ def updateMetricDict(metricDict, key, val):
     return
 
 def computeOpF1(predOpList, actualOpList):
-    if predOpList is None and actualOpList is not None:
+    if (actualOpList is None and predOpList is not None) or\
+            (predOpList is None and actualOpList is not None):
         return (0.0, 0.0, 0.0)
     elif predOpList is not None and actualOpList is not None:
         TP = len(set(predOpList).intersection(set(actualOpList)))
@@ -221,22 +262,16 @@ def computeOpF1(predOpList, actualOpList):
             F = 2*P*R / float(P+R)
         return (P, R, F)
     else:
-        return (None, None, None)
+        return (1.0, 1.0, 1.0)
 
-def updateOpMetrics(P, R, F, evalOpsP, evalOpsR, evalOpsF, evalOpsQueryCountDict, evalOpsObj):
+def updateOpMetrics(P, R, F, evalOpsP, evalOpsR, evalOpsF, evalOpsObj):
     if P is not None and R is not None and F is not None:
-        if evalOpsObj.curEpisode not in evalOpsQueryCountDict:
-            evalOpsQueryCountDict[evalOpsObj.curEpisode] = 1
-        else:
-            evalOpsQueryCountDict[evalOpsObj.curEpisode] += 1
         updateMetricDict(evalOpsP, evalOpsObj.curEpisode, P)
         updateMetricDict(evalOpsR, evalOpsObj.curEpisode, R)
         updateMetricDict(evalOpsF, evalOpsObj.curEpisode, F)
     return
 
 def computeRelevantCols(accTables, predOrActualCols):
-    if predOrActualCols is None:
-        return None
     relCols = []
     for col in predOrActualCols:
         tableName = col.split(".")[0]
@@ -246,67 +281,62 @@ def computeRelevantCols(accTables, predOrActualCols):
         return None
     return relCols
 
-def compUpdateOpMetrics(predOpList, actualOpList, evalOpsP, evalOpsR, evalOpsF, evalOpsQueryCountDict, evalOpsObj):
+def compUpdateOpMetrics(predOpList, actualOpList, evalOpsP, evalOpsR, evalOpsF, evalOpsObj):
     (P,R,F) = computeOpF1(predOpList, actualOpList)
-    updateOpMetrics(P, R, F, evalOpsP, evalOpsR, evalOpsF, evalOpsQueryCountDict, evalOpsObj)
+    updateOpMetrics(P, R, F, evalOpsP, evalOpsR, evalOpsF, evalOpsObj)
     return
 
 def compUpdateCondSelMetrics(predOpsObj, nextActualOpsObj, evalOpsObj):
     try:
         if evalOpsObj.tablesF[evalOpsObj.curEpisode] == 1.0 and evalOpsObj.curEpisode in evalOpsObj.selColsP \
                 and evalOpsObj.curEpisode in evalOpsObj.selColsR and evalOpsObj.curEpisode in evalOpsObj.selColsF:
-            updateOpMetrics(evalOpsObj.selColsP[evalOpsObj.curEpisode], evalOpsObj.selColsR[evalOpsObj.curEpisode],
-                            evalOpsObj.selColsF[evalOpsObj.curEpisode], evalOpsObj.condSelColsP, evalOpsObj.condSelColsR,
-                            evalOpsObj.condSelColsF, evalOpsObj.numCondSelColsQueries, evalOpsObj)
-        elif evalOpsObj.tablesF[evalOpsObj.curEpisode] > 0.0 and evalOpsObj.curEpisode in evalOpsObj.selColsP \
-                and evalOpsObj.curEpisode in evalOpsObj.selColsR and evalOpsObj.curEpisode in evalOpsObj.selColsF: # partial overlap of tables
+            updateOpMetrics(evalOpsObj.selColsP[evalOpsObj.curEpisode], evalOpsObj.selColsR[evalOpsObj.curEpisode], evalOpsObj.selColsF[evalOpsObj.curEpisode], evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF, evalOpsObj)
+        elif evalOpsObj.tablesF[evalOpsObj.curEpisode] > 0.0: # partial overlap of tables
             accTables = list(set(predOpsObj.tables).intersection(set(nextActualOpsObj.tables)))
             relPredCols = computeRelevantCols(accTables, predOpsObj.selCols)
             relActualCols = computeRelevantCols(accTables, nextActualOpsObj.selCols)
-            compUpdateOpMetrics(relPredCols, relActualCols, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR,
-                                evalOpsObj.condSelColsF, evalOpsObj.numCondSelColsQueries, evalOpsObj)
+            compUpdateOpMetrics(relPredCols, relActualCols, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF, evalOpsObj)
+        else:
+            updateOpMetrics(1.0, 1.0, 1.0, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF, evalOpsObj)
     except:
+        updateOpMetrics(1.0, 1.0, 1.0, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR, evalOpsObj.condSelColsF,
+                        evalOpsObj)
         pass
     return
 
 def computeF1(evalOpsObj, predOpsObj, nextActualOpsObj):
     if predOpsObj.queryType == nextActualOpsObj.queryType:
-        updateOpMetrics(1.0, 1.0, 1.0, evalOpsObj.queryTypeP, evalOpsObj.queryTypeR,
-                        evalOpsObj.queryTypeF, evalOpsObj.numQueryTypeQueries, evalOpsObj)
+        updateOpMetrics(1.0, 1.0, 1.0, evalOpsObj.queryTypeP, evalOpsObj.queryTypeR, evalOpsObj.queryTypeF, evalOpsObj)
     elif predOpsObj.queryType != nextActualOpsObj.queryType:
-        updateOpMetrics(0.0, 0.0, 0.0, evalOpsObj.queryTypeP, evalOpsObj.queryTypeR,
-                        evalOpsObj.queryTypeF, evalOpsObj.numQueryTypeQueries, evalOpsObj)
-    if nextActualOpsObj.limit is not None:
-        if predOpsObj.limit == nextActualOpsObj.limit:
-            updateOpMetrics(1.0, 1.0, 1.0, evalOpsObj.limitP, evalOpsObj.limitR,
-                            evalOpsObj.limitF, evalOpsObj.numLimitColsQueries, evalOpsObj)
-        else:
-            updateOpMetrics(0.0, 0.0, 0.0, evalOpsObj.limitP, evalOpsObj.limitR,
-                            evalOpsObj.limitF, evalOpsObj.numLimitColsQueries, evalOpsObj)
+        updateOpMetrics(0.0, 0.0, 0.0, evalOpsObj.queryTypeP, evalOpsObj.queryTypeR, evalOpsObj.queryTypeF, evalOpsObj)
+    if predOpsObj.limit == nextActualOpsObj.limit:
+        updateOpMetrics(1.0, 1.0, 1.0, evalOpsObj.limitP, evalOpsObj.limitR, evalOpsObj.limitF, evalOpsObj)
+    elif predOpsObj.limit != nextActualOpsObj.limit:
+        updateOpMetrics(0.0, 0.0, 0.0, evalOpsObj.limitP, evalOpsObj.limitR, evalOpsObj.limitF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.tables, nextActualOpsObj.tables, evalOpsObj.tablesP,
-                        evalOpsObj.tablesR, evalOpsObj.tablesF, evalOpsObj.numTablesQueries, evalOpsObj)
+                        evalOpsObj.tablesR, evalOpsObj.tablesF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.projCols, nextActualOpsObj.projCols, evalOpsObj.projColsP,
-                        evalOpsObj.projColsR, evalOpsObj.projColsF, evalOpsObj.numProjColsQueries, evalOpsObj)
+                        evalOpsObj.projColsR, evalOpsObj.projColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.avgCols, nextActualOpsObj.avgCols, evalOpsObj.avgColsP,
-                        evalOpsObj.avgColsR, evalOpsObj.avgColsF, evalOpsObj.numAvgColsQueries, evalOpsObj)
+                        evalOpsObj.avgColsR, evalOpsObj.avgColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.minCols, nextActualOpsObj.minCols, evalOpsObj.minColsP,
-                        evalOpsObj.minColsR, evalOpsObj.minColsF, evalOpsObj.numMinColsQueries, evalOpsObj)
+                        evalOpsObj.minColsR, evalOpsObj.minColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.maxCols, nextActualOpsObj.maxCols, evalOpsObj.maxColsP,
-                        evalOpsObj.maxColsR, evalOpsObj.maxColsF, evalOpsObj.numMaxColsQueries, evalOpsObj)
+                        evalOpsObj.maxColsR, evalOpsObj.maxColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.sumCols, nextActualOpsObj.sumCols, evalOpsObj.sumColsP,
-                        evalOpsObj.sumColsR, evalOpsObj.sumColsF, evalOpsObj.numSumColsQueries, evalOpsObj)
+                        evalOpsObj.sumColsR, evalOpsObj.sumColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.countCols, nextActualOpsObj.countCols, evalOpsObj.countColsP,
-                        evalOpsObj.countColsR, evalOpsObj.countColsF, evalOpsObj.numCountColsQueries, evalOpsObj)
+                        evalOpsObj.countColsR, evalOpsObj.countColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.selCols, nextActualOpsObj.selCols, evalOpsObj.selColsP,
-                        evalOpsObj.selColsR, evalOpsObj.selColsF, evalOpsObj.numSelColsQueries, evalOpsObj)
+                        evalOpsObj.selColsR, evalOpsObj.selColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.groupByCols, nextActualOpsObj.groupByCols, evalOpsObj.groupByColsP,
-                        evalOpsObj.groupByColsR, evalOpsObj.groupByColsF, evalOpsObj.numGroupByColsQueries, evalOpsObj)
+                        evalOpsObj.groupByColsR, evalOpsObj.groupByColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.orderByCols, nextActualOpsObj.orderByCols, evalOpsObj.orderByColsP,
-                        evalOpsObj.orderByColsR, evalOpsObj.orderByColsF, evalOpsObj.numOrderByColsQueries, evalOpsObj)
+                        evalOpsObj.orderByColsR, evalOpsObj.orderByColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.havingCols, nextActualOpsObj.havingCols, evalOpsObj.havingColsP,
-                        evalOpsObj.havingColsR, evalOpsObj.havingColsF, evalOpsObj.numHavingColsQueries, evalOpsObj)
+                        evalOpsObj.havingColsR, evalOpsObj.havingColsF, evalOpsObj)
     compUpdateOpMetrics(predOpsObj.joinPreds, nextActualOpsObj.joinPreds, evalOpsObj.joinPredsP,
-                        evalOpsObj.joinPredsR, evalOpsObj.joinPredsF, evalOpsObj.numJoinPredsColsQueries, evalOpsObj)
+                        evalOpsObj.joinPredsR, evalOpsObj.joinPredsF, evalOpsObj)
     compUpdateCondSelMetrics(predOpsObj, nextActualOpsObj, evalOpsObj)
     return
 
