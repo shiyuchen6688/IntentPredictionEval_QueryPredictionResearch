@@ -63,7 +63,7 @@ def plotEvalMetricsOpWise(evalOpsObj):
            "MAX")
     plotOp(evalOpsObj.sumColsP, evalOpsObj.sumColsR, evalOpsObj.sumColsF, evalOpsObj.numSumColsQueries, evalOpsObj,
            "SUM")
-    plotOp(evalOpsObj.countColsP, evalOpsObj.countColsR, evalOpsObj.countColsFn, evalOpsObj.numCountColsQueries, evalOpsObj,
+    plotOp(evalOpsObj.countColsP, evalOpsObj.countColsR, evalOpsObj.countColsF, evalOpsObj.numCountColsQueries, evalOpsObj,
            "COUNT")
     plotOp(evalOpsObj.selColsP, evalOpsObj.selColsR, evalOpsObj.selColsF, evalOpsObj.numSelColsQueries, evalOpsObj,
            "SEL")
@@ -77,7 +77,7 @@ def plotEvalMetricsOpWise(evalOpsObj):
            "HAVING")
     plotOp(evalOpsObj.limitP, evalOpsObj.limitR, evalOpsObj.limitF, evalOpsObj.numLimitColsQueries, evalOpsObj,
            "LIMIT")
-    plotOp(evalOpsObj.joinPredsP, evalOpsObj.joinPredsR, evalOpsObj.joinPredsFn, evalOpsObj.numJoinPredsColsQueries, evalOpsObj,
+    plotOp(evalOpsObj.joinPredsP, evalOpsObj.joinPredsR, evalOpsObj.joinPredsF, evalOpsObj.numJoinPredsColsQueries, evalOpsObj,
            "JOIN")
     return
 
