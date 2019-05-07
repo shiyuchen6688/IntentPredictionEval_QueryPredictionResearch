@@ -27,7 +27,7 @@ def plotMeanReciprocalRank(evalOpsObj):
         updateArrWithDictEntry(meanReciprocalRank, evalOpsObj.meanReciprocalRank, key, evalOpsObj.numEpQueries)
     df = DataFrame(
         {'episodes': episodes, 'meanReciprocalRank': meanReciprocalRank})
-    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/Output_MRR_" + evalOpsObj.configDict['ALGORITHM']
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseDict/Output_MRR_" + evalOpsObj.configDict['ALGORITHM']
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
 
 def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opString):
@@ -45,7 +45,7 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
     headerF = evalOpsObj.configDict['ALGORITHM'] + "(F)"
     df = DataFrame(
         {'episodes': episodes, headerP: resP, headerR: resR, headerF: resF})
-    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/Output_" + opString + "_" + \
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseDict/Output_" + opString + "_" + \
                                   evalOpsObj.configDict['ALGORITHM']
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
 
