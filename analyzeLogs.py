@@ -19,13 +19,20 @@ def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, numOpQueryCountDict):
         arr.append("")
     return
 
+def updateArrWithCountEntry(arr, numOpQueryCountDict, key):
+    try:
+        arr.append(numOpQueryCountDict[key])
+    except:
+        arr.append(0.0)
+    return
+
 def plotMeanReciprocalRank(evalOpsObj):
     episodes = []
     meanReciprocalRank = []
     numEpQueries = []
     for key in sorted(evalOpsObj.meanReciprocalRank.keys()):
         episodes.append(key)
-        numEpQueries.append(evalOpsObj.numEpQueries[key])
+        updateArrWithCountEntry(numEpQueries, evalOpsObj.numEpQueries, key)
         updateArrWithDictEntry(meanReciprocalRank, evalOpsObj.meanReciprocalRank, key, evalOpsObj.numEpQueries)
     df = DataFrame(
         {'episodes': episodes, 'meanReciprocalRank': meanReciprocalRank, 'numMRRQueries': numEpQueries})
@@ -40,7 +47,7 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
     numEpQueries = []
     for key in sorted(evalOpsObj.queryTypeP.keys()):
         episodes.append(key)
-        numEpQueries.append(numOpQueryCountDict[key])
+        updateArrWithCountEntry(numEpQueries, numOpQueryCountDict, key)
         updateArrWithDictEntry(resP, evalOpsP, key, numOpQueryCountDict)
         updateArrWithDictEntry(resR, evalOpsR, key, numOpQueryCountDict)
         updateArrWithDictEntry(resF, evalOpsF, key, numOpQueryCountDict)
@@ -50,7 +57,7 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
     headerQ = 'num'+opString+'Queries'
     df = DataFrame(
         {'episodes': episodes, headerP: resP, headerR: resR, headerF: resF, headerQ:numEpQueries})
-    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseDict/Output_" + opString + "_" + \
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/Output_" + opString + "_" + \
                                   evalOpsObj.configDict['ALGORITHM']
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
 
