@@ -22,11 +22,13 @@ def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, numOpQueryCountDict):
 def plotMeanReciprocalRank(evalOpsObj):
     episodes = []
     meanReciprocalRank = []
+    numEpQueries = []
     for key in sorted(evalOpsObj.meanReciprocalRank.keys()):
         episodes.append(key)
+        numEpQueries.append(evalOpsObj.numEpQueries[key])
         updateArrWithDictEntry(meanReciprocalRank, evalOpsObj.meanReciprocalRank, key, evalOpsObj.numEpQueries)
     df = DataFrame(
-        {'episodes': episodes, 'meanReciprocalRank': meanReciprocalRank})
+        {'episodes': episodes, 'meanReciprocalRank': meanReciprocalRank, 'numMRRQueries': numEpQueries})
     outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseDict/Output_MRR_" + evalOpsObj.configDict['ALGORITHM']
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
 
@@ -35,16 +37,19 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
     resP = []
     resR = []
     resF = []
+    numEpQueries = []
     for key in sorted(evalOpsObj.queryTypeP.keys()):
         episodes.append(key)
+        numEpQueries.append(numOpQueryCountDict[key])
         updateArrWithDictEntry(resP, evalOpsP, key, numOpQueryCountDict)
         updateArrWithDictEntry(resR, evalOpsR, key, numOpQueryCountDict)
         updateArrWithDictEntry(resF, evalOpsF, key, numOpQueryCountDict)
     headerP = evalOpsObj.configDict['ALGORITHM']+"(P)"
     headerR = evalOpsObj.configDict['ALGORITHM']+"(R)"
     headerF = evalOpsObj.configDict['ALGORITHM'] + "(F)"
+    headerQ = 'num'+opString+'Queries'
     df = DataFrame(
-        {'episodes': episodes, headerP: resP, headerR: resR, headerF: resF})
+        {'episodes': episodes, headerP: resP, headerR: resR, headerF: resF, headerQ:numEpQueries})
     outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseDict/Output_" + opString + "_" + \
                                   evalOpsObj.configDict['ALGORITHM']
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
