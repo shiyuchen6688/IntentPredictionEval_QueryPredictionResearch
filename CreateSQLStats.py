@@ -40,12 +40,21 @@ def checkTableOverlaps(curTableSet, nextTableSet):
     if len(overlap) == 0:
         return "numTableSetChangedCompletely"
 
+def initKeyIfAbsent(statsDict, key):
+    if key not in statsDict:
+        statsDict[key] = 0
+    return
 
 def computeTableStats(intentObjDict):
     statsDict = {}
     # numTransitions, numOneTableToSeveralTables, numSeveralTablesToOneTable, numOneTableToOneTable,
     # numSameTableToSameTable, numTableAddedOnly, numTableDroppedOnly, numTableSetNotChanged,
     # numTableSetChangedCompletely, numTableSetChangedWithOverlaps
+    initKeyIfAbsent(statsDict, "numTableSetNotChanged")
+    initKeyIfAbsent(statsDict, 'numOneTableToOneTable')
+    initKeyIfAbsent(statsDict, 'numSameTableToSameTable')
+    initKeyIfAbsent(statsDict, 'numOneTableToSeveralTables')
+    initKeyIfAbsent(statsDict, 'numSeveralTablesToOneTable')
     for sessQueryID in intentObjDict:
         sessID = int(sessQueryID.split(",")[0])
         queryID = int(sessQueryID.split(",")[1])
