@@ -11,6 +11,8 @@ from ParseConfigFile import getConfig
 import pickle
 import argparse
 from pandas import DataFrame
+from openpyxl import load_workbook
+import pandas as pd
 
 def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, numOpQueryCountDict):
     try:
@@ -26,18 +28,38 @@ def updateArrWithCountEntry(arr, numOpQueryCountDict, key):
         arr.append(0.0)
     return
 
+def updateAggMetricWithDictEntry(avgMetric, evalOpsObjDict, epIndex):
+    try:
+        avgMetric += float(evalOpsObjDict[epIndex])
+    except:
+        avgMetric += 0.0
+    return avgMetric
+
 def plotMeanReciprocalRank(evalOpsObj):
     episodes = []
     meanReciprocalRank = []
     numEpQueries = []
+    avgMRR = 0.0
     for key in sorted(evalOpsObj.meanReciprocalRank.keys()):
         episodes.append(key)
         updateArrWithCountEntry(numEpQueries, evalOpsObj.numEpQueries, key)
         updateArrWithDictEntry(meanReciprocalRank, evalOpsObj.meanReciprocalRank, key, evalOpsObj.numEpQueries)
+        avgMRR = updateAggMetricWithDictEntry(avgMRR, evalOpsObj.meanReciprocalRank, key)
     df = DataFrame(
         {'episodes': episodes, 'meanReciprocalRank': meanReciprocalRank, 'numMRRQueries': numEpQueries})
     outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/Output_MRR_" + evalOpsObj.configDict['ALGORITHM']
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
+    totalQueryCount = float(sum(numEpQueries))
+    if totalQueryCount > 0.0:
+        avgMRR = avgMRR / totalQueryCount
+    avgMRRList = []
+    avgMRRList.append(avgMRR)
+    totalQueryCountList = []
+    totalQueryCountList.append(totalQueryCount)
+    df = DataFrame({'avgMRR': avgMRRList, 'numMRRQueries': totalQueryCountList})
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/Agg_Output_MRR_" + evalOpsObj.configDict['ALGORITHM']
+    df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet2', index=False)
+    return
 
 def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opString):
     episodes = []
@@ -45,12 +67,18 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
     resR = []
     resF = []
     numEpQueries = []
+    avgResP = 0.0
+    avgResR = 0.0
+    avgResF = 0.0
     for key in sorted(evalOpsObj.queryTypeP.keys()):
         episodes.append(key)
         updateArrWithCountEntry(numEpQueries, numOpQueryCountDict, key)
         updateArrWithDictEntry(resP, evalOpsP, key, numOpQueryCountDict)
         updateArrWithDictEntry(resR, evalOpsR, key, numOpQueryCountDict)
         updateArrWithDictEntry(resF, evalOpsF, key, numOpQueryCountDict)
+        updateAggMetricWithDictEntry(avgResP, evalOpsP, key)
+        updateAggMetricWithDictEntry(avgResR, evalOpsR, key)
+        updateAggMetricWithDictEntry(avgResF, evalOpsF, key)
     headerP = evalOpsObj.configDict['ALGORITHM']+"(P)"
     headerR = evalOpsObj.configDict['ALGORITHM']+"(R)"
     headerF = evalOpsObj.configDict['ALGORITHM'] + "(F)"
@@ -60,6 +88,25 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
     outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/Output_" + opString + "_" + \
                                   evalOpsObj.configDict['ALGORITHM']
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
+    totalQueryCount = float(sum(numEpQueries))
+    if totalQueryCount > 0.0:
+        avgResP = avgResP / totalQueryCount
+        avgResR = avgResR / totalQueryCount
+        avgResF = avgResF / totalQueryCount
+    avgResPList = []
+    avgResPList.append(avgResP)
+    avgResRList = []
+    avgResRList.append(avgResR)
+    avgResFList = []
+    avgResFList.append(avgResF)
+    totalQueryCountList = []
+    totalQueryCountList.append(totalQueryCount)
+    df = DataFrame({headerP: avgResPList, headerR: avgResRList, headerF: avgResFList, headerQ: totalQueryCountList})
+    outputOpWiseQualityFileName = getConfig(
+        evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/AggrOutput_" + opString + "_" + \
+                                  evalOpsObj.configDict['ALGORITHM']
+    df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
+    return
 
 def plotEvalMetricsOpWise(evalOpsObj):
     plotMeanReciprocalRank(evalOpsObj)
@@ -95,6 +142,7 @@ def plotEvalMetricsOpWise(evalOpsObj):
 
 class evalOps:
     def __init__(self, configFileName, logFile):
+        self.configFileName = configFileName
         self.configDict = parseConfig.parseConfigFile(configFileName)
         self.logFile = logFile
         self.curEpisode = 0
