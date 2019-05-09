@@ -76,9 +76,9 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
         updateArrWithDictEntry(resP, evalOpsP, key, numOpQueryCountDict)
         updateArrWithDictEntry(resR, evalOpsR, key, numOpQueryCountDict)
         updateArrWithDictEntry(resF, evalOpsF, key, numOpQueryCountDict)
-        updateAggMetricWithDictEntry(avgResP, evalOpsP, key)
-        updateAggMetricWithDictEntry(avgResR, evalOpsR, key)
-        updateAggMetricWithDictEntry(avgResF, evalOpsF, key)
+        avgResP = updateAggMetricWithDictEntry(avgResP, evalOpsP, key)
+        avgResR = updateAggMetricWithDictEntry(avgResR, evalOpsR, key)
+        avgResF = updateAggMetricWithDictEntry(avgResF, evalOpsF, key)
     headerP = evalOpsObj.configDict['ALGORITHM']+"(P)"
     headerR = evalOpsObj.configDict['ALGORITHM']+"(R)"
     headerF = evalOpsObj.configDict['ALGORITHM'] + "(F)"
