@@ -30,9 +30,9 @@ def increment(key, dictName):
     return dictName
 
 def checkTableAddedOrDropped(curTableSet, nextTableSet):
-    if set(curTableSet).issubset(set(nextTableSet)):
+    if set(curTableSet).issubset(set(nextTableSet)) and len(nextTableSet) > len(curTableSet):
         return "numTableAddedOnly"
-    elif set(nextTableSet).issubset(set(curTableSet)):
+    elif set(nextTableSet).issubset(set(curTableSet)) and len(nextTableSet) < len(curTableSet):
         return "numTableDroppedOnly"
 
 def checkTableOverlaps(curTableSet, nextTableSet):
