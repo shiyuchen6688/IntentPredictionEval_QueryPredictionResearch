@@ -23,6 +23,8 @@ import CreateSQLFromIntentVec
 
 
 def increment(key, dictName):
+    if key is None:
+        return dictName
     if key not in dictName:
         dictName[key] = 1
     else:
