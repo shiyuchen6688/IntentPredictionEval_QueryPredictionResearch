@@ -38,6 +38,8 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
             (sessionLineDict, newSessionLengthDict) = QR.updateSessionLineDict(line, configDict, sessionLineDict, newSessionLengthDict)
     f.close()
     compareForSanity(newSessionLengthDict, sessionLengthDict)
+    sessCount = 0
+    sessQueryCount = 0
     for sessName in sessNames:
         sessID = int(sessName.split(" ")[1])
         numSessQueries = sessionLengthDict[sessID]
@@ -45,10 +47,16 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
             #print "hi in createTrainTest"
         for queryID in range(numSessQueries):
             lineToOutput = sessionLineDict[str(sessID)+","+str(queryID)]
+            sessQueryCount += 1
             if sessName in testSessNamesFold:
                 ti.appendToFile(outputIntentTestSessions, lineToOutput)
+                if sessQueryCount%10000 == 0:
+                    print "Sess: "+str(sessCount)+", sessQueryCount: "+str(sessQueryCount)
             else:
                 ti.appendToFile(outputIntentTrainSessions, lineToOutput)
+                if sessQueryCount%10000 == 0:
+                    print "Sess: "+str(sessCount)+", sessQueryCount: "+str(sessQueryCount)
+        sessCount+=1
     return
 
 def prepareKFoldTrainTest(configDict, intentSessionFile):
