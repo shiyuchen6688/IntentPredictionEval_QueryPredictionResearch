@@ -883,8 +883,12 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
         print "Total Train Time: "+str(totalTrainTime)
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
-def trainEpisodicModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict):
-    batchSize = int(configDict['EPISODE_IN_QUERIES'])
+def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict):
+    assert episodicTraining == 'True' or episodicTraining == 'False'
+    if episodicTraining == 'True':
+        batchSize = int(configDict['EPISODE_IN_QUERIES'])
+    elif episodicTraining == 'False':
+        batchSize = len(trainKeyOrder)
     lo = 0
     hi = -1
     assert configDict[
@@ -919,7 +923,8 @@ def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, qu
     assert configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        trainEpisodicModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict)
+        episodicTrain = 'False'
+        trainEpisodicModelSustenance(episodicTrain, trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict)
     elif configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         (sessionSummaries, sessionSampleDict) = loadModel(configDict)
     return (sessionSummaries, sessionSampleDict)

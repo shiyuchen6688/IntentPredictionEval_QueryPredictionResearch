@@ -326,12 +326,16 @@ def loadModel(qObj):
     print "notInQT: "+str(notInQT)+", notInSessionStreamDict: "+str(notInSessionStreamDict)
     return
 
-def trainEpisodicModelSustenance(trainKeyOrder, qObj):
-    batchSize = int(qObj.configDict['EPISODE_IN_QUERIES'])
+def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, qObj):
+    numTrainEpisodes = 0
+    assert episodicTraining == 'True' or episodicTraining == 'False'
+    if episodicTraining == 'True':
+        batchSize = int(qObj.configDict['EPISODE_IN_QUERIES'])
+    elif episodicTraining == 'False':
+        batchSize = len(trainKeyOrder)
     lo = 0
     hi = -1
     # assert qObj.configDict['INCLUDE_CUR_SESS'] == "False"
-    numTrainEpisodes = 0
     while hi < len(trainKeyOrder) - 1:
         lo = hi + 1
         if len(qObj.keyOrder) - lo < batchSize:
@@ -363,7 +367,8 @@ def trainModelSustenance(trainKeyOrder, qObj):
     assert configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        trainEpisodicModelSustenance(trainKeyOrder, qObj)
+        episodicTraining = 'False'
+        trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, qObj)
     elif configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         loadModel(qObj)
     return
