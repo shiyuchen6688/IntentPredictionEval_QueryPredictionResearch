@@ -763,8 +763,12 @@ def splitIntoTrainTestSets(keyOrder, configDict):
     return (trainKeyOrder, testKeyOrder)
 
 
-def trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict):
-    batchSize = int(configDict['EPISODE_IN_QUERIES'])
+def trainModelSustenance(episodic, trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict):
+    assert episodic == 'True' or episodic == 'False'
+    if episodic == 'True':
+        batchSize = int(configDict['EPISODE_IN_QUERIES'])
+    elif episodic == 'False':
+        batchSize = len(trainKeyOrder)
     lo = 0
     hi = -1
     numTrainEpisodes = 0
@@ -794,6 +798,7 @@ def trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, 
             queryKeysSetAside = []
         numTrainEpisodes += 1
     return (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback)
+
 
 def testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
     batchSize = int(configDict['EPISODE_IN_QUERIES'])
@@ -837,7 +842,8 @@ def evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside
     (trainKeyOrder, testKeyOrder) = splitIntoTrainTestSets(keyOrder, configDict)
     assert configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = trainModelSustenance(trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict)
+        episodicTraining = 'False'
+        (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = trainModelSustenance(episodicTraining, trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict)
     elif configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         (modelRNN, sessionLengthDict, sampledQueryHistory, max_lookback) = loadModelSustenance(configDict)
     testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
