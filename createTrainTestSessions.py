@@ -26,7 +26,7 @@ def compareForSanity(newSessionLengthDict, sessionLengthDict):
             print "newSessionLengthDict["+str(key)+"]: "+str(newSessionLengthDict[key])+", sessionLengthDict["+str(key)+"]: "+str(sessionLengthDict[key])
 
 
-def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intentSessionFile, sessionLengthDict):
+def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intentSessionFile, sessionLengthDict, sessionLineDict):
     fileNameWithoutDir = intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]
     outputIntentTrainSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir+"_TRAIN_FOLD_"+str(foldID)
     outputIntentTestSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir + "_TEST_FOLD_" + str(foldID)
@@ -35,14 +35,6 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
         os.remove(outputIntentTestSessions)
     except OSError:
         pass
-    sessionLineDict = {}
-    newSessionLengthDict = {}
-    with open(intentSessionFile) as f:
-        for line in f:
-            (sessionLineDict, newSessionLengthDict) = QR.updateSessionLineDict(line, configDict, sessionLineDict, newSessionLengthDict)
-    f.close()
-    compareForSanity(newSessionLengthDict, sessionLengthDict)
-    print "Checked Sanity for all Sessions"
     sessCount = 0
     sessQueryCount = 0
     for sessName in sessNames:
@@ -84,6 +76,15 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
     testSessNames = [[] for i in range(kFold)]
     testEndIndex = -1
     sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
+    sessionLineDict = {}
+    newSessionLengthDict = {}
+    with open(intentSessionFile) as f:
+        for line in f:
+            (sessionLineDict, newSessionLengthDict) = QR.updateSessionLineDict(line, configDict, sessionLineDict,
+                                                                               newSessionLengthDict)
+    f.close()
+    compareForSanity(newSessionLengthDict, sessionLengthDict)
+    print "Checked Sanity for all Sessions"
     for i in range(kFold):
         testStartIndex = testEndIndex+1
         testEndIndex = testStartIndex + numTest
@@ -92,7 +93,7 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
         for index in range(testStartIndex, testEndIndex+1):
             testSessNames[i].append(sessNames[index])
         print "Fold "+str(i)+", StartIndex="+str(testStartIndex)+", EndIndex="+str(testEndIndex)
-        createIntentVectors(testSessNames[i], i, configDict, sessNames, intentSessionFile, sessionLengthDict)
+        createIntentVectors(testSessNames[i], i, configDict, sessNames, intentSessionFile, sessionLengthDict, sessionLineDict)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
