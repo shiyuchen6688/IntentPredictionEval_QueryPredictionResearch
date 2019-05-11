@@ -16,8 +16,12 @@ import argparse
 
 def compareForSanity(newSessionLengthDict, sessionLengthDict):
     assert len(sessionLengthDict) == len(newSessionLengthDict)
+    sessCount = 0
     for key in sessionLengthDict:
         assert key in newSessionLengthDict
+        if sessCount % 100 == 0:
+            print "Checked Sanity for "+str(sessCount)+" so far"
+        sessCount+=1
         if sessionLengthDict[key] != newSessionLengthDict[key]:
             print "newSessionLengthDict["+str(key)+"]: "+str(newSessionLengthDict[key])+", sessionLengthDict["+str(key)+"]: "+str(sessionLengthDict[key])
 
@@ -38,6 +42,7 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
             (sessionLineDict, newSessionLengthDict) = QR.updateSessionLineDict(line, configDict, sessionLineDict, newSessionLengthDict)
     f.close()
     compareForSanity(newSessionLengthDict, sessionLengthDict)
+    print "Checked Sanity for all Sessions"
     sessCount = 0
     sessQueryCount = 0
     for sessName in sessNames:
