@@ -335,8 +335,12 @@ def trainTestBatchWise(svdObj):
             svdObj.resultDict = LSTM_RNN_Parallel.clear(svdObj.resultDict)
     updateResultsToExcel(svdObj.configDict, svdObj.episodeResponseTimeDictName, svdObj.outputIntentFileName)
 
-def trainEpisodicModelSustenance(trainKeyOrder, svdObj):
-    batchSize = int(svdObj.configDict['EPISODE_IN_QUERIES'])
+def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, svdObj):
+    assert episodicTraining == 'True' or episodicTraining == 'False'
+    if episodicTraining == 'True':
+        batchSize = int(svdObj.configDict['EPISODE_IN_QUERIES'])
+    elif episodicTraining == 'False':
+        batchSize = len(trainKeyOrder)
     lo = 0
     hi = -1
     numTrainEpisodes = 0
@@ -373,7 +377,8 @@ def trainModelSustenance(trainKeyOrder, svdObj):
     assert configDict['SVD_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'SVD_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['SVD_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        trainEpisodicModelSustenance(trainKeyOrder, svdObj)
+        episodicTraining = 'False'
+        trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, svdObj)
     elif configDict['SVD_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         loadModel(svdObj)
     return
