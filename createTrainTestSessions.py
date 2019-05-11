@@ -18,7 +18,7 @@ def compareForSanity(newSessionLengthDict, sessionLengthDict):
     assert len(sessionLengthDict) == len(newSessionLengthDict)
     sessCount = 0
     for key in sessionLengthDict:
-        assert key in newSessionLengthDict
+        #assert key in newSessionLengthDict
         if sessCount % 100 == 0:
             print "Checked Sanity for "+str(sessCount)+" so far"
         sessCount+=1
