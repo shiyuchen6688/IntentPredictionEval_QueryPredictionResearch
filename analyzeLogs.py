@@ -35,6 +35,47 @@ def updateAggMetricWithDictEntry(avgMetric, evalOpsObjDict, epIndex):
         avgMetric += 0.0
     return avgMetric
 
+def plotQueryTypeDistribution(evalOpsObj):
+    episodes = []
+    numSelectQueryType = []
+    numInsertQueryType = []
+    numUpdateQueryType = []
+    numDeleteQueryType = []
+    totalSelect = 0.0
+    totalInsert = 0.0
+    totalUpdate = 0.0
+    totalDelete = 0.0
+    for key in sorted(evalOpsObj.meanReciprocalRank.keys()):
+        episodes.append(key)
+        updateArrWithCountEntry(numSelectQueryType, evalOpsObj.numSelectQueryType, key)
+        updateArrWithCountEntry(numInsertQueryType, evalOpsObj.numInsertQueryType, key)
+        updateArrWithCountEntry(numUpdateQueryType, evalOpsObj.numUpdateQueryType, key)
+        updateArrWithCountEntry(numDeleteQueryType, evalOpsObj.numDeleteQueryType, key)
+        totalSelect = updateAggMetricWithDictEntry(totalSelect, evalOpsObj.numSelectQueryType, key)
+        totalInsert = updateAggMetricWithDictEntry(totalInsert, evalOpsObj.numInsertQueryType, key)
+        totalUpdate = updateAggMetricWithDictEntry(totalUpdate, evalOpsObj.numUpdateQueryType, key)
+        totalDelete = updateAggMetricWithDictEntry(totalDelete, evalOpsObj.numDeleteQueryType, key)
+    df = DataFrame(
+        {'episodes': episodes, '# SELECT': numSelectQueryType, '# INSERT': numInsertQueryType, '# UPDATE': numUpdateQueryType,
+         '# DELETE': numDeleteQueryType})
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/QTDist" + \
+                                  evalOpsObj.configDict['ALGORITHM']
+    df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
+    totalSelList = []
+    totalSelList.append(totalSelect)
+    totalInsList = []
+    totalInsList.append(totalInsert)
+    totalUpdList = []
+    totalUpdList.append(totalUpdate)
+    totalDelList = []
+    totalDelList.append(totalDelete)
+    df = DataFrame({'totalSEL': totalSelList, 'totalINS': totalInsList, 'totalUPD': totalUpdList, 'totalDEL': totalDelList})
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/TotalQT_" + \
+                                  evalOpsObj.configDict['ALGORITHM']
+    df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet2', index=False)
+    return
+
+
 def plotMeanReciprocalRank(evalOpsObj):
     episodes = []
     meanReciprocalRank = []
@@ -109,6 +150,7 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
     return
 
 def plotEvalMetricsOpWise(evalOpsObj):
+    plotQueryTypeDistribution(evalOpsObj)
     plotMeanReciprocalRank(evalOpsObj)
     plotOp(evalOpsObj.queryTypeP, evalOpsObj.queryTypeR, evalOpsObj.queryTypeF, evalOpsObj.numQueryTypeQueries, evalOpsObj, "QUERYTYPE")
     plotOp(evalOpsObj.tablesP, evalOpsObj.tablesR, evalOpsObj.tablesF, evalOpsObj.numTablesQueries, evalOpsObj, "TABLES")
@@ -146,6 +188,10 @@ class evalOps:
         self.configDict = parseConfig.parseConfigFile(configFileName)
         self.logFile = logFile
         self.curEpisode = 0
+        self.numSelectQueryType = {}
+        self.numInsertQueryType = {}
+        self.numUpdateQueryType = {}
+        self.numDeleteQueryType = {}
         self.numEpQueries = {}
         self.curQueryIndex = -1
         self.meanReciprocalRank = {}
@@ -330,6 +376,14 @@ def compUpdateCondSelMetrics(predOpsObj, nextActualOpsObj, evalOpsObj):
     return
 
 def computeF1(evalOpsObj, predOpsObj, nextActualOpsObj):
+    if nextActualOpsObj.queryType == "select":
+        updateMetricDict(evalOpsObj.numSelectQueryType, evalOpsObj.curEpisode, 1.0)
+    elif nextActualOpsObj.queryType == "insert":
+        updateMetricDict(evalOpsObj.numInsertQueryType, evalOpsObj.curEpisode, 1.0)
+    elif nextActualOpsObj.queryType == "update":
+        updateMetricDict(evalOpsObj.numUpdateQueryType, evalOpsObj.curEpisode, 1.0)
+    elif nextActualOpsObj.queryType == "delete":
+        updateMetricDict(evalOpsObj.numDeleteQueryType, evalOpsObj.curEpisode, 1.0)
     if predOpsObj.queryType == nextActualOpsObj.queryType:
         updateOpMetrics(1.0, 1.0, 1.0, evalOpsObj.queryTypeP, evalOpsObj.queryTypeR,
                         evalOpsObj.queryTypeF, evalOpsObj.numQueryTypeQueries, evalOpsObj)
