@@ -367,7 +367,7 @@ def trainModelSustenance(trainKeyOrder, qObj):
     assert configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        episodicTraining = 'False'
+        episodicTraining = 'True'
         trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, qObj)
     elif configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         loadModel(qObj)

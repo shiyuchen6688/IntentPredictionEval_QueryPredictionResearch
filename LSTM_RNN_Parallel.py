@@ -842,7 +842,7 @@ def evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside
     (trainKeyOrder, testKeyOrder) = splitIntoTrainTestSets(keyOrder, configDict)
     assert configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        episodicTraining = 'False'
+        episodicTraining = 'True'
         (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = trainModelSustenance(episodicTraining, trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict)
     elif configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         (modelRNN, sessionLengthDict, sampledQueryHistory, max_lookback) = loadModelSustenance(configDict)

@@ -923,7 +923,7 @@ def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, qu
     assert configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        episodicTrain = 'False'
+        episodicTrain = 'True'
         trainEpisodicModelSustenance(episodicTrain, trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict)
     elif configDict['CF_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         (sessionSummaries, sessionSampleDict) = loadModel(configDict)

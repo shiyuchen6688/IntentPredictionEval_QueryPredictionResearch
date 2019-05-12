@@ -377,7 +377,7 @@ def trainModelSustenance(trainKeyOrder, svdObj):
     assert configDict['SVD_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'SVD_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['SVD_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
-        episodicTraining = 'False'
+        episodicTraining = 'True'
         trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, svdObj)
     elif configDict['SVD_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         loadModel(svdObj)
