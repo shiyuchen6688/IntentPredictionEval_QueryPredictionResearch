@@ -34,7 +34,7 @@ def seqIntentVectorFilesCleanConcat(configDict):
                     line = removeExcessDelimiters(line)
                 assert len(line.split(";")) == 3
                 tokens = line.split(";")
-                sessName = tokens[0].split(", ")[0].split(" ")[1]
+                sessName = BitMap.fromstring(tokens[0].split(", ")[0].split(" ")[1])
                 if sessName != prevSessName:
                     sessID+=1
                     prevSessName = sessName
