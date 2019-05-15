@@ -13,7 +13,48 @@ import ReverseEnggQueries
 import CFCosineSim_Parallel
 #import MINC_QueryParser as MINC_QP
 
-def seqIntentVectorFilesCleanConcat(configDict):
+def seqIntentVectorFilesModifyCrawler(configDict):
+    splitDir = getConfig(configDict['BIT_FRAGMENT_SEQ_SPLITS'])
+    splitFileName = configDict['BIT_FRAGMENT_SEQ_SPLIT_NAME_FORMAT']
+    numFiles = int(configDict['BIT_FRAGMENT_SEQ_SPLIT_THREADS'])
+    sessionQueryDict = {} # key is session ID and value is line
+    queryCount = 0
+    prevSessName = None
+    prevQueryVector = None
+    #sessID = int(configDict['BIT_FRAGMENT_START_SESS_INDEX'])-1
+    sessID = -1
+    sessQueryID = float("-inf")
+    for i in range(numFiles):
+        fileNamePerThread = splitDir+"/"+splitFileName+str(i)
+        with open(fileNamePerThread) as f:
+            for line in f:
+                line = line.strip()
+                if len(line.split(";")) > 3:
+                    line = removeExcessDelimiters(line)
+                assert len(line.split(";")) == 3
+                tokens = line.split(";")
+                sessName = tokens[0].split(", ")[0].split(" ")[1]
+                if sessName != prevSessName:
+                    sessID+=1
+                    prevSessName = sessName
+                if sessID >= int(configDict['BIT_FRAGMENT_START_SESS_INDEX']):
+                    if sessID not in sessionQueryDict:
+                        sessionQueryDict[sessID] = []
+                        sessQueryID = 1 # since some query indices may be pruned in between
+                    curQueryVector = BitMap.fromstring(tokens[2])
+                    if prevQueryVector is None or CFCosineSim_Parallel.computeBitCosineSimilarity(curQueryVector, prevQueryVector) >= 1.0:
+                        newLine = "Session "+sessName+", Query "+str(sessQueryID) +";"+tokens[1]+";"+tokens[2]
+                        sessionQueryDict[sessID].append(newLine)
+                        sessQueryID += 1
+                    queryCount +=1
+                    #if queryCount >20000:
+                        #break
+                    if queryCount % 1000 == 0:
+                        print ("Query count so far: "+str(queryCount)+", len(sessionQueryDict): "+str(len(sessionQueryDict)))
+    return sessionQueryDict
+
+
+def seqIntentVectorFilesPruneCrawler(configDict):
     splitDir = getConfig(configDict['BIT_FRAGMENT_SEQ_SPLITS'])
     splitFileName = configDict['BIT_FRAGMENT_SEQ_SPLIT_NAME_FORMAT']
     numFiles = int(configDict['BIT_FRAGMENT_SEQ_SPLIT_THREADS'])
@@ -36,18 +77,20 @@ def seqIntentVectorFilesCleanConcat(configDict):
                 tokens = line.split(";")
                 sessName = tokens[0].split(", ")[0].split(" ")[1]
                 if sessName != prevSessName:
-                    sessID+=1
+                    if repQuery == "True":
+                        assert sessID in sessionQueryDict
+                        del sessionQueryDict[sessID]
+                        assert sessID not in sessionQueryDict
+                        repQuery = "False"
+                    else:
+                        sessID+=1
                     prevSessName = sessName
                 if sessID >= int(configDict['BIT_FRAGMENT_START_SESS_INDEX']):
                     if sessID not in sessionQueryDict:
-                        if repQuery == "True":
-                            sessID -= 1
-                            del sessionQueryDict[sessID]
-                            repQuery = "False"
                         sessionQueryDict[sessID] = []
                     sessionQueryDict[sessID].append(line)
                     curQueryVector = BitMap.fromstring(tokens[2])
-                    if repQuery == "False" and prevQueryVector is not None and CFCosineSim_Parallel.computeBitCosineSimilarity(curQueryVector,
+                    if prevQueryVector is not None and CFCosineSim_Parallel.computeBitCosineSimilarity(curQueryVector,
                                                                                                        prevQueryVector) >= 1.0:
                         repQuery = "True"
                     prevQueryVector = curQueryVector
@@ -59,7 +102,7 @@ def seqIntentVectorFilesCleanConcat(configDict):
                             len(sessionQueryDict)))
     return sessionQueryDict
 
-def seqIntentVectorFilesConcat(configDict):
+def seqIntentVectorFilesKeepCrawler(configDict):
     splitDir = getConfig(configDict['BIT_FRAGMENT_SEQ_SPLITS'])
     splitFileName = configDict['BIT_FRAGMENT_SEQ_SPLIT_NAME_FORMAT']
     numFiles = int(configDict['BIT_FRAGMENT_SEQ_SPLIT_THREADS'])
@@ -221,10 +264,12 @@ if __name__ == "__main__":
         os.remove(fragmentIntentSessionsFile)
     except OSError:
         pass
-    assert args.crawler == "True" or args.crawler == "False"
-    if args.crawler == "False":
-        sessionQueryDict = seqIntentVectorFilesConcat(configDict)
-    elif args.crawler == "True":
-        sessionQueryDict = seqIntentVectorFilesCleanConcat(configDict)
+    assert args.crawler == "keep" or args.crawler == "prune" or args.crawler == "modify"
+    if args.crawler == "keep":
+        sessionQueryDict = seqIntentVectorFilesKeepCrawler(configDict)
+    elif args.crawler == "prune":
+        sessionQueryDict = seqIntentVectorFilesPruneCrawler(configDict)
+    elif args.crawler == "modify":
+        sessionQueryDict = seqIntentVectorFilesModifyCrawler(configDict)
     createQuerySessions(sessionQueryDict, configDict)
     createConcurrentIntentVectors(sessionQueryDict, configDict)
