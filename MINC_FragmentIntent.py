@@ -55,7 +55,8 @@ def seqIntentVectorFilesCleanConcat(configDict):
                     #if queryCount >20000:
                         #break
                     if queryCount % 1000 == 0:
-                        print ("Query count so far: "+str(queryCount))
+                        print ("Query count so far: " + str(queryCount) + ", len(sessionQueryDict): " + str(
+                            len(sessionQueryDict)))
     return sessionQueryDict
 
 def seqIntentVectorFilesConcat(configDict):
@@ -88,7 +89,7 @@ def seqIntentVectorFilesConcat(configDict):
                     queryCount +=1
                     #if queryCount >20000:
                         #break
-                    if queryCount % 1000 == 0:
+                    if queryCount % 10000 == 0:
                         print ("Query count so far: "+str(queryCount)+", len(sessionQueryDict): "+str(len(sessionQueryDict)))
     return sessionQueryDict
 
