@@ -41,9 +41,9 @@ def seqIntentVectorFilesCleanConcat(configDict):
                 if sessID >= int(configDict['BIT_FRAGMENT_START_SESS_INDEX']):
                     if sessID not in sessionQueryDict:
                         if repQuery == "True":
+                            sessID -= 1
                             del sessionQueryDict[sessID]
                             repQuery = "False"
-                            sessID -= 1
                         sessionQueryDict[sessID] = []
                     sessionQueryDict[sessID].append(line)
                     curQueryVector = BitMap.fromstring(tokens[2])
