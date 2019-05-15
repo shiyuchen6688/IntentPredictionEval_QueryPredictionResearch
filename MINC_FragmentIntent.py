@@ -34,7 +34,7 @@ def seqIntentVectorFilesCleanConcat(configDict):
                     line = removeExcessDelimiters(line)
                 assert len(line.split(";")) == 3
                 tokens = line.split(";")
-                sessName = BitMap.fromstring(tokens[0].split(", ")[0].split(" ")[1])
+                sessName = tokens[0].split(", ")[0].split(" ")[1]
                 if sessName != prevSessName:
                     sessID+=1
                     prevSessName = sessName
@@ -46,7 +46,7 @@ def seqIntentVectorFilesCleanConcat(configDict):
                             sessID -= 1
                         sessionQueryDict[sessID] = []
                     sessionQueryDict[sessID].append(line)
-                    curQueryVector = tokens[0]
+                    curQueryVector = BitMap.fromstring(tokens[2])
                     if repQuery == "False" and prevQueryVector is not None and CFCosineSim_Parallel.computeBitCosineSimilarity(curQueryVector,
                                                                                                        prevQueryVector) >= 1.0:
                         repQuery = "True"
