@@ -42,7 +42,7 @@ def seqIntentVectorFilesModifyCrawler(configDict):
                         sessionQueryDict[sessID] = []
                         sessQueryID = 1 # since some query indices may be pruned in between
                     curQueryVector = BitMap.fromstring(tokens[2])
-                    if prevQueryVector is None or CFCosineSim_Parallel.computeBitCosineSimilarity(curQueryVector, prevQueryVector) >= 1.0:
+                    if prevQueryVector is None or CFCosineSim_Parallel.computeBitCosineSimilarity(curQueryVector, prevQueryVector) < 0.99:
                         newLine = "Session "+sessName+", Query "+str(sessQueryID) +";"+tokens[1]+";"+tokens[2]
                         sessionQueryDict[sessID].append(newLine)
                         sessQueryID += 1
