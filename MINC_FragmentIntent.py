@@ -46,6 +46,7 @@ def seqIntentVectorFilesModifyCrawler(configDict):
                         newLine = "Session "+sessName+", Query "+str(sessQueryID) +";"+tokens[1]+";"+tokens[2]
                         sessionQueryDict[sessID].append(newLine)
                         sessQueryID += 1
+                    prevQueryVector = curQueryVector
                     queryCount +=1
                     #if queryCount >20000:
                         #break
