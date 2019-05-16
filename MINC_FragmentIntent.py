@@ -35,7 +35,10 @@ def seqIntentVectorFilesModifyCrawler(configDict):
                 tokens = line.split(";")
                 sessName = tokens[0].split(", ")[0].split(" ")[1]
                 if sessName != prevSessName:
-                    sessID+=1
+                    if len(sessionQueryDict[sessID]) == 0:
+                        del sessionQueryDict[sessID]
+                    else:
+                        sessID+=1
                     prevSessName = sessName
                 if sessID >= int(configDict['BIT_FRAGMENT_START_SESS_INDEX']):
                     if sessID not in sessionQueryDict:
