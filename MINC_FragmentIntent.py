@@ -36,10 +36,11 @@ def seqIntentVectorFilesModifyCrawler(configDict):
                 sessName = tokens[0].split(", ")[0].split(" ")[1]
                 if sessName != prevSessName:
                     if sessID in sessionQueryDict and len(sessionQueryDict[sessID]) == 0:
-                        del sessionQueryDict[sessID]
+                        del sessionQueryDict[sessID] # empty previous session
                     else:
                         sessID+=1
                     prevSessName = sessName
+                    prevQueryVector = None
                 if sessID >= int(configDict['BIT_FRAGMENT_START_SESS_INDEX']):
                     if sessID not in sessionQueryDict:
                         sessionQueryDict[sessID] = []
@@ -89,6 +90,7 @@ def seqIntentVectorFilesPruneCrawler(configDict):
                     else:
                         sessID+=1
                     prevSessName = sessName
+                    prevQueryVector = None
                 if sessID >= int(configDict['BIT_FRAGMENT_START_SESS_INDEX']):
                     if sessID not in sessionQueryDict:
                         sessionQueryDict[sessID] = []
