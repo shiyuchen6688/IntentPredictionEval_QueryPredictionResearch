@@ -136,7 +136,7 @@ if __name__ == "__main__":
     if configDict['INTENT_REP']=='TUPLE':
         intentSessionFile = getConfig(configDict['TUPLEINTENTSESSIONS'])
     elif configDict['INTENT_REP']=='FRAGMENT' and configDict['BIT_OR_WEIGHTED']=='BIT':
-        if configDict['ALGORITHM'] == 'RNN' and configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
+        if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
             intentSessionFile = getConfig(configDict['BIT_FRAGMENT_TABLE_INTENT_SESSIONS'])
         else:
             intentSessionFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
