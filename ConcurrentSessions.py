@@ -81,13 +81,19 @@ def convertSeqToConcFile(configDict):
     testSessIDs = readTestSessIDs(inputSeqFile, configDict)
     try:
         os.remove(seqTrainFile)
+    except:
+        pass
+    try:
+        os.remove(concTestFile)
+    except:
+        pass
+    try:
         with open(inputSeqFile) as f:
             for line in f:
                 curSessID = line.strip().split(";")[0].split(",")[0]
                 if curSessID not in testSessIDs:
                     ti.appendToFile(seqTrainFile, line.strip())
         f.close()
-        os.remove(concTestFile)
         with open(inputConcFile) as f:
             for line in f:
                 curSessID = line.strip().split(";")[0].split(",")[0]
