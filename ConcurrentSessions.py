@@ -79,6 +79,8 @@ def convertSeqToConcFile(configDict):
     concTestFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_ConcTest_Sustenance_0.8')
     testSessIDs = readTestSessIDs(inputSeqFile, configDict)
     try:
+        os.remove(concTestFile)
+        os.remove(seqTrainFile)
         with open(inputConcFile) as f:
             for line in f:
                 curSessID = line.strip().split(";")[0].split(",")[0]
