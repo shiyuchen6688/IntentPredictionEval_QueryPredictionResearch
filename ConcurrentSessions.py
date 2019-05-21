@@ -76,11 +76,11 @@ def readTestSessIDs(inputSeqFile, configDict):
 def convertSeqToConcFile(configDict):
     inputConcFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_Singularity')
     inputSeqFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_Sustenance_0.8')
-    seqTrainFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_SeqTrain_Sustenance_0.8')
+    concTrainFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_ConcTrain_Sustenance_0.8')
     concTestFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_ConcTest_Sustenance_0.8')
     testSessIDs = readTestSessIDs(inputSeqFile, configDict)
     try:
-        os.remove(seqTrainFile)
+        os.remove(concTrainFile)
     except:
         pass
     try:
@@ -88,17 +88,13 @@ def convertSeqToConcFile(configDict):
     except:
         pass
     try:
-        with open(inputSeqFile) as f:
-            for line in f:
-                curSessID = line.strip().split(";")[0].split(",")[0]
-                if curSessID not in testSessIDs:
-                    ti.appendToFile(seqTrainFile, line.strip())
-        f.close()
         with open(inputConcFile) as f:
             for line in f:
                 curSessID = line.strip().split(";")[0].split(",")[0]
                 if curSessID in testSessIDs:
                     ti.appendToFile(concTestFile, line.strip())
+                else:
+                    ti.appendToFile(concTrainFile, line.strip())
         f.close()
     except:
         print "error2"
