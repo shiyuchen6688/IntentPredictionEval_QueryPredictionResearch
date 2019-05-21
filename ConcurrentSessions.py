@@ -68,8 +68,9 @@ def readTestSessIDs(inputSeqFile, configDict):
                     sessID = line.strip().split(";")[0].split(",")[0]
                     sessIDs.add(sessID)
                 lineIndex+=1
+        f.close()
     except:
-        print "error"
+        print "error1"
     return sessIDs
 
 def convertSeqToConcFile(configDict):
@@ -85,14 +86,16 @@ def convertSeqToConcFile(configDict):
                 curSessID = line.strip().split(";")[0].split(",")[0]
                 if curSessID not in testSessIDs:
                     ti.appendToFile(seqTrainFile, line.strip())
+        f.close()
         os.remove(concTestFile)
         with open(inputConcFile) as f:
             for line in f:
                 curSessID = line.strip().split(";")[0].split(",")[0]
                 if curSessID in testSessIDs:
                     ti.appendToFile(concTestFile, line.strip())
+        f.close()
     except:
-        print "error"
+        print "error2"
     return
 
 
