@@ -63,11 +63,11 @@ def readTestSessIDs(inputSeqFile, configDict):
     try:
         lineIndex = 0
         with open(inputSeqFile) as f:
-            line = f.readline()
-            if lineIndex >= int(configDict['RNN_SUSTENANCE_TRAIN_LIMIT']):
-                sessID = line.strip().split(";")[0].split(",")[0]
-                sessIDs.add(sessID)
-            lineIndex+=1
+            for line in f:
+                if lineIndex >= int(configDict['RNN_SUSTENANCE_TRAIN_LIMIT']):
+                    sessID = line.strip().split(";")[0].split(",")[0]
+                    sessIDs.add(sessID)
+                lineIndex+=1
     except:
         print "error"
     return sessIDs
@@ -80,12 +80,12 @@ def convertSeqToConcFile(configDict):
     testSessIDs = readTestSessIDs(inputSeqFile, configDict)
     try:
         with open(inputConcFile) as f:
-            line = f.readline()
-            curSessID = line.strip().split(";")[0].split(",")[0]
-            if curSessID in testSessIDs:
-                ti.appendToFile(concTestFile, line.strip())
-            else:
-                ti.appendToFile(seqTrainFile, line.strip())
+            for line in f:
+                curSessID = line.strip().split(";")[0].split(",")[0]
+                if curSessID in testSessIDs:
+                    ti.appendToFile(concTestFile, line.strip())
+                else:
+                    ti.appendToFile(seqTrainFile, line.strip())
     except:
         print "error"
     return
