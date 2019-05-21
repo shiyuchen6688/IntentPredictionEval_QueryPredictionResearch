@@ -203,7 +203,8 @@ def tryDeletionIfExists(fileName):
         pass
     return
 
-def createConcurrentIntentVectors(sessionQueryDict, configDict):
+
+def createSingularityIntentVectors(sessionQueryDict, configDict):
     intentFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
     concurrentFile = getConfig(configDict['CONCURRENT_QUERY_SESSIONS'])
     tableIntentFile = getConfig(configDict['BIT_FRAGMENT_TABLE_INTENT_SESSIONS'])
@@ -261,7 +262,6 @@ if __name__ == "__main__":
     #configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
     parser = argparse.ArgumentParser()
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
-    parser.add_argument("-crawler", help="Remove Crawler Sessons?", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
     assert configDict["BIT_OR_WEIGHTED"] == "BIT"
@@ -270,12 +270,14 @@ if __name__ == "__main__":
         os.remove(fragmentIntentSessionsFile)
     except OSError:
         pass
-    assert args.crawler == "keep" or args.crawler == "prune" or args.crawler == "modify"
-    if args.crawler == "keep":
+    assert configDict['KEEP_PRUNE_MODIFY_CRAWLER_SESS'] == "KEEP" or \
+           configDict['KEEP_PRUNE_MODIFY_CRAWLER_SESS'] == "PRUNE" or \
+           configDict['KEEP_PRUNE_MODIFY_CRAWLER_SESS'] == "MODIFY"
+    if configDict['KEEP_PRUNE_MODIFY_CRAWLER_SESS'] == "KEEP":
         sessionQueryDict = seqIntentVectorFilesKeepCrawler(configDict)
-    elif args.crawler == "prune":
+    elif configDict['KEEP_PRUNE_MODIFY_CRAWLER_SESS'] == "PRUNE":
         sessionQueryDict = seqIntentVectorFilesPruneCrawler(configDict)
-    elif args.crawler == "modify":
+    elif configDict['KEEP_PRUNE_MODIFY_CRAWLER_SESS'] == "MODIFY":
         sessionQueryDict = seqIntentVectorFilesModifyCrawler(configDict)
     createQuerySessions(sessionQueryDict, configDict)
-    createConcurrentIntentVectors(sessionQueryDict, configDict)
+    createSingularityIntentVectors(sessionQueryDict, configDict)
