@@ -58,7 +58,44 @@ def createConcurrentSessions(inputFile, outputFile):
         else:
             keyList.remove(sessIndex)
 
+def readTestSessIDs(inputSeqFile, configDict):
+    sessIDs = set()
+    try:
+        lineIndex = 0
+        with open(inputSeqFile) as f:
+            line = f.readline()
+            if lineIndex >= int(configDict['RNN_SUSTENANCE_TRAIN_LIMIT']):
+                sessID = line.strip().split(";")[0].split(",")[0]
+                sessIDs.add(sessID)
+            lineIndex+=1
+    except:
+        print "error"
+    return sessIDs
+
+def convertSeqToConcFile(configDict):
+    inputConcFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_Singularity')
+    inputSeqFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_Sustenance_0.8')
+    seqTrainFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_SeqTrain_Sustenance_0.8')
+    concTestFile = getConfig('Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-203087-8936Sess-307KModified/MincBitFragmentIntentSessions_ConcTest_Sustenance_0.8')
+    testSessIDs = readTestSessIDs(inputSeqFile, configDict)
+    try:
+        with open(inputConcFile) as f:
+            line = f.readline()
+            curSessID = line.strip().split(";")[0].split(",")[0]
+            if curSessID in testSessIDs:
+                ti.appendToFile(concTestFile, line.strip())
+            else:
+                ti.appendToFile(seqTrainFile, line.strip())
+    except:
+        print "error"
+    return
+
+
 if __name__ == "__main__":
-    configDict = parseConfig.parseConfigFile("configFile.txt")
-    createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-config", help="Config parameters file", type=str, required=True)
+    args = parser.parse_args()
+    configDict = parseConfig.parseConfigFile(args.config)
+    convertSeqToConcFile(configDict)
+    #createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
     print "Completed concurrent session order creation"
