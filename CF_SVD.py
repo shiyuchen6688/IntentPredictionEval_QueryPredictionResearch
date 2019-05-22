@@ -53,6 +53,8 @@ class SVD_Obj:
         self.matrix = [] # this will be an array of arrays
         self.queryVocab = {}  # key is index and val is sessID,queryID
         self.sessAdjList = {} # key is sess index and val is a list of query vocab indices
+        self.sessionSummaries = {} # key is sess index and val is session summary
+        self.sessionSummarySample = None
         self.startEpisode = time.time()
         self.leftFactorMatrix = None
         self.rightFactorMatrix = None
@@ -196,7 +198,7 @@ def completeMatrix(svdObj):
                     svdObj.matrix[i][j]=getProductElement(rowArr, colArr)
     return
 
-def predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, configDict):
+def predictTopKIntents(threadID, matrix, sessionSummaries, sessionSummarySample, queryVocab, sortedSessKeys, sessID, configDict):
     if sessID in sortedSessKeys:
         matchingRowIndex = sortedSessKeys.index(sessID)
     else:
@@ -213,7 +215,7 @@ def predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, con
     return topKSessQueryIndices
 
 
-def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList, queryVocab, sortedSessKeys, sessionStreamDict, configDict)):
+def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList, queryVocab, sortedSessKeys, sessionStreamDict, sessionSummaries, sessionSummarySample, configDict)):
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
@@ -221,7 +223,7 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList
         #curQueryIntent = sessionStreamDict[sessQueryID]
         #if queryID < sessionLengthDict[sessID]-1:
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
-            topKSessQueryIndices = predictTopKIntents(threadID, matrix, queryVocab, sortedSessKeys, sessID, configDict)
+            topKSessQueryIndices = predictTopKIntents(threadID, matrix, sessionSummaries, sessionSummarySample, queryVocab, sortedSessKeys, sessID, configDict)
             for sessQueryID in topKSessQueryIndices:
                 #print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
                 if sessQueryID not in sessionStreamDict:
@@ -253,23 +255,22 @@ def predictIntentsWithoutCurrentBatch(lo, hi, svdObj, keyOrder):
         # print "Set tuple boundaries for Threads"
     #sortedSessKeys = svdObj.sessAdjList.keys().sort()
     if numThreads == 1:
-        svdObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
+        svdObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict, svdObj.sessionSummaries, svdObj.sessionSummarySample, svdObj.configDict))
     elif numThreads > 1:
-        #sharedMtx = svdObj.matrix
-        #manager = multiprocessing.Manager()
-        #sharedMtx = manager.list()
-        #for row in svdObj.matrix:
-            #sharedMtx.append(row)
+        sharedSessSummaries = svdObj.manager.dict()
+        for sessID in svdObj.sessionSummaries:
+            sharedSessSummaries[sessID] = svdObj.sessionSummaries[sessID]
         pool = multiprocessing.Pool()
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, keyOrder, svdObj.matrix, svdObj.resultDict[threadID], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict, svdObj.configDict))
+            argsList.append((threadID, t_lo, t_hi, keyOrder, svdObj.matrix, svdObj.resultDict[threadID], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict, sharedSessSummaries, svdObj.sessionSummarySample, svdObj.configDict))
             #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             #threads[i].start()
         pool.map(predictTopKIntentsPerThread, argsList)
         pool.close()
         pool.join()
+        del sharedSessSummaries
         for threadID in range(numThreads):
             svdObj.resultDict[threadID] = QR.readFromPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "SVDResList_" + str(threadID) + ".pickle")
     return svdObj.resultDict
@@ -281,6 +282,8 @@ def saveModelToFile(svdObj):
         getConfig(configDict['OUTPUT_DIR']) + "SVDQueryVocab.pickle", svdObj.queryVocab)
     QR.writeToPickleFile(
         getConfig(configDict['OUTPUT_DIR']) + "SVDSortedSessKeys.pickle", svdObj.sortedSessKeys)
+    QR.writeToPickleFile(
+        getConfig(configDict['OUTPUT_DIR']) + "SVDSessionSummaries.pickle", svdObj.sessionSummaries)
     return
 
 def loadModel(svdObj):
@@ -290,6 +293,33 @@ def loadModel(svdObj):
         getConfig(configDict['OUTPUT_DIR']) + "SVDQueryVocab.pickle")
     svdObj.sortedSessKeys = QR.readFromPickleFile(
         getConfig(configDict['OUTPUT_DIR']) + "SVDSortedSessKeys.pickle")
+    svdObj.sessionSummaries = QR.readFromPickleFile(
+        getConfig(configDict['OUTPUT_DIR']) + "SVDSessionSummaries.pickle")
+    return
+
+def trainModelEpisode(lo, hi, trainKeyOrder, svdObj):
+    startTrainTime = time.time()
+    svdObj.queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, trainKeyOrder,
+                                                                          svdObj.queryKeysSetAside)
+    svdObj.sessionSummaries = CFCosineSim_Parallel.refineSessionSummariesForAllQueriesSetAside(
+        svdObj.queryKeysSetAside,
+        svdObj.configDict,
+        svdObj.sessionSummaries,
+        svdObj.sessionStreamDict)
+    updateQueryVocabSessAdjList(svdObj)
+    if len(svdObj.queryVocab) > 2:
+        createMatrix(svdObj)
+        factorizeMatrix(svdObj)
+        completeMatrix(svdObj)
+        saveModelToFile(svdObj)
+    totalTrainTime = float(time.time() - startTrainTime)
+    print "Total Train Time: " + str(totalTrainTime)
+    assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
+                                                                                      'SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
+    # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
+    if svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
+        del svdObj.queryKeysSetAside
+        svdObj.queryKeysSetAside = []
     return
 
 def trainTestBatchWise(svdObj):
@@ -306,25 +336,11 @@ def trainTestBatchWise(svdObj):
         # test first for each query in the batch if the classifier is not None
         print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(keyOrder): " + str(len(svdObj.keyOrder))
-        if len(svdObj.matrix) > 1 and len(svdObj.queryVocab) > 2: # unless at least two rows hard to recommend
+        if len(svdObj.matrix) > 1 and len(svdObj.queryVocab) > 2 and len(svdObj.sessionSummaries) > 0: # unless at least two rows hard to recommend
+            svdObj.sessionSummarySample = CFCosineSim_Parallel.sampleSessionSummaries(svdObj.sessionSummaries, float(configDict['SVD_SAMPLE_SESSION_FRACTION']))
             svdObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, svdObj, svdObj.keyOrder)
         print "Starting training in Episode " + str(svdObj.numEpisodes)
-        startTrainTime = time.time()
-        svdObj.queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, svdObj.keyOrder, svdObj.queryKeysSetAside)
-        updateQueryVocabSessAdjList(svdObj)
-        if len(svdObj.queryVocab) > 2:
-            createMatrix(svdObj)
-            factorizeMatrix(svdObj)
-            completeMatrix(svdObj)
-            saveModelToFile(svdObj)
-        totalTrainTime = float(time.time() - startTrainTime)
-        print "Total Train Time: " + str(totalTrainTime)
-        assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
-                                                                                  'SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
-        # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
-        if svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
-            del svdObj.queryKeysSetAside
-            svdObj.queryKeysSetAside = []
+        trainModelEpisode(lo, hi, svdObj.keyOrder, svdObj)
         # we record the times including train and test
         svdObj.numEpisodes += 1
         if len(svdObj.resultDict) > 0:
@@ -352,23 +368,7 @@ def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, svdObj):
             batchSize = len(trainKeyOrder) - lo
         hi = lo + batchSize - 1
         print "Starting training in Episode " + str(numTrainEpisodes)
-        startTrainTime = time.time()
-        svdObj.queryKeysSetAside = CFCosineSim_Parallel.updateQueriesSetAside(lo, hi, trainKeyOrder,
-                                                                              svdObj.queryKeysSetAside)
-        updateQueryVocabSessAdjList(svdObj)
-        if len(svdObj.queryVocab) > 2:
-            createMatrix(svdObj)
-            factorizeMatrix(svdObj)
-            completeMatrix(svdObj)
-            saveModelToFile(svdObj)
-        totalTrainTime = float(time.time() - startTrainTime)
-        print "Total Train Time: " + str(totalTrainTime)
-        assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
-                                                                                          'SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
-        # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
-        if svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL':
-            del svdObj.queryKeysSetAside
-            svdObj.queryKeysSetAside = []
+        trainModelEpisode(lo, hi, trainKeyOrder, svdObj)
         # we record the times including train and test
         numTrainEpisodes += 1
     return
@@ -389,6 +389,8 @@ def testModelSustenance(testKeyOrder, svdObj):
     hi = -1
     assert svdObj.configDict[
                'INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
+    # sample once for the entire dataset as the models are pre-trained and session summaries remain unchanged
+    svdObj.sessionSummarySample = CFCosineSim_Parallel.sampleSessionSummaries(svdObj.sessionSummaries, float(configDict['SVD_SAMPLE_SESSION_FRACTION']))
     while hi < len(testKeyOrder) - 1:
         lo = hi + 1
         if len(testKeyOrder) - lo < batchSize:
