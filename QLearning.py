@@ -167,12 +167,12 @@ def assignReward(startSessID, startQueryID, endSessID, endQueryID, qObj):
             if LSTM_RNN_Parallel.compareBitMaps(qObj.sessionStreamDict[endDistinctSessQueryID], qObj.sessionStreamDict[idealSuccSessQueryID]) == "True":
                 rewVal = 1.0
         except:
-            pass
+            pass # if successor query not present as curQuery marks the end of session
         if rewVal == 0.0 and qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'NUMERIC':
             try:
                 rewVal = CFCosineSim_Parallel.computeBitCosineSimilarity(qObj.sessionStreamDict[endDistinctSessQueryID], qObj.sessionStreamDict[idealSuccSessQueryID])
             except:
-                pass
+                pass # if successor query not present as curQuery marks the end of session
     return (startDistinctSessQueryID, endSessQueryIndex, rewVal)
 
 def refineQTableUsingBellmanUpdate(qObj):
