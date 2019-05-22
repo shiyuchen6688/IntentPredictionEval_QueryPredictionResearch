@@ -169,7 +169,10 @@ def assignReward(startSessID, startQueryID, endSessID, endQueryID, qObj):
         except:
             pass
         if rewVal == 0.0 and qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'NUMERIC':
-            rewVal = CFCosineSim_Parallel.computeBitCosineSimilarity(qObj.sessionStreamDict[endDistinctSessQueryID], qObj.sessionStreamDict[idealSuccSessQueryID])
+            try:
+                rewVal = CFCosineSim_Parallel.computeBitCosineSimilarity(qObj.sessionStreamDict[endDistinctSessQueryID], qObj.sessionStreamDict[idealSuccSessQueryID])
+            except:
+                pass
     return (startDistinctSessQueryID, endSessQueryIndex, rewVal)
 
 def refineQTableUsingBellmanUpdate(qObj):
