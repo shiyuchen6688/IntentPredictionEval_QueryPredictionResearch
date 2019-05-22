@@ -150,6 +150,28 @@ def printQTable(qTable, queryVocab):
         print line
     return
 
+def assignReward(startSessID, startQueryID, endSessID, endQueryID, qObj):
+    assert qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'BOOLEAN' or qObj.configDict[
+                                                                            'QL_BOOLEAN_NUMERIC_REWARD'] == 'NUMERIC'
+    startSessQueryID = str(startSessID) + "," + str(startQueryID)
+    endSessQueryID = str(endSessID) + "," + str(endQueryID)
+    startDistinctSessQueryID = findDistinctQuery(startSessQueryID, qObj)
+    endDistinctSessQueryID = findDistinctQuery(endSessQueryID, qObj)
+    endSessQueryIndex = qObj.queryVocab.index(endDistinctSessQueryID)
+    rewVal = 0.0
+    if startSessID == endSessID and endQueryID == startQueryID + 1:
+        rewVal = 1.0
+    else:
+        idealSuccSessQueryID = str(startSessID) + "," + str(startQueryID+1)
+        try:
+            if LSTM_RNN_Parallel.compareBitMaps(qObj.sessionStreamDict[endDistinctSessQueryID], qObj.sessionStreamDict[idealSuccSessQueryID]) == "True":
+                rewVal = 1.0
+        except:
+            pass
+        if rewVal == 0.0 and qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'NUMERIC':
+            rewVal = CFCosineSim_Parallel.computeBitCosineSimilarity(qObj.sessionStreamDict[endDistinctSessQueryID], qObj.sessionStreamDict[idealSuccSessQueryID])
+    return (startDistinctSessQueryID, endSessQueryIndex, rewVal)
+
 def refineQTableUsingBellmanUpdate(qObj):
     print "Number of distinct queries: "+str(len(qObj.queryVocab))+", #cells in QTable: "+str(int(len(qObj.queryVocab)*len(qObj.queryVocab)))
     print "Expected number of refinement iterations: max("+str(len(qObj.queryVocab))+","+str(int(configDict['QL_REFINE_ITERS']))+")"
@@ -165,15 +187,7 @@ def refineQTableUsingBellmanUpdate(qObj):
         startQueryID = random.randint(0, qObj.sessionDict[startSessID])
         endSessID = random.choice(qObj.sessionDict.keys())
         endQueryID = random.randint(0, qObj.sessionDict[endSessID])
-        startSessQueryID = str(startSessID)+","+str(startQueryID)
-        endSessQueryID = str(endSessID)+","+str(endQueryID)
-        if startSessID == endSessID and endQueryID == startQueryID+1:
-            rewVal = 1.0
-        else:
-            rewVal = 0.0
-        startDistinctSessQueryID = findDistinctQuery(startSessQueryID, qObj)
-        endDistinctSessQueryID = findDistinctQuery(endSessQueryID, qObj)
-        endSessQueryIndex = qObj.queryVocab.index(endDistinctSessQueryID)
+        (startDistinctSessQueryID, endSessQueryIndex, rewVal) = assignReward(startSessID, startQueryID, endSessID, endQueryID, qObj)
         invokeBellmanUpdate(startDistinctSessQueryID, endSessQueryIndex, qObj, rewVal)
     return
 
@@ -338,7 +352,7 @@ def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, qObj):
     # assert qObj.configDict['INCLUDE_CUR_SESS'] == "False"
     while hi < len(trainKeyOrder) - 1:
         lo = hi + 1
-        if len(qObj.keyOrder) - lo < batchSize:
+        if len(trainKeyOrder) - lo < batchSize:
             batchSize = len(trainKeyOrder) - lo
         hi = lo + batchSize - 1
         print "Starting training in Episode " + str(numTrainEpisodes)
