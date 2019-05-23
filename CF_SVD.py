@@ -52,7 +52,7 @@ class SVD_Obj:
         f.close()
         self.matrix = [] # this will be an array of arrays
         self.queryVocab = {}  # key is index and val is sessID,queryID
-        self.sessAdjList = {} # key is sess index and val is a list of query vocab indices
+        self.sessAdjList = {} # key is sess index and val is a set of query vocab indices
         self.sessionSummaries = {} # key is sess index and val is session summary
         self.sessionSummarySample = None
         self.startEpisode = time.time()
@@ -80,17 +80,29 @@ def createMatrix(svdObj):
     rowEntry = [0.0] * len(svdObj.queryVocab)
     svdObj.matrix.append(rowEntry)
 
+def findIfQueryInside(sessQueryID, svdObj):
+    for key in svdObj.queryVocab:
+        oldSessQueryID = svdObj.queryVocab[key]
+        if LSTM_RNN_Parallel.compareBitMaps(svdObj.sessionStreamDict[oldSessQueryID], svdObj.sessionStreamDict[sessQueryID]) == "True":
+            #print "True"
+            return (key, oldSessQueryID)
+    return (None, None)
+
 def updateQueryVocabSessAdjList(svdObj):
     distinctQueries = []
     for sessQueryID in svdObj.queryKeysSetAside:
-        if LSTM_RNN_Parallel.findIfQueryInside(sessQueryID, svdObj.sessionStreamDict, svdObj.queryVocab.values(), distinctQueries) == "False":
+        (prevKey, prevVal) = findIfQueryInside(sessQueryID, svdObj)
+        if prevKey is None and prevVal is None: # update queryVocab
             distinctQueries.append(sessQueryID)
             key = len(svdObj.queryVocab)
             svdObj.queryVocab[key] = sessQueryID
-            sessID = int(sessQueryID.split(",")[0])
-            if sessID not in svdObj.sessAdjList:
-                svdObj.sessAdjList[sessID] = []
-            svdObj.sessAdjList[sessID].append(key)
+            prevKey = key
+            prevVal = sessQueryID
+        # update sessAdjList
+        sessID = int(prevVal.split(",")[0])
+        if sessID not in svdObj.sessAdjList:
+            svdObj.sessAdjList[sessID] = set()
+        svdObj.sessAdjList[sessID].append(prevKey)
     return
 
 def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
