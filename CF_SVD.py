@@ -198,7 +198,7 @@ def completeMatrix(svdObj):
                     svdObj.matrix[i][j]=getProductElement(rowArr, colArr)
     return
 
-def computeMatchingSessID(sessionSummaries, sessionSummarySample, curQueryIntent):
+def computeMatchingSessID(sessionSummaries, sessionSummarySample, curQueryIntent, sortedSessKeys):
     matchingSessSim = 0.0
     matchingSessIndex = None
     for prevSessID in sessionSummarySample:
@@ -206,16 +206,16 @@ def computeMatchingSessID(sessionSummaries, sessionSummarySample, curQueryIntent
         prevSessSim = CFCosineSim_Parallel.computeBitCosineSimilarity(curQueryIntent, prevSessSummary)
         if prevSessSim > matchingSessSim:
             matchingSessSim = prevSessSim
-            matchingSessIndex = prevSessID
+            matchingSessIndex = sortedSessKeys.index(prevSessID)
     return matchingSessIndex
 
 def predictTopKIntents(threadID, matrix, sessionSummaries, sessionSummarySample, queryVocab, sortedSessKeys, sessID, curQueryIntent, configDict):
     if sessID in sortedSessKeys:
         matchingRowIndex = sortedSessKeys.index(sessID)
     else:
-        matchingRowIndex = computeMatchingSessID(sessionSummaries, sessionSummarySample, curQueryIntent)
-    if matchingRowIndex is None:
-        matchingRowIndex = len(sortedSessKeys) - 1 # last row accommodates for new session as it inits with all 0s
+        matchingRowIndex = computeMatchingSessID(sessionSummaries, sessionSummarySample, curQueryIntent, sortedSessKeys)
+        if matchingRowIndex is None:
+            matchingRowIndex = len(sortedSessKeys) - 1 # last row accommodates for new session as it inits with all 0s
     sessRow = matrix[matchingRowIndex]
     topK = int(configDict['TOP_K'])
     topKIndices = zip(*heapq.nlargest(topK, enumerate(sessRow), key=operator.itemgetter(1)))[0]
