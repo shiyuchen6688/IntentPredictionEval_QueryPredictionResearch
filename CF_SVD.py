@@ -99,7 +99,7 @@ def updateQueryVocabSessAdjList(svdObj):
             prevKey = key
             prevVal = sessQueryID
         # update sessAdjList
-        sessID = int(prevVal.split(",")[0])
+        sessID = int(sessQueryID.split(",")[0])
         if sessID not in svdObj.sessAdjList:
             svdObj.sessAdjList[sessID] = set()
         svdObj.sessAdjList[sessID].add(prevKey)
