@@ -236,7 +236,7 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList
         curQueryIntent = sessionStreamDict[sessQueryID]
         #if queryID < sessionLengthDict[sessID]-1:
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
-            topKSessQueryIndices = predictTopKIntents(threadID, matrix, sessionSummaries, sessionSummarySample, queryVocab, sortedSessKeys, sessionStreamDict, sessID, curQueryIntent, configDict)
+            topKSessQueryIndices = predictTopKIntents(threadID, matrix, sessionSummaries, sessionSummarySample, queryVocab, sortedSessKeys, sessID, curQueryIntent, configDict)
             for sessQueryID in topKSessQueryIndices:
                 #print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
                 if sessQueryID not in sessionStreamDict:
