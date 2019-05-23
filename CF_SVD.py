@@ -102,7 +102,7 @@ def updateQueryVocabSessAdjList(svdObj):
         sessID = int(prevVal.split(",")[0])
         if sessID not in svdObj.sessAdjList:
             svdObj.sessAdjList[sessID] = set()
-        svdObj.sessAdjList[sessID].append(prevKey)
+        svdObj.sessAdjList[sessID].add(prevKey)
     return
 
 def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
