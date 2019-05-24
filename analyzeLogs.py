@@ -353,7 +353,7 @@ def computeRelevantJoinPreds(accTables, predictedOrActualJoinPreds):
     relJoinPreds = []
     for joinPred in predictedOrActualJoinPreds:
         leftTable = joinPred.split(",")[0].split(".")[0]
-        rightTable = joinPred.split(",")[1].split(".")[1]
+        rightTable = joinPred.split(",")[1].split(".")[0]
         if leftTable in accTables and rightTable in accTables:
             relJoinPreds.append(joinPred)
     if len(relJoinPreds) == 0:
@@ -387,10 +387,11 @@ def compUpdateCondSelMetrics(predOpsObj, nextActualOpsObj, evalOpsObj):
         elif evalOpsObj.tablesF[evalOpsObj.curEpisode] > 0.0 and evalOpsObj.curEpisode in evalOpsObj.selColsP \
                 and evalOpsObj.curEpisode in evalOpsObj.selColsR and evalOpsObj.curEpisode in evalOpsObj.selColsF: # partial overlap of tables
             accTables = list(set(predOpsObj.tables).intersection(set(nextActualOpsObj.tables)))
-            relPredCols = computeRelevantSelCols(accTables, predOpsObj.selCols)
-            relActualCols = computeRelevantSelCols(accTables, nextActualOpsObj.selCols)
-            compUpdateOpMetrics(relPredCols, relActualCols, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR,
-                                evalOpsObj.condSelColsF, evalOpsObj.numCondSelColsQueries, evalOpsObj)
+            if len(accTables) > 0:
+                relPredCols = computeRelevantSelCols(accTables, predOpsObj.selCols)
+                relActualCols = computeRelevantSelCols(accTables, nextActualOpsObj.selCols)
+                compUpdateOpMetrics(relPredCols, relActualCols, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR,
+                                    evalOpsObj.condSelColsF, evalOpsObj.numCondSelColsQueries, evalOpsObj)
     except:
         pass
     return
@@ -405,10 +406,11 @@ def compUpdateCondJoinMetrics(predOpsObj, nextActualOpsObj, evalOpsObj):
         elif evalOpsObj.tablesF[evalOpsObj.curEpisode] > 0.0 and evalOpsObj.curEpisode in evalOpsObj.joinPredsP \
                 and evalOpsObj.curEpisode in evalOpsObj.joinPredsR and evalOpsObj.curEpisode in evalOpsObj.joinPredsF: # partial overlap of tables
             accTables = list(set(predOpsObj.tables).intersection(set(nextActualOpsObj.tables)))
-            relPredictedJoinPreds = computeRelevantJoinPreds(accTables, predOpsObj.joinPreds)
-            relActualJoinPreds = computeRelevantJoinPreds(accTables, nextActualOpsObj.joinPreds)
-            compUpdateOpMetrics(relPredictedJoinPreds, relActualJoinPreds, evalOpsObj.condJoinPredsP, evalOpsObj.condJoinPredsR,
-                                evalOpsObj.condJoinPredsF, evalOpsObj.numCondJoinPredsQueries, evalOpsObj)
+            if len(accTables) > 0:
+                relPredictedJoinPreds = computeRelevantJoinPreds(accTables, predOpsObj.joinPreds)
+                relActualJoinPreds = computeRelevantJoinPreds(accTables, nextActualOpsObj.joinPreds)
+                compUpdateOpMetrics(relPredictedJoinPreds, relActualJoinPreds, evalOpsObj.condJoinPredsP, evalOpsObj.condJoinPredsR,
+                                    evalOpsObj.condJoinPredsF, evalOpsObj.numCondJoinPredsQueries, evalOpsObj)
     except:
         pass
     return
