@@ -98,7 +98,7 @@ def plotMeanReciprocalRank(evalOpsObj):
     totalQueryCountList = []
     totalQueryCountList.append(totalQueryCount)
     df = DataFrame({'avgMRR': avgMRRList, 'numMRRQueries': totalQueryCountList})
-    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/Agg_Output_MRR_" + evalOpsObj.configDict['ALGORITHM']
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/AggrOutput_MRR_" + evalOpsObj.configDict['ALGORITHM']
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet2', index=False)
     return
 
