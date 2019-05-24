@@ -180,6 +180,9 @@ def plotEvalMetricsOpWise(evalOpsObj):
            "LIMIT")
     plotOp(evalOpsObj.joinPredsP, evalOpsObj.joinPredsR, evalOpsObj.joinPredsF, evalOpsObj.numJoinPredsColsQueries, evalOpsObj,
            "JOIN")
+    plotOp(evalOpsObj.condJoinPredsP, evalOpsObj.condJoinPredsR, evalOpsObj.condJoinPredsF, evalOpsObj.numCondJoinPredsColsQueries,
+           evalOpsObj,
+           "CONDJOIN")
     return
 
 class evalOps:
@@ -256,6 +259,10 @@ class evalOps:
         self.joinPredsR = {}
         self.joinPredsF = {}
         self.numJoinPredsColsQueries = {}
+        self.condJoinPredsP = {}
+        self.condJoinPredsR = {}
+        self.condJoinPredsF = {}
+        self.numCondJoinPredsColsQueries = {}
 
 class nextActualOps:
     def __init__(self):
@@ -340,7 +347,20 @@ def updateOpMetrics(P, R, F, evalOpsP, evalOpsR, evalOpsF, evalOpsQueryCountDict
         updateMetricDict(evalOpsF, evalOpsObj.curEpisode, F)
     return
 
-def computeRelevantCols(accTables, predOrActualCols):
+def computeRelevantJoinPreds(accTables, predictedOrActualJoinPreds):
+    if predictedOrActualJoinPreds is None:
+        return None
+    relJoinPreds = []
+    for joinPred in predictedOrActualJoinPreds:
+        leftTable = joinPred.split(",")[0].split(".")[0]
+        rightTable = joinPred.split(",")[1].split(".")[1]
+        if leftTable in accTables and rightTable in accTables:
+            relJoinPreds.append(joinPred)
+    if len(relJoinPreds) == 0:
+        return None
+    return relJoinPreds
+
+def computeRelevantSelCols(accTables, predOrActualCols):
     if predOrActualCols is None:
         return None
     relCols = []
@@ -367,10 +387,28 @@ def compUpdateCondSelMetrics(predOpsObj, nextActualOpsObj, evalOpsObj):
         elif evalOpsObj.tablesF[evalOpsObj.curEpisode] > 0.0 and evalOpsObj.curEpisode in evalOpsObj.selColsP \
                 and evalOpsObj.curEpisode in evalOpsObj.selColsR and evalOpsObj.curEpisode in evalOpsObj.selColsF: # partial overlap of tables
             accTables = list(set(predOpsObj.tables).intersection(set(nextActualOpsObj.tables)))
-            relPredCols = computeRelevantCols(accTables, predOpsObj.selCols)
-            relActualCols = computeRelevantCols(accTables, nextActualOpsObj.selCols)
+            relPredCols = computeRelevantSelCols(accTables, predOpsObj.selCols)
+            relActualCols = computeRelevantSelCols(accTables, nextActualOpsObj.selCols)
             compUpdateOpMetrics(relPredCols, relActualCols, evalOpsObj.condSelColsP, evalOpsObj.condSelColsR,
                                 evalOpsObj.condSelColsF, evalOpsObj.numCondSelColsQueries, evalOpsObj)
+    except:
+        pass
+    return
+
+def compUpdateCondJoinMetrics(predOpsObj, nextActualOpsObj, evalOpsObj):
+    try:
+        if evalOpsObj.tablesF[evalOpsObj.curEpisode] == 1.0 and evalOpsObj.curEpisode in evalOpsObj.joinPredsP \
+                and evalOpsObj.curEpisode in evalOpsObj.joinPredsR and evalOpsObj.curEpisode in evalOpsObj.joinPredsF:
+            updateOpMetrics(evalOpsObj.joinPredsP[evalOpsObj.curEpisode], evalOpsObj.joinPredsR[evalOpsObj.curEpisode],
+                            evalOpsObj.joinPredsF[evalOpsObj.curEpisode], evalOpsObj.condJoinPredsP, evalOpsObj.condJoinPredsR,
+                            evalOpsObj.condJoinPredsF, evalOpsObj.numCondJoinPredsColsQueries, evalOpsObj)
+        elif evalOpsObj.tablesF[evalOpsObj.curEpisode] > 0.0 and evalOpsObj.curEpisode in evalOpsObj.joinPredsP \
+                and evalOpsObj.curEpisode in evalOpsObj.joinPredsR and evalOpsObj.curEpisode in evalOpsObj.joinPredsF: # partial overlap of tables
+            accTables = list(set(predOpsObj.tables).intersection(set(nextActualOpsObj.tables)))
+            relPredictedJoinPreds = computeRelevantJoinPreds(accTables, predOpsObj.joinPreds)
+            relActualJoinPreds = computeRelevantJoinPreds(accTables, nextActualOpsObj.joinPreds)
+            compUpdateOpMetrics(relPredictedJoinPreds, relActualJoinPreds, evalOpsObj.condJoinPredsP, evalOpsObj.condJoinPredsR,
+                                evalOpsObj.condJoinPredsF, evalOpsObj.numCondJoinPredsQueries, evalOpsObj)
     except:
         pass
     return
@@ -422,6 +460,7 @@ def computeF1(evalOpsObj, predOpsObj, nextActualOpsObj):
     compUpdateOpMetrics(predOpsObj.joinPreds, nextActualOpsObj.joinPreds, evalOpsObj.joinPredsP,
                         evalOpsObj.joinPredsR, evalOpsObj.joinPredsF, evalOpsObj.numJoinPredsColsQueries, evalOpsObj)
     compUpdateCondSelMetrics(predOpsObj, nextActualOpsObj, evalOpsObj)
+    compUpdateCondJoinMetrics(predOpsObj, nextActualOpsObj, evalOpsObj)
     return
 
             
