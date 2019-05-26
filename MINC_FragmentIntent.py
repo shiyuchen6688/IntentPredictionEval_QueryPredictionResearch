@@ -225,10 +225,10 @@ def createSingularityIntentVectors(sessionQueryDict, configDict):
             sessionQueryDict[sessIndex].remove(sessQueryIntent)
             if len(sessionQueryDict[sessIndex]) == 0:
                 del sessionQueryDict[sessIndex]
-            queryIndexRec = sessQueryIntent.split(";")[0].split(", ")[1].split(" ")[1]
-            if queryIndexRec != str(queryIndex):
-                print "queryIndexRec != queryIndex !!"
-            assert queryIndexRec == str(queryIndex)
+            #queryIndexRec = sessQueryIntent.split(";")[0].split(", ")[1].split(" ")[1]
+            #if queryIndexRec != str(queryIndex):
+                #print "queryIndexRec != queryIndex !!"
+            #assert queryIndexRec == str(queryIndex)
             tokens = sessQueryIntent.split(";")
             assert len(tokens) == 3
             assert queryCount>=0
