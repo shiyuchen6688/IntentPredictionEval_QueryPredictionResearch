@@ -25,17 +25,31 @@ def compareForSanity(newSessionLengthDict, sessionLengthDict):
         if sessionLengthDict[key] != newSessionLengthDict[key]:
             print "newSessionLengthDict["+str(key)+"]: "+str(newSessionLengthDict[key])+", sessionLengthDict["+str(key)+"]: "+str(sessionLengthDict[key])
 
-
-def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intentSessionFile, sessionLengthDict, sessionLineDict, allQueries):
+def createConcIntentVectors(testSessNamesFold, foldID, configDict, intentSessionFile, allQueries):
     fileNameWithoutDir = intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]
-    outputIntentTrainSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir+"_TRAIN_FOLD_"+str(foldID)
-    outputIntentTestSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir + "_TEST_FOLD_" + str(foldID)
-    outputIntentConcTestSessions = getConfig(configDict['KFOLD_INPUT_DIR']) + fileNameWithoutDir + "_CONC_TEST_FOLD_" + str(
-        foldID)
+    outputIntentConcTrainSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir+"_CONC_TRAIN_FOLD_"+str(foldID)
+    outputIntentConcTestSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir + "_CONC_TEST_FOLD_" + str(foldID)
     try:
-        os.remove(outputIntentTrainSessions)
-        os.remove(outputIntentTestSessions)
+        os.remove(outputIntentConcTrainSessions)
         os.remove(outputIntentConcTestSessions)
+    except OSError:
+        pass
+    for line in allQueries:
+        sessName = line.split(";")[0]
+        if sessName in testSessNamesFold:
+            ti.appendToFile(outputIntentConcTestSessions, line)
+        else:
+            ti.appendToFile(outputIntentConcTrainSessions, line)
+    return
+
+
+def createSeqIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intentSessionFile, sessionLengthDict, sessionLineDict):
+    fileNameWithoutDir = intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]
+    outputIntentSeqTrainSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir+"_SEQ_TRAIN_FOLD_"+str(foldID)
+    outputIntentSeqTestSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir + "_SEQ_TEST_FOLD_" + str(foldID)
+    try:
+        os.remove(outputIntentSeqTrainSessions)
+        os.remove(outputIntentSeqTestSessions)
     except OSError:
         pass
     #sessCount = 0
@@ -49,18 +63,14 @@ def createIntentVectors(testSessNamesFold, foldID, configDict, sessNames, intent
             lineToOutput = sessionLineDict[str(sessID)+","+str(queryID)]
             #sessQueryCount += 1
             if sessName in testSessNamesFold:
-                ti.appendToFile(outputIntentTestSessions, lineToOutput)
+                ti.appendToFile(outputIntentSeqTestSessions, lineToOutput)
                 #if sessQueryCount%10000 == 0:
                     #print "Sess: "+str(sessCount)+", sessQueryCount: "+str(sessQueryCount)
             else:
-                ti.appendToFile(outputIntentTrainSessions, lineToOutput)
+                ti.appendToFile(outputIntentSeqTrainSessions, lineToOutput)
                 #if sessQueryCount%10000 == 0:
                     #print "Sess: "+str(sessCount)+", sessQueryCount: "+str(sessQueryCount)
         #sessCount+=1
-    for line in allQueries:
-        sessName = line.split(";")[0]
-        if sessName in testSessNamesFold:
-            ti.appendToFile(outputIntentConcTestSessions, line)
     return
 
 
@@ -83,17 +93,23 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
     # for K fold CV
     testSessNames = [[] for i in range(kFold)]
     testEndIndex = -1
-    sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
-    sessionLineDict = {}
-    newSessionLengthDict = {}
-    allQueries =[]
-    with open(intentSessionFile) as f:
-        for line in f:
-            (sessionLineDict, newSessionLengthDict) = QR.updateSessionLineDict(line, configDict, sessionLineDict, newSessionLengthDict)
-            allQueries.append(line.strip())
-    f.close()
-    compareForSanity(newSessionLengthDict, sessionLengthDict)
-    print "Checked Sanity for all Sessions"
+    assert configDict['SEQ_OR_CONC_TRAIN_TEST'] == 'SEQ' or configDict['SEQ_OR_CONC_TRAIN_TEST'] == 'CONC'
+    if configDict['SEQ_OR_CONC_TRAIN_TEST'] == 'SEQ':
+        sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
+        sessionLineDict = {}
+        newSessionLengthDict = {}
+        with open(intentSessionFile) as f:
+            for line in f:
+                (sessionLineDict, newSessionLengthDict) = QR.updateSessionLineDict(line, configDict, sessionLineDict, newSessionLengthDict)
+        f.close()
+        compareForSanity(newSessionLengthDict, sessionLengthDict)
+        print "Checked Sanity for all Sessions"
+    else:
+        allQueries =[]
+        with open(intentSessionFile) as f:
+            for line in f:
+                allQueries.append(line.strip())
+        f.close()
     for i in range(kFold):
         testStartIndex = testEndIndex+1
         testEndIndex = testStartIndex + numTest
@@ -102,7 +118,11 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
         for index in range(testStartIndex, testEndIndex+1):
             testSessNames[i].append(sessNames[index])
         print "Fold "+str(i)+", StartIndex="+str(testStartIndex)+", EndIndex="+str(testEndIndex)
-        createIntentVectors(testSessNames[i], i, configDict, sessNames, intentSessionFile, sessionLengthDict, sessionLineDict, allQueries)
+        if configDict['SEQ_OR_CONC_TRAIN_TEST'] == 'SEQ':
+            createSeqIntentVectors(testSessNames[i], i, configDict, sessNames, intentSessionFile, sessionLengthDict, sessionLineDict)
+        else:
+            createConcIntentVectors(testSessNames[i], i, configDict, intentSessionFile, allQueries)
+    return
 
 
 if __name__ == "__main__":
