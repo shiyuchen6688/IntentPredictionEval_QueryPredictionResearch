@@ -38,7 +38,7 @@ def createConcIntentVectors(testSessNamesFold, foldID, configDict, intentSession
     except OSError:
         pass
     for line in allQueries:
-        sessName = line.split(";")[0]
+        sessName = line.split(";")[0].split(",")[0]
         if sessName in testSessNamesFold:
             ti.appendToFile(outputIntentConcTestSessions, line)
         else:
