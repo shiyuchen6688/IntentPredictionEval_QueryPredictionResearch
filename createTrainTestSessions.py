@@ -31,6 +31,9 @@ def createConcIntentVectors(testSessNamesFold, foldID, configDict, intentSession
     outputIntentConcTestSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir + "_CONC_TEST_FOLD_" + str(foldID)
     try:
         os.remove(outputIntentConcTrainSessions)
+    except OSError:
+        pass
+    try:
         os.remove(outputIntentConcTestSessions)
     except OSError:
         pass
@@ -49,6 +52,9 @@ def createSeqIntentVectors(testSessNamesFold, foldID, configDict, sessNames, int
     outputIntentSeqTestSessions = getConfig(configDict['KFOLD_INPUT_DIR'])+fileNameWithoutDir + "_SEQ_TEST_FOLD_" + str(foldID)
     try:
         os.remove(outputIntentSeqTrainSessions)
+    except:
+        pass
+    try:
         os.remove(outputIntentSeqTestSessions)
     except OSError:
         pass
