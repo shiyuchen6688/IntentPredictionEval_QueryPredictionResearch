@@ -761,7 +761,6 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
         curQueryIntent = sessionStreamDict[sessQueryID]
         #if queryID < sessionLengthDict[sessID]-1:
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
-            print "Predicting topK Intents"
             topKSessQueryIndices = predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
             for sessQueryID in topKSessQueryIndices:
@@ -772,10 +771,8 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
             #print "ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
             #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
             if topKSessQueryIndices is not None:
-                print "appending to resList"
                 resList.append((sessID, queryID, topKSessQueryIndices))
-    QR.writeToPickleFile(
-        getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle", resList)
+    QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle", resList)
     return resList
 
 
