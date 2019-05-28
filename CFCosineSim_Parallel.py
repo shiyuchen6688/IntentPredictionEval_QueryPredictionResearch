@@ -399,7 +399,6 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSummar
     sessSimDict = {}
     # compute cosine similarity in parallel between curSessSummary and all the sessions from sessionSummaries
     numSubThreads = min(int(configDict['CF_SUB_THREADS']), len(sessionSummarySample))
-
     if numSubThreads == 1:
         sessSimDict = computeSessSimilaritySingleThread(sessionSummaries, sessionSummarySample, curSessSummary)
     elif numSubThreads > 1:
@@ -430,7 +429,7 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSummar
     elif configDict['CF_HEAP_OR_SORT'] == 'SORT':
         topKSessIndices = findTopKSessSort(sessSimDict, sessID)
         topKSessQueryIndices = findTopKSessQueriesSort(threadID, topKSessIndices, sessionSampleDict, sessionStreamDict, curSessSummary)
-        #print "ThreadID: "+str(threadID)+", Found Top-K Queries"
+        print "ThreadID: "+str(threadID)+", Found Top-K Queries"
     '''
     topKPredictedIntents = []
     for topKSessQueryIndex in topKSessQueryIndices:
@@ -762,6 +761,7 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
         curQueryIntent = sessionStreamDict[sessQueryID]
         #if queryID < sessionLengthDict[sessID]-1:
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
+            print "Predicting topK Intents"
             topKSessQueryIndices = predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
             for sessQueryID in topKSessQueryIndices:
@@ -772,6 +772,7 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
             #print "ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
             #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
             if topKSessQueryIndices is not None:
+                print "appending to resList"
                 resList.append((sessID, queryID, topKSessQueryIndices))
     QR.writeToPickleFile(
         getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle", resList)
