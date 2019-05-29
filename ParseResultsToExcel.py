@@ -74,6 +74,59 @@ def parseQualityFileWithEpisodeRep(fileName, outputExcel, configDict):
     recall = []
     FMeasure = []
     accuracy = []
+    numQueries = []
+    precisionPerEpisode = 0.0
+    recallPerEpisode = 0.0
+    FMeasurePerEpisode = 0.0
+    accuracyPerEpisode = 0.0
+    numQueriesPerEpisode = 0
+    prevEpisode = None
+    curEpisode = None
+    assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY' or configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD'
+    if configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY':
+        episodeIndex = 2
+    elif configDict['SINGULARITY_OR_KFOLD'] == 'KFOLD':
+        episodeIndex = 0
+    with open(fileName) as f:
+        for line in f:
+            tokens = line.split(";")
+            curEpisode = float(tokens[episodeIndex].split(":")[1])
+            precisionPerEpisode += float(tokens[episodeIndex + 1].split(":")[1])
+            recallPerEpisode += float(tokens[episodeIndex + 2].split(":")[1])
+            FMeasurePerEpisode += float(tokens[episodeIndex + 3].split(":")[1])
+            accuracyPerEpisode += float(tokens[episodeIndex + 4].split(":")[1])
+            if curEpisode != prevEpisode:
+                prevEpisode = curEpisode
+                if numQueriesPerEpisode > 0 and prevEpisode is not None:
+                    precisionPerEpisode /= int(numQueriesPerEpisode)
+                    recallPerEpisode /= int(numQueriesPerEpisode)
+                    FMeasurePerEpisode /= int(numQueriesPerEpisode)
+                    accuracyPerEpisode /= int(numQueriesPerEpisode)
+                    numQueries.append(numQueriesPerEpisode)
+                    episodes.append(prevEpisode)
+                    precision.append(precisionPerEpisode)
+                    recall.append(recallPerEpisode)
+                    FMeasure.append(FMeasurePerEpisode)
+                    accuracy.append(accuracyPerEpisode)
+                    numQueriesPerEpisode = 0
+                    precisionPerEpisode = 0.0
+                    recallPerEpisode = 0.0
+                    FMeasurePerEpisode = 0.0
+                    accuracyPerEpisode = 0.0
+            numQueriesPerEpisode += 1
+    print "Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy))
+    df = DataFrame(
+        {'episodes':episodes, 'precision': precision,
+         'recall': recall, 'FMeasure': FMeasure, 'accuracy': accuracy})
+    df.to_excel(outputExcel, sheet_name='sheet1', index=False)
+
+
+def parseQualityFileWithEpisodeRepOld(fileName, outputExcel, configDict):
+    episodes = []
+    precision = []
+    recall = []
+    FMeasure = []
+    accuracy = []
     precisionPerEpisode = 0.0
     recallPerEpisode = 0.0
     FMeasurePerEpisode = 0.0
