@@ -108,13 +108,14 @@ def parseQualityFileWithEpisodeRep(fileName, outputExcel, configDict):
     with open(fileName) as f:
         for line in f:
             tokens = line.split(";")
-            curEpisode = float(tokens[episodeIndex].split(":")[1])
+            episodeID = float(tokens[episodeIndex].split(":")[1])
             precisionPerEpisode += float(tokens[episodeIndex + 1].split(":")[1])
             recallPerEpisode += float(tokens[episodeIndex + 2].split(":")[1])
             FMeasurePerEpisode += float(tokens[episodeIndex + 3].split(":")[1])
             accuracyPerEpisode += float(tokens[episodeIndex + 4].split(":")[1])
-            if curEpisode != prevEpisode:
+            if episodeID != curEpisode:
                 prevEpisode = curEpisode
+                curEpisode = episodeID
                 if numQueriesPerEpisode > 0 and prevEpisode is not None:
                     (numQueries, episodes, precision, recall, FMeasure, accuracy, numQueriesPerEpisode,
                      precisionPerEpisode, recallPerEpisode, FMeasurePerEpisode, accuracyPerEpisode) = computeStats(
@@ -122,7 +123,8 @@ def parseQualityFileWithEpisodeRep(fileName, outputExcel, configDict):
                         numQueriesPerEpisode, precisionPerEpisode, recallPerEpisode, FMeasurePerEpisode,
                         accuracyPerEpisode)
             numQueriesPerEpisode += 1
-    # following is for the last episode which was not included in the final result
+    # following is for the last episode which was not included in the final result -- note that we pass curEpisode as prevEpisode
+    prevEpisode = curEpisode
     (numQueries, episodes, precision, recall, FMeasure, accuracy, numQueriesPerEpisode,
      precisionPerEpisode, recallPerEpisode, FMeasurePerEpisode, accuracyPerEpisode) = computeStats(prevEpisode,
                                                                                                    numQueries, episodes,
