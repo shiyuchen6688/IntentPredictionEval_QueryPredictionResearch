@@ -153,7 +153,10 @@ def parseKFoldTimeDict(avgKFoldTimeDict, avgTrainTime, avgTestTime, outputExcelT
     df.to_excel(outputExcelKFoldTimeEval, sheet_name='sheet1', index=False)
 
 if __name__ == "__main__":
-    configDict = parseConfig.parseConfigFile("configFile.txt")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-config", help="Config parameters file", type=str, required=True)
+    args = parser.parse_args()
+    configDict = parseConfig.parseConfigFile(args.config)
     accThres = float(configDict['ACCURACY_THRESHOLD'])
     algoName = None
     outputEvalQualityFileName = None
