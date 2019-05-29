@@ -121,22 +121,8 @@ def parseQualityFileWithEpisodeRep(fileName, outputExcel, configDict):
                         prevEpisode, numQueries, episodes, precision, recall, FMeasure, accuracy,
                         numQueriesPerEpisode, precisionPerEpisode, recallPerEpisode, FMeasurePerEpisode,
                         accuracyPerEpisode)
-                    precisionPerEpisode /= int(numQueriesPerEpisode)
-                    recallPerEpisode /= int(numQueriesPerEpisode)
-                    FMeasurePerEpisode /= int(numQueriesPerEpisode)
-                    accuracyPerEpisode /= int(numQueriesPerEpisode)
-                    numQueries.append(numQueriesPerEpisode)
-                    episodes.append(prevEpisode)
-                    precision.append(precisionPerEpisode)
-                    recall.append(recallPerEpisode)
-                    FMeasure.append(FMeasurePerEpisode)
-                    accuracy.append(accuracyPerEpisode)
-                    numQueriesPerEpisode = 0
-                    precisionPerEpisode = 0.0
-                    recallPerEpisode = 0.0
-                    FMeasurePerEpisode = 0.0
-                    accuracyPerEpisode = 0.0
             numQueriesPerEpisode += 1
+    # following is for the last episode which was not included in the final result
     (numQueries, episodes, precision, recall, FMeasure, accuracy, numQueriesPerEpisode,
      precisionPerEpisode, recallPerEpisode, FMeasurePerEpisode, accuracyPerEpisode) = computeStats(prevEpisode,
                                                                                                    numQueries, episodes,
