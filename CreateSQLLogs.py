@@ -57,7 +57,7 @@ def procPredictedIntents(configDict, schemaDicts, curQueryDict, outputEvalDict, 
             #assert len(tokens) == 4 + int(configDict['TOP_K'])
             sessQueryID = tokens[0]+";"+tokens[1]
             outputSQLStr = "-----------------------------------------\n"
-            outputSQLStr += outputEvalDict[sessQueryID]+"\n" # prints the metrics first
+            outputSQLStr += outputEvalDict[sessQueryID]+";"+sessQueryID+"\n" # prints the metrics first
             outputSQLStr += "Current Query: "+curQueryDict[sessQueryID]+"\n"
             nextQueryID = "Query:"+str(int(tokens[1].split(":")[1]) + 1)
             outputSQLStr += "Next Query: "+curQueryDict[tokens[0]+";"+nextQueryID]+"\n"
