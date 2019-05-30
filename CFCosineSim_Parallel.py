@@ -775,6 +775,11 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle", resList)
     return resList
 
+def createSharedPoolDict(manager, srcDict):
+    sharedDict = manager.dict()
+    for key in srcDict:
+        sharedDict[key] = srcDict[key]
+    return sharedDict
 
 def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict):
     numThreads = min(int(configDict['CF_THREADS']), hi-lo+1)
@@ -794,14 +799,22 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
     if numThreads == 1:
         predictTopKIntentsPerThread((0, lo, hi, keyOrder, resultDict[0], sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict))
     elif numThreads > 1:
+        assert int(configDict['CF_SUB_THREADS']) >= 1
         if int(configDict['CF_SUB_THREADS']) == 1:
             pool = multiprocessing.Pool()
-        if int(configDict['CF_SUB_THREADS']) > 1:
+            manager = multiprocessing.Manager()
+            sharedSessSummaryDict = createSharedPoolDict(manager, sessionSummaries)
+            sharedSessSummarySampleDict = createSharedPoolDict(manager, sessionSummarySample)
+            sharedSessSampleDict = createSharedPoolDict(manager, sessionSampleDict)
+        elif int(configDict['CF_SUB_THREADS']) > 1:
             pool = ThreadPool()
+            sharedSessSummaryDict = sessionSummaries
+            sharedSessSummarySampleDict = sessionSummarySample
+            sharedSessSampleDict = sessionSampleDict
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, keyOrder, resultDict[threadID], sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict))
+            argsList.append((threadID, t_lo, t_hi, keyOrder, resultDict[threadID], sharedSessSummaryDict, sharedSessSummarySampleDict, sharedSessSampleDict, sessionStreamDict, configDict))
             #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             #threads[i].start()
         pool.map(predictTopKIntentsPerThread, argsList)
@@ -810,6 +823,10 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
         for threadID in range(numThreads):
             resultDict[threadID] = QR.readFromPickleFile(
                 getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle")
+        if int(configDict['CF_SUB_THREADS']) == 1:
+            del sharedSessSummaryDict
+            del sharedSessSampleDict
+            del sharedSessSummarySampleDict
     #print "len(resultDict): "+str(len(resultDict))
     return resultDict
 
