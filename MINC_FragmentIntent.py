@@ -24,6 +24,7 @@ def seqIntentVectorFilesModifyCrawler(configDict):
     #sessID = int(configDict['BIT_FRAGMENT_START_SESS_INDEX'])-1
     sessID = -1
     sessQueryID = float("-inf")
+    queryLimit = int(configDict['QUERY_LIMIT'])
     for i in range(numFiles):
         fileNamePerThread = splitDir+"/"+splitFileName+str(i)
         with open(fileNamePerThread) as f:
@@ -52,8 +53,8 @@ def seqIntentVectorFilesModifyCrawler(configDict):
                         sessQueryID += 1
                     prevQueryVector = curQueryVector
                     queryCount +=1
-                    #if queryCount >20000:
-                        #break
+                    if queryLimit != 0 and queryCount > queryLimit: # 0 indicates no limit
+                        break
                     if queryCount % 1000 == 0:
                         print ("Query count so far: "+str(queryCount)+", len(sessionQueryDict): "+str(len(sessionQueryDict)))
     return sessionQueryDict
@@ -71,6 +72,7 @@ def seqIntentVectorFilesPruneCrawler(configDict):
     #sessID = int(configDict['BIT_FRAGMENT_START_SESS_INDEX'])-1
     sessID = -1
     relSessID = -1
+    queryLimit = int(configDict['QUERY_LIMIT'])
     for i in range(numFiles):
         fileNamePerThread = splitDir+"/"+splitFileName+str(i)
         with open(fileNamePerThread) as f:
@@ -101,8 +103,8 @@ def seqIntentVectorFilesPruneCrawler(configDict):
                         repQuery = "True"
                     prevQueryVector = curQueryVector
                     queryCount +=1
-                    #if queryCount >20000:
-                        #break
+                    if queryLimit != 0 and queryCount > queryLimit: # 0 indicates no limit
+                        break
                     if queryCount % 1000 == 0:
                         print ("Query count so far: " + str(queryCount) + ", len(sessionQueryDict): " + str(
                             len(sessionQueryDict)))
@@ -118,6 +120,7 @@ def seqIntentVectorFilesKeepCrawler(configDict):
     #sessID = int(configDict['BIT_FRAGMENT_START_SESS_INDEX'])-1
     sessID = -1
     relSessID = -1
+    queryLimit = int(configDict['QUERY_LIMIT'])
     for i in range(numFiles):
         fileNamePerThread = splitDir+"/"+splitFileName+str(i)
         with open(fileNamePerThread) as f:
@@ -136,8 +139,8 @@ def seqIntentVectorFilesKeepCrawler(configDict):
                         sessionQueryDict[sessID] = []
                     sessionQueryDict[sessID].append(line)
                     queryCount +=1
-                    #if queryCount >20000:
-                        #break
+                    if queryLimit != 0 and queryCount > queryLimit: # 0 indicates no limit
+                        break
                     if queryCount % 10000 == 0:
                         print ("Query count so far: "+str(queryCount)+", len(sessionQueryDict): "+str(len(sessionQueryDict)))
     return sessionQueryDict
@@ -150,6 +153,7 @@ def concatenateSeqIntentVectorFiles(configDict):
     queryCount = 0
     prevSessName = None
     sessID = int(configDict['BIT_FRAGMENT_START_SESS_INDEX'])-1
+    queryLimit = int(configDict['QUERY_LIMIT'])
     for i in range(numFiles):
         fileNamePerThread = splitDir+"/"+splitFileName+str(i)
         with open(fileNamePerThread) as f:
@@ -167,8 +171,8 @@ def concatenateSeqIntentVectorFiles(configDict):
                     sessionQueryDict[sessID] = []
                 sessionQueryDict[sessID].append(line)
                 queryCount +=1
-                #if queryCount >20000:
-                    #break
+                if queryLimit != 0 and queryCount > queryLimit:  # 0 indicates no limit
+                    break
                 if queryCount % 10000 == 0:
                     print ("Query count so far: "+str(queryCount))
     return sessionQueryDict
