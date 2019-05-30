@@ -775,6 +775,12 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle", resList)
     return resList
 
+def createSharedPoolList(manager, srcList):
+    sharedList = manager.list()
+    for elem in srcList:
+        sharedList.append(elem)
+    return sharedList
+
 def createSharedPoolDict(manager, srcDict):
     sharedDict = manager.dict()
     for key in srcDict:
@@ -804,7 +810,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
             pool = multiprocessing.Pool()
             manager = multiprocessing.Manager()
             sharedSessSummaryDict = createSharedPoolDict(manager, sessionSummaries)
-            sharedSessSummarySampleDict = createSharedPoolDict(manager, sessionSummarySample)
+            sharedSessSummarySampleDict = createSharedPoolList(manager, sessionSummarySample)
             sharedSessSampleDict = createSharedPoolDict(manager, sessionSampleDict)
         elif int(configDict['CF_SUB_THREADS']) > 1:
             pool = ThreadPool()
