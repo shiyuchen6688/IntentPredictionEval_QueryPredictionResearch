@@ -810,17 +810,17 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
             pool = multiprocessing.Pool()
             manager = multiprocessing.Manager()
             sharedSessSummaryDict = createSharedPoolDict(manager, sessionSummaries)
-            sharedSessSummarySampleDict = createSharedPoolList(manager, sessionSummarySample)
+            sharedSessSummarySampleList = createSharedPoolList(manager, sessionSummarySample)
             sharedSessSampleDict = createSharedPoolDict(manager, sessionSampleDict)
         elif int(configDict['CF_SUB_THREADS']) > 1:
             pool = ThreadPool()
             sharedSessSummaryDict = sessionSummaries
-            sharedSessSummarySampleDict = sessionSummarySample
+            sharedSessSummarySampleList = sessionSummarySample
             sharedSessSampleDict = sessionSampleDict
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, keyOrder, resultDict[threadID], sharedSessSummaryDict, sharedSessSummarySampleDict, sharedSessSampleDict, sessionStreamDict, configDict))
+            argsList.append((threadID, t_lo, t_hi, keyOrder, resultDict[threadID], sharedSessSummaryDict, sharedSessSummarySampleList, sharedSessSampleDict, sessionStreamDict, configDict))
             #threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             #threads[i].start()
         pool.map(predictTopKIntentsPerThread, argsList)
@@ -832,7 +832,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
         if int(configDict['CF_SUB_THREADS']) == 1:
             del sharedSessSummaryDict
             del sharedSessSampleDict
-            del sharedSessSummarySampleDict
+            del sharedSessSummarySampleList
     #print "len(resultDict): "+str(len(resultDict))
     return resultDict
 
