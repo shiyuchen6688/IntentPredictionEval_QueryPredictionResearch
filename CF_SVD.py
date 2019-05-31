@@ -453,15 +453,23 @@ def runSVD(configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY'
     assert configDict['ALGORITHM'] == 'SVD'
     svdObj = SVD_Obj(configDict)
-    assert configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True' or configDict['RUN_FROM_EXISTING_OUTPUT'] =='False'
-    if configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True':
-        updateResultsToExcel(svdObj.configDict, svdObj.episodeResponseTimeDictName, svdObj.outputIntentFileName)
-        return
     assert configDict['SVD_SUSTENANCE'] == 'True' or configDict['SVD_SUSTENANCE'] == 'False'
     if configDict['SVD_SUSTENANCE'] == 'False':
         trainTestBatchWise(svdObj)
     elif configDict['SVD_SUSTENANCE'] == 'True':
         evalSustenance(svdObj)
+
+def runFromExistingOutput(configDict):
+    episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
+        'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + \
+                                       configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                           'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                                           'EPISODE_IN_QUERIES'] + ".pickle"
+    outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
+        'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+                                    'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
+    return
 
 if __name__ == "__main__":
     # configDict = parseConfig.parseConfigFile("configFile.txt")
@@ -469,4 +477,8 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    runSVD(configDict)
+    assert configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True' or configDict['RUN_FROM_EXISTING_OUTPUT'] == 'False'
+    if configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True':
+        runFromExistingOutput(configDict)
+    elif configDict['RUN_FROM_EXISTING_OUTPUT'] == 'False':
+        runSVD(configDict)
