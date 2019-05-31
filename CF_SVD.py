@@ -453,6 +453,10 @@ def runSVD(configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY'
     assert configDict['ALGORITHM'] == 'SVD'
     svdObj = SVD_Obj(configDict)
+    assert configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True' or configDict['RUN_FROM_EXISTING_OUTPUT'] =='False'
+    if configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True':
+        updateResultsToExcel(svdObj.configDict, svdObj.episodeResponseTimeDictName, svdObj.outputIntentFileName)
+        return
     assert configDict['SVD_SUSTENANCE'] == 'True' or configDict['SVD_SUSTENANCE'] == 'False'
     if configDict['SVD_SUSTENANCE'] == 'False':
         trainTestBatchWise(svdObj)
