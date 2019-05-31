@@ -476,7 +476,7 @@ def createEvalMetricsOpWise(evalOpsObj):
             if line.startswith("#Episodes"):
                 evalOpsObj.curEpisode = int(line.strip().split(";")[0].split(":")[1])
                 numTokens = len(line.strip().split(";"))
-                rank = int(line.strip().split(";")[numTokens-1].split(":")[1])
+                rank = int(line.strip().split(";")[numTokens-3].split(":")[1])
                 if rank == -1: # this can happen when all predicted queries are equally bad
                     rank = 0
                 assert rank >= 0 and rank < int(evalOpsObj.configDict['TOP_K'])
