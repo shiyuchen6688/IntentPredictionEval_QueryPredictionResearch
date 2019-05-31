@@ -969,10 +969,11 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
         print "Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
             hi) + ", len(keyOrder): " + str(len(keyOrder))
         # model is the sessionSummaries
-        if len(sessionSummaries) > 0:
+        if len(sessionSummarySample) > 0:
             # predict queries for the batch
             #sessionSummarySample = sampleSessionSummaries(sessionSummaries, float(configDict['CF_SAMPLE_SESSION_FRACTION']))
             resultDict = predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict)
+            #del sessionSummarySample
         # we record the times including train and test
         numEpisodes += 1
         if len(resultDict) > 0:
@@ -980,7 +981,8 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
             elapsedAppendTime = appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, -1)
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = LSTM_RNN_Parallel.clear(resultDict)
-    del sessionSummarySample
+    if len(sessionSummarySample) > 0:
+        del sessionSummarySample
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
     return
 
