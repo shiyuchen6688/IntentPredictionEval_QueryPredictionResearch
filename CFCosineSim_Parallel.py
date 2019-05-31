@@ -956,6 +956,9 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
     lo = 0
     hi = -1
     assert configDict['INCLUDE_CUR_SESS'] == "False"  # you never recommend queries from current session coz it is the most similar to the query you have
+    if len(sessionSummaries) > 0:
+        # predict queries for the batch
+        sessionSummarySample = sampleSessionSummaries(sessionSummaries, float(configDict['CF_SAMPLE_SESSION_FRACTION']))
     while hi < len(keyOrder) - 1:
         lo = hi + 1
         if len(keyOrder) - lo < batchSize:
@@ -968,9 +971,8 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
         # model is the sessionSummaries
         if len(sessionSummaries) > 0:
             # predict queries for the batch
-            sessionSummarySample = sampleSessionSummaries(sessionSummaries, float(configDict['CF_SAMPLE_SESSION_FRACTION']))
+            #sessionSummarySample = sampleSessionSummaries(sessionSummaries, float(configDict['CF_SAMPLE_SESSION_FRACTION']))
             resultDict = predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict)
-            del sessionSummarySample
         # we record the times including train and test
         numEpisodes += 1
         if len(resultDict) > 0:
@@ -978,6 +980,7 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
             elapsedAppendTime = appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, -1)
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = LSTM_RNN_Parallel.clear(resultDict)
+    del sessionSummarySample
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
     return
 
