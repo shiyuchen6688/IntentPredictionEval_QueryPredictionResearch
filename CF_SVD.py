@@ -460,14 +460,6 @@ def runSVD(configDict):
         evalSustenance(svdObj)
 
 def runFromExistingOutput(configDict):
-    episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
-        'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + \
-                                       configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                                           'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
-                                           'EPISODE_IN_QUERIES'] + ".pickle"
-    outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
-        'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
-                                    'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
     accThres = float(configDict['ACCURACY_THRESHOLD'])
     outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + configDict[
         'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
