@@ -153,10 +153,10 @@ def printQTable(qTable, queryVocab):
 def assignReward(startDistinctSessQueryID, endDistinctSessQueryID, qObj):
     assert qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'BOOLEAN' or qObj.configDict[
                                                                             'QL_BOOLEAN_NUMERIC_REWARD'] == 'NUMERIC'
-    startSessID = startDistinctSessQueryID.split(",")[0]
-    startQueryID = startDistinctSessQueryID.split(",")[1]
-    endSessID = endDistinctSessQueryID.split(",")[0]
-    endQueryID = endDistinctSessQueryID.split(",")[1]
+    startSessID = int(startDistinctSessQueryID.split(",")[0])
+    startQueryID = int(startDistinctSessQueryID.split(",")[1])
+    endSessID = int(endDistinctSessQueryID.split(",")[0])
+    endQueryID = int(endDistinctSessQueryID.split(",")[1])
     rewVal = 0.0
     if startSessID == endSessID and endQueryID == startQueryID + 1:
         rewVal = 1.0
