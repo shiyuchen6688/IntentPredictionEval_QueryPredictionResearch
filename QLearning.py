@@ -163,13 +163,16 @@ def assignReward(startDistinctSessQueryID, endDistinctSessQueryID, qObj):
     else:
         idealSuccSessQueryID = str(startSessID) + "," + str(startQueryID+1)
         try:
-            if LSTM_RNN_Parallel.compareBitMaps(qObj.sessionStreamDict[endDistinctSessQueryID], qObj.sessionStreamDict[idealSuccSessQueryID]) == "True":
+            if qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'BOOLEAN' and \
+                            LSTM_RNN_Parallel.compareBitMaps(qObj.sessionStreamDict[endDistinctSessQueryID],
+                                                             qObj.sessionStreamDict[idealSuccSessQueryID]) == "True":
                 rewVal = 1.0
         except:
             pass # if successor query not present as curQuery marks the end of session
-        if rewVal == 0.0 and qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'NUMERIC':
+        if qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'NUMERIC':
             try:
-                rewVal = CFCosineSim_Parallel.computeBitCosineSimilarity(qObj.sessionStreamDict[endDistinctSessQueryID], qObj.sessionStreamDict[idealSuccSessQueryID])
+                rewVal = CFCosineSim_Parallel.computeBitCosineSimilarity(qObj.sessionStreamDict[endDistinctSessQueryID],
+                                                                         qObj.sessionStreamDict[idealSuccSessQueryID])
             except:
                 pass # if successor query not present as curQuery marks the end of session
     return rewVal
