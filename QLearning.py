@@ -140,7 +140,7 @@ def updateQueryVocabQTable(qObj):
         if queryID - 1 >= 0:
             prevSessQueryID = str(sessID) + "," + str(queryID - 1)
             updateQTable(retDistinctSessQueryID, prevSessQueryID, qObj)
-    return
+    return distinctQueries
 
 def printQTable(qTable, queryVocab):
     assert len(qTable)==len(queryVocab)
@@ -150,14 +150,13 @@ def printQTable(qTable, queryVocab):
         print line
     return
 
-def assignReward(startSessID, startQueryID, endSessID, endQueryID, qObj):
+def assignReward(startDistinctSessQueryID, endDistinctSessQueryID, qObj):
     assert qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'BOOLEAN' or qObj.configDict[
                                                                             'QL_BOOLEAN_NUMERIC_REWARD'] == 'NUMERIC'
-    startSessQueryID = str(startSessID) + "," + str(startQueryID)
-    endSessQueryID = str(endSessID) + "," + str(endQueryID)
-    startDistinctSessQueryID = findDistinctQuery(startSessQueryID, qObj)
-    endDistinctSessQueryID = findDistinctQuery(endSessQueryID, qObj)
-    endSessQueryIndex = qObj.queryVocab.index(endDistinctSessQueryID)
+    startSessID = startDistinctSessQueryID.split(",")[0]
+    startQueryID = startDistinctSessQueryID.split(",")[1]
+    endSessID = endDistinctSessQueryID.split(",")[0]
+    endQueryID = endDistinctSessQueryID.split(",")[1]
     rewVal = 0.0
     if startSessID == endSessID and endQueryID == startQueryID + 1:
         rewVal = 1.0
@@ -173,7 +172,7 @@ def assignReward(startSessID, startQueryID, endSessID, endQueryID, qObj):
                 rewVal = CFCosineSim_Parallel.computeBitCosineSimilarity(qObj.sessionStreamDict[endDistinctSessQueryID], qObj.sessionStreamDict[idealSuccSessQueryID])
             except:
                 pass # if successor query not present as curQuery marks the end of session
-    return (startDistinctSessQueryID, endSessQueryIndex, rewVal)
+    return rewVal
 
 def refineQTableUsingBellmanUpdate(qObj):
     print "Number of distinct queries: "+str(len(qObj.queryVocab))+", #cells in QTable: "+str(int(len(qObj.queryVocab)*len(qObj.queryVocab)))
@@ -187,12 +186,12 @@ def refineQTableUsingBellmanUpdate(qObj):
     for i in range(numRefineIters):
         if i%100 == 0:
             print "Refining using Bellman update, Iteration:"+str(i)
-        # pick a random start and end sessQueryID pair within the vocabulary in sessionDict
-        startSessID = random.choice(qObj.sessionDict.keys())
-        startQueryID = random.randint(0, qObj.sessionDict[startSessID])
-        endSessID = random.choice(qObj.sessionDict.keys())
-        endQueryID = random.randint(0, qObj.sessionDict[endSessID])
-        (startDistinctSessQueryID, endSessQueryIndex, rewVal) = assignReward(startSessID, startQueryID, endSessID, endQueryID, qObj)
+        # pick a random start and end sessQueryID pair within the vocabulary in queryVocab
+        startSessQueryIndex = random.randrange(len(qObj.queryVocab))
+        endSessQueryIndex = random.randrange(len(qObj.queryVocab))
+        startDistinctSessQueryID = qObj.queryVocab[startSessQueryIndex]
+        endDistinctSessQueryID = qObj.queryVocab[endSessQueryIndex]
+        rewVal = assignReward(startDistinctSessQueryID, endDistinctSessQueryID, qObj)
         invokeBellmanUpdate(startDistinctSessQueryID, endSessQueryIndex, qObj, rewVal)
     return
 
