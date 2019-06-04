@@ -67,6 +67,52 @@ def plotTemporality(configDict, logFile):
     plotSessionLengths(configDict)
     plotQueryProgression(configDict,logFile)
 
+def incrementVal(dictName, key):
+    try:
+        dictName[key] = dictName[key]+1
+    except:
+        dictName[key]=1
+    return dictName
+
+def analyzePR(configDict, logFile):
+    numPREqualOne = 0
+    numPREqualNotOne = 0
+    numPRNotEqual = 0
+    notEqualBinKeys = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    notEqualBinFreqDict = {}
+    avgDiffPR = 0.0
+    count =0
+    with open(logFile) as f:
+        for line in f:
+            if line.startswith("#Episodes"):
+                tokens = line.strip().split(";")
+                precision = float(tokens[1].split(":")[1])
+                recall = float(tokens[2].split(":")[1])
+                FMeasure = float(tokens[3].split(":")[1])
+                avgDiffPR += abs(precision-recall)
+                count+=1
+                if precision == recall:
+                    if precision == 1.0:
+                        numPREqualOne+=1
+                    else:
+                        numPREqualNotOne+=1
+                else:
+                    numPRNotEqual+=1
+                    for key in notEqualBinKeys:
+                        if FMeasure < key:
+                            notEqualBinFreqDict = incrementVal(notEqualBinFreqDict,key)
+                            break
+        notEqualBinVals = []
+        for key in notEqualBinKeys:
+            try:
+                notEqualBinVals.append(notEqualBinFreqDict[key])
+                print "key: "+str(key)+", val: "+str(notEqualBinFreqDict[key])
+            except:
+                notEqualBinVals.append(0.0)
+    avgDiffPR = float(avgDiffPR)/float(count)
+    print "numPREqualOne: "+str(numPREqualOne)+", numPREqualNotOne: "+str(numPREqualNotOne)+", numPRNotEqual: "+str(numPRNotEqual)+", avgDiffPR: "+str(avgDiffPR)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-config", help="config file to parse", type=str, required=True)
@@ -74,4 +120,5 @@ if __name__ == "__main__":
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    plotTemporality(configDict, args.log)
+    #plotTemporality(configDict, args.log)
+    analyzePR(configDict, args.log)
