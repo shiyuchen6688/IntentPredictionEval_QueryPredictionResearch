@@ -259,6 +259,23 @@ def partitionPrevQueriesAmongThreadsFull(sessionDictCurThread, numQueries, numSu
             queryPartitions[threadID].append(str(sessID)+","+str(queryID))
     return queryPartitions
 
+def computeBinaryCrossEntropy(predictedY, queryIntent):
+    # if configDict['INTENT_REP'] == 'TUPLE' or configDict['INTENT_REP'] == 'FRAGMENT' or configDict['INTENT_REP'] == 'QUERY':
+    # assert(len(predSessSummary))==oldSessionSummary.size()
+    # idealSize = min(len(predSessSummary), oldSessionSummary.size())
+    entropy = 0.0
+    setDims = queryIntent.nonzero()
+    numDims = queryIntent.size()
+    epsilon = 1e-12 # needed as log cannot be applied on 0s
+    for i in range(numDims):
+        prob = min(max(float(predictedY[i]),epsilon),1.0-epsilon) # clip prob to lie between epsilon and 1.0-epsilon
+        if i in setDims:
+            entropy = entropy - math.log(prob)
+        else:
+            entropy = entropy - math.log(1.0-prob)
+    entropy = entropy / numDims
+    return entropy
+
 
 def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, configDict):
     assert configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'SAMPLE' or configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL'
@@ -268,8 +285,8 @@ def singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID
     else:
         for sessQueryID in sampledQueryHistory:
             queryIntent = sessionStreamDict[sessQueryID]
-            cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent,
-                                                                                       configDict)
+            #cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
+            cosineSim = computeBinaryCrossEntropy(predictedY, queryIntent)
             cosineSimDict[sessQueryID] = cosineSim
         return cosineSimDict
 
@@ -286,7 +303,8 @@ def singleThreadedTopKDetectionFull(predictedY, cosineSimDict, curSessID, curQue
                 #expToCheck = (sessID != curSessID and queryID != curQueryID)
             if (sessID != curSessID and queryID != curQueryID):
                 queryIntent = sessionStreamDict[str(sessID)+","+str(queryID)]
-                cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
+                #cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
+                cosineSim = computeBinaryCrossEntropy(predictedY, queryIntent)
                 cosineSimDict[str(sessID) + "," + str(queryID)] = cosineSim
     return cosineSimDict
 
@@ -303,7 +321,8 @@ def multiThreadedTopKDetectionSample((threadID, subThreadID, queryPartition, pre
     localCosineSimDict = {}
     for sessQueryID in queryPartition:
         queryIntent = sessionStreamDict[sessQueryID]
-        cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
+        #cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
+        cosineSim = computeBinaryCrossEntropy(predictedY, queryIntent)
         localCosineSimDict[sessQueryID] = cosineSim
     #print localCosineSimDict
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+"_"+str(subThreadID)+".pickle",localCosineSimDict)
@@ -323,7 +342,8 @@ def multiThreadedTopKDetectionFull((threadID, subThreadID, queryPartition, predi
         #if len(sessionDictCurThread) == 1 or sessID != curSessID:
         if (sessID != curSessID and queryID != curQueryID):
             queryIntent = sessionStreamDict[sessQueryID]
-            cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
+            #cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
+            cosineSim = computeBinaryCrossEntropy(predictedY, queryIntent)
             localCosineSimDict[sessQueryID] = cosineSim
     #print localCosineSimDict
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+"_"+str(subThreadID)+".pickle",localCosineSimDict)
@@ -377,7 +397,8 @@ def computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curS
         else:
             cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, configDict)
     # sorted_d is a list of lists, not a dictionary. Each list entry has key as 0th entry and value as 1st entry, we need the key
-    sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
+    #sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
+    sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1)) # we pick the Min-K not Top-K for entropyDict
     topKPredictedIntents = []
     maxTopK = int(configDict['TOP_K'])
     resCount = 0
