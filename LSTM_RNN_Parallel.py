@@ -398,7 +398,7 @@ def computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curS
             cosineSimDict = singleThreadedTopKDetection(predictedY, cosineSimDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict, configDict)
     # sorted_d is a list of lists, not a dictionary. Each list entry has key as 0th entry and value as 1st entry, we need the key
     #sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1), reverse=True)
-    sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1)) # we pick the Min-K not Top-K for entropyDict
+    sorted_csd = sorted(cosineSimDict.items(), key=operator.itemgetter(1)) # we pick the Min-K not Top-K for entropyDict -- least entropy/loss is highest similarity
     topKPredictedIntents = []
     maxTopK = int(configDict['TOP_K'])
     resCount = 0
