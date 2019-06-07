@@ -234,6 +234,7 @@ def partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, 
         return partitionPrevQueriesAmongThreadsSample(sampledQueryHistory, numSubThreads)
 
 def partitionPrevQueriesAmongThreadsSample(sampledQueryHistory, numSubThreads):
+    print "numSubThreads: "+str(numSubThreads)+", len(sampledQueryhistory): "+str(len(sampledQueryHistory))
     queryPartitions = {}
     for i in range(numSubThreads):
         queryPartitions[i] = []
@@ -767,7 +768,6 @@ def loadModelSustenance(configDict):
                                  'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                              configDict['EPISODE_IN_QUERIES']
         sampledQueryHistory = QR.readFromPickleFile(sampledQueryHistoryFileName)
-    print len(sampledQueryHistory)
     max_lookbackFileName = getConfig(configDict['OUTPUT_DIR']) + "/max_lookback_" + configDict[
         'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
                                  'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
@@ -1130,15 +1130,13 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    loadModelSustenance(configDict)
-    '''
+    #loadModelSustenance(configDict)
     assert configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True' or configDict['RUN_FROM_EXISTING_OUTPUT'] =='False'
     if configDict['RUN_FROM_EXISTING_OUTPUT'] == 'False':
         executeRNN(configDict)
     elif configDict['RUN_FROM_EXISTING_OUTPUT'] == 'True':
         #runFromExistingOutputInBetween(configDict)
         runFromExistingOutput(configDict)
-    '''
 
 
 '''
