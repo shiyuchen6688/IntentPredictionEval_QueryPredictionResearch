@@ -767,7 +767,7 @@ def loadModelSustenance(configDict):
                                  'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                              configDict['EPISODE_IN_QUERIES']
         sampledQueryHistory = QR.readFromPickleFile(sampledQueryHistoryFileName)
-    assert len(sampledQueryHistory) > 0
+    print len(sampledQueryHistory) > 0
     max_lookbackFileName = getConfig(configDict['OUTPUT_DIR']) + "/max_lookback_" + configDict[
         'ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"] + "_" + configDict['INTENT_REP'] + "_" + configDict[
                                  'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
