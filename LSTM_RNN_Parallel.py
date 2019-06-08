@@ -234,7 +234,7 @@ def partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, 
         return partitionPrevQueriesAmongThreadsSample(sampledQueryHistory, numSubThreads)
 
 def partitionPrevQueriesAmongThreadsSample(sampledQueryHistory, numSubThreads):
-    print "numSubThreads: "+str(numSubThreads)+", len(sampledQueryhistory): "+str(len(sampledQueryHistory))
+    #print "numSubThreads: "+str(numSubThreads)+", len(sampledQueryhistory): "+str(len(sampledQueryHistory))
     queryPartitions = {}
     for i in range(numSubThreads):
         queryPartitions[i] = []
@@ -870,7 +870,7 @@ def evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside
         episodicTraining = 'True'
         (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = trainModelSustenance(episodicTraining, trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict)
     elif configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
-        (modelRNN, sessionLengthDict, sampledQueryHistory, max_lookback) = loadModelSustenance(configDict)
+        (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = loadModelSustenance(configDict)
     testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
