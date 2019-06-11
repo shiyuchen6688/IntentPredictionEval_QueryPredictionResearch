@@ -366,7 +366,7 @@ def computePredictedIntentsRNN(threadID, predictedY, schemaDicts, configDict, cu
 
 
 def computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
-    predictedY = ReverseEnggQueries.pruneUnImportantDimensions(predictedY, float(configDict['RNN_WEIGHT_VECTOR_THRESHOLD']))
+    #predictedY = ReverseEnggQueries.pruneUnImportantDimensions(predictedY, float(configDict['RNN_WEIGHT_VECTOR_THRESHOLD']))
     cosineSimDict = {}
     numSubThreads = int(configDict['RNN_SUB_THREADS'])
     if numSubThreads == 1:
