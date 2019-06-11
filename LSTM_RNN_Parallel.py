@@ -458,6 +458,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, schemaDicts, resultDict,
     threads = {}
     t_loHiDict = {}
     t_hi = lo-1
+    totalSplitRows = 0
     for i in range(numThreads):
         t_lo = t_hi + 1
         if i == numThreads -1:
@@ -466,7 +467,9 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, schemaDicts, resultDict,
             t_hi = t_lo + numKeysPerThread - 1
         t_loHiDict[i] = (t_lo, t_hi)
         resultDict[i] = list()
+        totalSplitRows += t_hi -t_lo+1
     #print "Set tuple boundaries for Threads"
+    assert totalSplitRows == hi-lo+1
     if numThreads == 1:
         predictTopKIntentsPerThread(0, lo, hi, keyOrder, schemaDicts, modelRNN, resultDict[0], sessionDictGlobal, sampledQueryHistory, sessionStreamDict,
                                     sessionLengthDict, max_lookback, configDict) # 0 is the threadID
