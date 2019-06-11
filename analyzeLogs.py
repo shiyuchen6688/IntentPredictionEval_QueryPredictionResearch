@@ -489,19 +489,19 @@ def createEvalMetricsOpWise(evalOpsObj):
                     evalOpsObj.numEpQueries[evalOpsObj.curEpisode] += 1
                     evalOpsObj.meanReciprocalRank[evalOpsObj.curEpisode] = (evalOpsObj.meanReciprocalRank[evalOpsObj.curEpisode] + MRR)
             elif line.startswith("Actual SQL"):
-                evalOpsObj.curQueryIndex = -1
+                evalOpsObj.curQueryIndex = -100
                 nextActualOpsObj = nextActualOps()
             elif line.startswith("Predicted SQL Ops"):
                 substrTokens = line.strip().split(":")[0].split(" ")
                 evalOpsObj.curQueryIndex = int(substrTokens[len(substrTokens)-1])
                 if evalOpsObj.curQueryIndex == rank:
                     predOpsObj = nextActualOps()
-            elif evalOpsObj.curQueryIndex == -1:
+            elif line.startswith("---") and predOpsObj is not None and evalOpsObj is not None:
+                computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
+            elif evalOpsObj.curQueryIndex == -100:
                 parseLineAddOp(line, nextActualOpsObj)
             elif evalOpsObj.curQueryIndex == rank:
                 parseLineAddOp(line, predOpsObj)
-            elif line.startswith("---") and predOpsObj is not None and evalOpsObj is not None:
-                computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
             prevEpisode = evalOpsObj.curEpisode
     return evalOpsObj
 
