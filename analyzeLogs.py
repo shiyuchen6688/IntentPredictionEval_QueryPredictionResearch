@@ -58,8 +58,13 @@ def plotQueryTypeDistribution(evalOpsObj):
     df = DataFrame(
         {'episodes': episodes, '# SELECT': numSelectQueryType, '# INSERT': numInsertQueryType, '# UPDATE': numUpdateQueryType,
          '# DELETE': numDeleteQueryType})
+    algoName = evalOpsObj.configDict['ALGORITHM']
+    if evalOpsObj.configDict['ALGORITHM'] == 'RNN' and evalOpsObj.configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True':
+        algoName = "NovelRNN"
+    elif evalOpsObj.configDict['ALGORITHM'] == 'RNN' and evalOpsObj.configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        algoName = "HistoricalRNN"
     outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/QTDist" + \
-                                  evalOpsObj.configDict['ALGORITHM']
+                                  algoName
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
     totalSelList = []
     totalSelList.append(totalSelect)
@@ -71,7 +76,7 @@ def plotQueryTypeDistribution(evalOpsObj):
     totalDelList.append(totalDelete)
     df = DataFrame({'totalSEL': totalSelList, 'totalINS': totalInsList, 'totalUPD': totalUpdList, 'totalDEL': totalDelList})
     outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/TotalQT_" + \
-                                  evalOpsObj.configDict['ALGORITHM']
+                                  algoName
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet2', index=False)
     return
 
@@ -88,7 +93,12 @@ def plotMeanReciprocalRank(evalOpsObj):
         avgMRR = updateAggMetricWithDictEntry(avgMRR, evalOpsObj.meanReciprocalRank, key)
     df = DataFrame(
         {'episodes': episodes, 'meanReciprocalRank': meanReciprocalRank, 'numMRRQueries': numEpQueries})
-    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/Output_MRR_" + evalOpsObj.configDict['ALGORITHM']
+    algoName = evalOpsObj.configDict['ALGORITHM']
+    if evalOpsObj.configDict['ALGORITHM'] == 'RNN' and evalOpsObj.configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True':
+        algoName = "NovelRNN"
+    elif evalOpsObj.configDict['ALGORITHM'] == 'RNN' and evalOpsObj.configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        algoName = "HistoricalRNN"
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/Output_MRR_" + algoName
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
     totalQueryCount = float(sum(numEpQueries))
     if totalQueryCount > 0.0:
@@ -98,7 +108,7 @@ def plotMeanReciprocalRank(evalOpsObj):
     totalQueryCountList = []
     totalQueryCountList.append(totalQueryCount)
     df = DataFrame({'avgMRR': avgMRRList, 'numMRRQueries': totalQueryCountList})
-    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/AggrOutput_MRR_" + evalOpsObj.configDict['ALGORITHM']
+    outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/AggrOutput_MRR_" + algoName
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet2', index=False)
     return
 
@@ -126,8 +136,13 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
     headerQ = 'num'+opString+'Queries'
     df = DataFrame(
         {'episodes': episodes, headerP: resP, headerR: resR, headerF: resF, headerQ:numEpQueries})
+    algoName = evalOpsObj.configDict['ALGORITHM']
+    if evalOpsObj.configDict['ALGORITHM'] == 'RNN' and evalOpsObj.configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True':
+        algoName = "NovelRNN"
+    elif evalOpsObj.configDict['ALGORITHM'] == 'RNN' and evalOpsObj.configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
+        algoName = "HistoricalRNN"
     outputOpWiseQualityFileName = getConfig(evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/Output_" + opString + "_" + \
-                                  evalOpsObj.configDict['ALGORITHM']
+                                  algoName
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
     totalQueryCount = float(sum(numEpQueries))
     if totalQueryCount > 0.0:
@@ -144,8 +159,7 @@ def plotOp(evalOpsP, evalOpsR, evalOpsF, numOpQueryCountDict, evalOpsObj, opStri
     totalQueryCountList.append(totalQueryCount)
     df = DataFrame({headerP: avgResPList, headerR: avgResRList, headerF: avgResFList, headerQ: totalQueryCountList})
     outputOpWiseQualityFileName = getConfig(
-        evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/AggrOutput_" + opString + "_" + \
-                                  evalOpsObj.configDict['ALGORITHM']
+        evalOpsObj.configDict['OUTPUT_DIR']) + "/OpWiseExcel/AggrOutput_" + opString + "_" + algoName
     df.to_excel(outputOpWiseQualityFileName + ".xlsx", sheet_name='sheet1', index=False)
     return
 
