@@ -52,7 +52,7 @@ def countConstTabPreds(configDict):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-config", help="config file to parse", type=str, required=True)
-    parser.add_argument("-log", help="log filename to analyze", type=str, required=True)
+    #parser.add_argument("-log", help="log filename to analyze", type=str, required=True)
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
