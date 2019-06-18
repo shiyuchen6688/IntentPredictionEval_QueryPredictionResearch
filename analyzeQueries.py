@@ -49,6 +49,8 @@ def countConstTabPreds(configDict):
             count+=1
             if count % 1000 == 0:
                 print "len(totalTables): "+str(len(totalTables))+", len(selTables): "+str(len(selTables)) +", len(selCols): "+str(len(selCols))
+    print "len(totalTables): " + str(len(totalTables)) + ", len(selTables): " + str(
+        len(selTables)) + ", len(selCols): " + str(len(selCols))
     writeSetToFile(totalTables, getConfig(configDict['OUTPUT_DIR'])+"TotalTables")
     writeSetToFile(selTables, getConfig(configDict['OUTPUT_DIR'])+"SelTables")
     writeSetToFile(selCols, getConfig(configDict['OUTPUT_DIR'])+"SelCols")
