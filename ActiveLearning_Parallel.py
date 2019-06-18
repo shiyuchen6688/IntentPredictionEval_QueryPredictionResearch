@@ -401,7 +401,8 @@ def computeAvgPerDict(avgDict, expectedIterLength):
 def executeAL(configDict):
     # ActiveLearning runs only on kFold
     assert configDict['SINGULARITY_OR_KFOLD']=='KFOLD'
-    assert configDict['ALGORITHM'] == 'RNN'
+    #assert configDict['ALGORITHM'] == 'RNN'
+    # generic for any algorithm
     runActiveRNNKFoldExp(configDict)
     return
 

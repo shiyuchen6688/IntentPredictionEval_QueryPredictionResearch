@@ -61,7 +61,7 @@ def ourDemo(qlLogFile, rnnNovelLogFile, svdLogFile, cfLogFile):
      "Session:12495;Query:4", "Session:4542;Query:0", "Session:1140;Query:0", "Session:33536;Query:4", "Session:31559;Query:11",
      "Session:6032;Query:1", "Session:16399;Query:6", "Session:14062;Query:0", "Session:25895;Query:0",
      "Session:19808;Query:0", "Session:11882;Query:0", "Session:26835;Query:3", "Session:34616;Query:4", "Session:32281;Query:1",
-     "Session:27832;Query:1", "Session:18512;Query:3"]
+     "Session:27832;Query:1", "Session:18512;Query:3", "Session:32442;Query:2", "Session:28383;Query:28"]
     termFlag = input('Enter True to continue and False to terminate: ')
     while(termFlag == True):
         sessQueryID = random.choice(sessQueryIDs)

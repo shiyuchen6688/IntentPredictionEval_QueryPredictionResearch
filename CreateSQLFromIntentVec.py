@@ -684,8 +684,8 @@ def createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict):
     #intentObj = initIntentStrObj(schemaDicts, intentStr)
     #assertIntentOpObjects(intentObj, intentObjDict)
     #createSQLFromIntentStringBitPos(intentObj, newSetBitPosList)
-    regenerateSQL(intentBitMap, schemaDicts)
-
+    intentObj = regenerateSQL(intentBitMap, schemaDicts)
+    return intentObj
 
 if __name__ == "__main__":
     #configDict = parseConfig.parseConfigFile("configFile.txt")
@@ -700,5 +700,6 @@ if __name__ == "__main__":
     intentObjDict = readIntentObjectsFromFile(tempVectorFileName)
     #intentObjDict = readIntentObjectsFromFile()
     #createSQLFromIntentStrSanityCheck(schemaDicts, intentObjDict)
-    createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict)
+    intentObj = createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict)
+    printSQLOps(intentObj)
     #createSQLFromIntent(schemaDicts, intentObjDict['intentVector'])
