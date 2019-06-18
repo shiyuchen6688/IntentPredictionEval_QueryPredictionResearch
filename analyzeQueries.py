@@ -35,6 +35,7 @@ def countConstTabPreds(configDict):
     totalTables = set()
     selTables = set()
     selCols = set()
+    count = 0
     with open(intentSessionFile) as f:
         for line in f:
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
@@ -45,6 +46,9 @@ def countConstTabPreds(configDict):
                 for selCol in intentObj.selCols:
                     selTable = selCol.split(".")[0]
                     selTables.update(selTable)
+            count+=1
+            if count % 1000 == 0:
+                print "len(totalTables): "+str(len(totalTables))+", len(selTables): "+str(len(selTables)) +", len(selCols): "+str(len(selCols))
     writeSetToFile(totalTables, getConfig(configDict['OUTPUT_DIR'])+"TotalTables")
     writeSetToFile(selTables, getConfig(configDict['OUTPUT_DIR'])+"SelTables")
     writeSetToFile(selCols, getConfig(configDict['OUTPUT_DIR'])+"SelCols")
