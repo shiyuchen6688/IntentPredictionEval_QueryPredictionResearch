@@ -98,7 +98,7 @@ def evalSelCols(configDict, schemaDicts):
     print set(selJoinColTypeDict.values())
     print "len(totalTables): " + str(len(totalTables)) + ", len(selTables): " + str(
         len(selTables)) + ", len(selCols): " + str(len(selCols)) + ", len(joinTables): " + str(
-        len(joinTables)) + ", len(joinCols): " + str(len(joinCols)) + "len(selJoinCols): "+str(len(selJoinColTypeDict))
+        len(joinTables)) + ", len(joinCols): " + str(len(joinCols)) + ", len(selJoinCols): "+str(len(selJoinColTypeDict))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
