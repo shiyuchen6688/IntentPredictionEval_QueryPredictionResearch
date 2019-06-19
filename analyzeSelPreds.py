@@ -87,16 +87,17 @@ def evalSelCols(configDict, schemaDicts):
     print "joinTables - selTables: " + str(joinTables - selTables)
     print "joinCols - selCols: "+str(joinCols - selCols)
     print "totalTables - selTables: "+str(totalTables - selTables)
-    #selJoinCols = selCols.union(joinCols)
+    selJoinCols = selCols.union(joinCols)
     selJoinColTypeDict = {}
-    for selJoinCol in selCols:
+    for selJoinCol in selJoinCols:
         selJoinTab = selJoinCol.split(".")[0]
         selJoinColName = selJoinCol.split(".")[1]
         offset = schemaDicts.colDict[selJoinTab].index(selJoinColName)
         selJoinColType = colTypeDict[selJoinTab][offset]
         selJoinColTypeDict[selJoinCol] = selJoinColType
     print set(selJoinColTypeDict.values())
-    print selJoinColTypeDict
+    print len(selJoinColTypeDict)
+    print len(selCols)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
