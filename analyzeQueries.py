@@ -85,7 +85,7 @@ def evalSelCols(configDict, schemaDicts):
     joinCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"JoinCols.pickle")
     print "joinTables - selTables: " + str(joinTables - selTables)
     print "joinCols - selCols: "+str(joinCols - selCols)
-    print "selTables - totalTables: "+str(selTables - totalTables)
+    print "totalTables - selTables: "+str(totalTables - selTables)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
