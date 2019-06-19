@@ -35,12 +35,24 @@ def countConstTabPreds(configDict):
     totalTables = set()
     selTables = set()
     selCols = set()
+    joinTables = set()
+    joinCols = set()
     count = 0
     with open(intentSessionFile) as f:
         for line in f:
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
             intentObj = CreateSQLFromIntentVec.regenerateSQL(curQueryIntent, schemaDicts)
             totalTables.update(intentObj.tables)
+            if intentObj.joinPreds is not None and len(intentObj.joinPreds) > 0:
+                for joinPred in intentObj.joinPreds:
+                    leftJoinCol = joinPred.split(",")[0]
+                    rightJoinCol = joinPred.split(",")[1]
+                    leftjoinTab = leftJoinCol.split(".")[0]
+                    rightJoinTab = rightJoinCol.split(".")[1]
+                    joinCols.add(leftJoinCol)
+                    joinCols.add(rightJoinCol)
+                    joinTables.add(leftjoinTab)
+                    joinTables.add(rightJoinTab)
             if intentObj.selCols is not None and len(intentObj.selCols) > 0:
                 selCols.update(intentObj.selCols)
                 for selCol in intentObj.selCols:
