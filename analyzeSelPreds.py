@@ -96,6 +96,7 @@ def evalSelCols(configDict, schemaDicts):
         selJoinColType = colTypeDict[selJoinTab][offset]
         selJoinColTypeDict[selJoinCol] = selJoinColType
     print set(selJoinColTypeDict.values())
+    print selJoinColTypeDict
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
