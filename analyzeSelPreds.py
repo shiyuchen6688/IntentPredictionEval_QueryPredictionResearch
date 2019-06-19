@@ -96,6 +96,7 @@ def evalSelCols(configDict, schemaDicts):
         selJoinColType = colTypeDict[selJoinTab][offset]
         selJoinColTypeDict[selJoinCol] = selJoinColType
     print set(selJoinColTypeDict.values())
+    print selJoinColTypeDict
     print "len(totalTables): " + str(len(totalTables)) + ", len(selTables): " + str(
         len(selTables)) + ", len(selCols): " + str(len(selCols)) + ", len(joinTables): " + str(
         len(joinTables)) + ", len(joinCols): " + str(len(joinCols)) + ", len(selJoinCols): "+str(len(selJoinColTypeDict))
