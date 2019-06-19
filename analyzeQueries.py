@@ -57,7 +57,7 @@ def countConstTabPreds(configDict):
                 selCols.update(intentObj.selCols)
                 for selCol in intentObj.selCols:
                     selTable = selCol.split(".")[0]
-                    selTables.update(selTable)
+                    selTables.add(selTable)
             count+=1
             if count % 1000 == 0:
                 print "len(totalTables): "+str(len(totalTables))+", len(selTables): "+str(len(selTables)) +", len(selCols): "+str(len(selCols))
@@ -66,6 +66,8 @@ def countConstTabPreds(configDict):
     writeSetToFile(totalTables, getConfig(configDict['OUTPUT_DIR'])+"TotalTables")
     writeSetToFile(selTables, getConfig(configDict['OUTPUT_DIR'])+"SelTables")
     writeSetToFile(selCols, getConfig(configDict['OUTPUT_DIR'])+"SelCols")
+    writeSetToFile(joinTables, getConfig(configDict['OUTPUT_DIR']) + "JoinTables")
+    writeSetToFile(joinCols, getConfig(configDict['OUTPUT_DIR']) + "JoinCols")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
