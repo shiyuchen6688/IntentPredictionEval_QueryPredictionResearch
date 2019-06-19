@@ -71,6 +71,12 @@ def countConstTabPreds(configDict):
     writeSetToFile(selCols, getConfig(configDict['OUTPUT_DIR'])+"SelCols")
     writeSetToFile(joinTables, getConfig(configDict['OUTPUT_DIR']) + "JoinTables")
     writeSetToFile(joinCols, getConfig(configDict['OUTPUT_DIR']) + "JoinCols")
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR'])+"TotalTables.pickle", totalTables)
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "SelTables.pickle", selTables)
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "SelCols.pickle", selCols)
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "JoinTables.pickle", joinTables)
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "JoinCols.pickle", joinCols)
+    return
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
