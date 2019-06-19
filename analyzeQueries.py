@@ -46,7 +46,7 @@ def countConstTabPreds(configDict, schemaDicts):
                 for joinPred in intentObj.joinPreds:
                     leftJoinCol = joinPred.split(",")[0]
                     rightJoinCol = joinPred.split(",")[1]
-                    leftjoinTab = leftJoinCol.split(".")[0]
+                    leftjoinTab = leftJoinCol.split(".")[1]
                     rightJoinTab = rightJoinCol.split(".")[1]
                     joinCols.add(leftJoinCol)
                     joinCols.add(rightJoinCol)
