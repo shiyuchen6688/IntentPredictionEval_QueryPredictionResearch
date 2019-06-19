@@ -95,5 +95,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
-    #countConstTabPreds(configDict, schemaDicts)
+    countConstTabPreds(configDict, schemaDicts)
     evalSelCols(configDict, schemaDicts)
