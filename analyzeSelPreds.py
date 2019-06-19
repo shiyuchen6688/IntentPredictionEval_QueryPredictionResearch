@@ -65,27 +65,37 @@ def countConstTabPreds(configDict, schemaDicts):
     print "len(totalTables): " + str(len(totalTables)) + ", len(selTables): " + str(
         len(selTables)) + ", len(selCols): " + str(len(selCols)) + ", len(joinTables): " + str(
         len(joinTables)) + ", len(joinCols): " + str(len(joinCols))
-    writeSetToFile(totalTables, getConfig(configDict['OUTPUT_DIR'])+"TotalTables")
-    writeSetToFile(selTables, getConfig(configDict['OUTPUT_DIR'])+"SelTables")
-    writeSetToFile(selCols, getConfig(configDict['OUTPUT_DIR'])+"SelCols")
-    writeSetToFile(joinTables, getConfig(configDict['OUTPUT_DIR']) + "JoinTables")
-    writeSetToFile(joinCols, getConfig(configDict['OUTPUT_DIR']) + "JoinCols")
-    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR'])+"TotalTables.pickle", totalTables)
-    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "SelTables.pickle", selTables)
-    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "SelCols.pickle", selCols)
-    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "JoinTables.pickle", joinTables)
-    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "JoinCols.pickle", joinCols)
+    writeSetToFile(totalTables, getConfig(configDict['OUTPUT_DIR'])+"../MincTotalTables")
+    writeSetToFile(selTables, getConfig(configDict['OUTPUT_DIR'])+"../MincSelTables")
+    writeSetToFile(selCols, getConfig(configDict['OUTPUT_DIR'])+"../MincSelCols")
+    writeSetToFile(joinTables, getConfig(configDict['OUTPUT_DIR']) + "../MincJoinTables")
+    writeSetToFile(joinCols, getConfig(configDict['OUTPUT_DIR']) + "../MincJoinCols")
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincTotalTables.pickle", totalTables)
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "../MincSelTables.pickle", selTables)
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "../MincSelCols.pickle", selCols)
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "../MincJoinTables.pickle", joinTables)
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "../MincJoinCols.pickle", joinCols)
     return
 
 def evalSelCols(configDict, schemaDicts):
-    totalTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"TotalTables.pickle")
-    selTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"SelTables.pickle")
-    selCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"SelCols.pickle")
-    joinTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"JoinTables.pickle")
-    joinCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"JoinCols.pickle")
+    colTypeDict = ReverseEnggQueries.readColDict(getConfig(configDict['MINC_COL_TYPES']))
+    totalTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincTotalTables.pickle")
+    selTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincSelTables.pickle")
+    selCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincSelCols.pickle")
+    joinTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincJoinTables.pickle")
+    joinCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincJoinCols.pickle")
     print "joinTables - selTables: " + str(joinTables - selTables)
     print "joinCols - selCols: "+str(joinCols - selCols)
     print "totalTables - selTables: "+str(totalTables - selTables)
+    selJoinCols = selCols.union(joinCols)
+    selJoinColTypeDict = {}
+    for selJoinCol in selJoinCols:
+        selJoinTab = selJoinCol.split(".")[0]
+        selJoinColName = selJoinCol.split(".")[1]
+        offset = schemaDicts.colDict[selJoinTab].index(selJoinColName)
+        selJoinColType = colTypeDict[selJoinTab][offset]
+        selJoinColTypeDict[selJoinCol] = selJoinColType
+    print set(selJoinColTypeDict.values())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -95,5 +105,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
     schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
-    countConstTabPreds(configDict, schemaDicts)
+    #countConstTabPreds(configDict, schemaDicts)
     evalSelCols(configDict, schemaDicts)
