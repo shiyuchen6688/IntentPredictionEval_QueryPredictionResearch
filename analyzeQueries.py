@@ -29,9 +29,8 @@ def writeSetToFile(tabColSet, fn):
         f.close()
     print "Wrote to file " + fn
 
-def countConstTabPreds(configDict):
+def countConstTabPreds(configDict, schemaDicts):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
-    schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
     totalTables = set()
     selTables = set()
     selCols = set()
@@ -78,6 +77,16 @@ def countConstTabPreds(configDict):
     QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR']) + "JoinCols.pickle", joinCols)
     return
 
+def evalSelCols(configDict, schemaDicts):
+    totalTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"TotalTables.pickle")
+    selTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"SelTables.pickle")
+    selCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"SelCols.pickle")
+    joinTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"JoinTables.pickle")
+    joinCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"JoinCols.pickle")
+    print "joinTables - selTables: " + str(joinTables - selTables)
+    print "joinCols - selCols: "+str(joinCols - selCols)
+    print "selTables - totalTables: "+str(selTables - totalTables)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-config", help="config file to parse", type=str, required=True)
@@ -85,4 +94,6 @@ if __name__ == "__main__":
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    countConstTabPreds(configDict)
+    schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
+    #countConstTabPreds(configDict, schemaDicts)
+    evalSelCols(configDict, schemaDicts)
