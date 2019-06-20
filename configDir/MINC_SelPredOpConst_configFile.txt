@@ -47,3 +47,7 @@ KFOLD_INPUT_DIR=Documents/DataExploration-Research/MINC/InputOutput/kFold/
 ACCURACY_THRESHOLD=0.95
 KFOLD=5
 NUM_FOLDS_TO_RUN=1
+MYSQL_UNAME=root
+MYSQL_PASSWORD=minc
+MYSQL_HOST=127.0.0.1
+MYSQL_DB=minc_education
