@@ -73,8 +73,10 @@ def createSelPredColRangeBins(selPredObj):
         print "Creating Sorted Range Bins for column "+selPredCol
         distinctVals = projectDistinctVals(selPredObj, tableName, colName)
         rangeBinsCol = createSortedRangesPerCol(distinctVals)
-        if rangeBinsCol is not None:
-            selPredObj.selPredColRangeBinDict[selPredCol] = rangeBinsCol
+        if rangeBinsCol is None:
+            rangeBinsCol = []
+        rangeBinsCol.append(('NULL', 'NULL')) # for comparison with is null
+        selPredObj.selPredColRangeBinDict[selPredCol] = rangeBinsCol
     return
 
 def createSelPredOpBitPosDict(selPredObj):
@@ -90,10 +92,7 @@ def createSelPredColBitPosDict(selPredObj):
     endPos = -1
     for selPredCol in selPredObj.selPredCols:
         startPos = endPos+1
-        try:
-            endPos = startPos+len(selPredObj.selPredColRangeBinDict[selPredCol])
-        except:
-            continue
+        endPos = startPos+len(selPredObj.selPredColRangeBinDict[selPredCol])
         selPredObj.selPredColBitPosDict[selPredCol] = str(startPos)+","+str(endPos)
     return
 
