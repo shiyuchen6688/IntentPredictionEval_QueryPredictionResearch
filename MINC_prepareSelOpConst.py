@@ -49,7 +49,7 @@ def createSortedRangesPerCol(distinctVals):
     binSize = 1
     if len(distinctVals) == 0:
         print "Length 0 !!"
-        exit()
+        return None
     elif len(distinctVals) < numBins:
         binSize = 1
     else:
@@ -69,7 +69,8 @@ def createSelPredColRangeBins(selPredObj):
         print "Creating Sorted Range Bins for column "+selPredCol
         distinctVals = projectDistinctVals(selPredObj, tableName, colName)
         rangeBinsCol = createSortedRangesPerCol(distinctVals)
-        selPredObj.selPredColRangeBinDict[selPredCol] = rangeBinsCol
+        if rangeBinsCol is not None:
+            selPredObj.selPredColRangeBinDict[selPredCol] = rangeBinsCol
     return
 
 def createSelPredOpBitPosDict(selPredObj):
