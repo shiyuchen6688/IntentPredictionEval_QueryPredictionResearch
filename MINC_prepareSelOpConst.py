@@ -98,9 +98,9 @@ def createSelPredColBitPosDict(selPredObj):
     return
 
 def writeSchemaInfoToFiles(selPredObj):
-    MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredOpBitPosDict, getConfig(configDict['MINC_SEL_PRED_OP_BIT_POS']))
-    MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredColRangeBinDict, getConfig(configDict['MINC_SEL_PRED_COL_RANGE_BINS']))
-    MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredColBitPosDict, getConfig(configDict['MINC_SEL_PRED_COL_BIT_POS']))
+    MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredOpBitPosDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_OP_BIT_POS']))
+    MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredColRangeBinDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_COL_RANGE_BINS']))
+    MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredColBitPosDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_COL_BIT_POS']))
     return
 
 def buildSelPredDicts(configDict):
