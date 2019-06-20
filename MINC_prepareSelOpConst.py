@@ -33,7 +33,7 @@ class SelPredObj:
 
 def projectDistinctVals(selPredObj, tableName, colName):
     distinctVals = []
-    query = "SELECT DISTINCT " + colName + " FROM " + tableName
+    query = "SELECT DISTINCT " + tableName+"."+colName + " FROM " + tableName
     cursor = selPredObj.cnx.cursor()
     cursor.execute(query)
     for row in cursor:
