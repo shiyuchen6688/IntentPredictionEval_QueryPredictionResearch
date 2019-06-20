@@ -179,6 +179,10 @@ def printStats(configDict):
     print "# JoinPreds from bit positions: "+str(joinPredCountFromBitPos)
 
 if __name__ == "__main__":
-    configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
+    #configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-config", help="Config parameters file", type=str, required=True)
+    args = parser.parse_args()
+    configDict = parseConfig.parseConfigFile(args.config)
     #(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict) = fetchSchema(configDict)
     printStats(configDict)
