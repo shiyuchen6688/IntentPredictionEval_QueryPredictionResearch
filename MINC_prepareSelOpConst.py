@@ -13,6 +13,7 @@ import QueryRecommender as QR
 import CreateSQLFromIntentVec
 import ReverseEnggQueries
 import MINC_prepareJoinKeyPairs
+import unicodedata
 
 class SelPredObj:
     def __init__(self, configDict):
@@ -37,7 +38,10 @@ def projectDistinctVals(selPredObj, tableName, colName):
     cursor.execute(query)
     for row in cursor:
         assert len(row) == 1  # single column projected
-        rowVal = str(row[0])
+        try:
+            rowVal = str(row[0])
+        except:
+            rowVal = unicodedata.normalize('NFKD', row[0]).encode('ascii', 'ignore') # for unicode and non-ascii
         distinctVals.append(rowVal)
     return distinctVals
 
