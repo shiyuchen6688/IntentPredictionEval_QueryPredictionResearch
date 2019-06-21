@@ -30,8 +30,9 @@ class SelPredObj:
         self.selPredOpBitPosDict = {} # key is selPredCol and value is startBitPos,endBitPos reqd for eq,neq,leq,geq,lt,gt in the same order
         self.selPredColRangeBinDict = {} # key is selPredCol and value is the list of range bins [(minBinVal,maxBinval),..,]
         self.selPredColBitPosDict = {} # key is selPredCol and value is startBitPos,endBitPos reqd for that selPredCol
+        self.commonDataTypes = ['int(11) unsigned', 'varchar(100)', 'int(11)', 'int(10)', 'int(16)', 'tinyint(3) unsigned', 'varchar(61)', 'text', 'int(1)', 'tinyint(1) unsigned', 'varchar(200)', 'varchar(255)', 'tinyint(3)', 'varchar(64)', 'tinyint(4)', 'int(255)', 'varchar(14)', 'int(10) unsigned', 'tinyint(1)']
 
-def projectDistinctVals(selPredObj, tableName, colName):
+def projectDistinctVals(selPredObj, tableName, colName, colType):
     distinctVals = []
     query = "SELECT DISTINCT " + tableName+"."+colName + " FROM " + tableName
     cursor = selPredObj.cnx.cursor()
@@ -39,7 +40,13 @@ def projectDistinctVals(selPredObj, tableName, colName):
     for row in cursor:
         assert len(row) == 1  # single column projected
         try:
-            rowVal = str(row[0])
+            if 'text' in colType or 'varchar' in colType:
+                rowVal = str(row[0])
+            elif 'int' in colType:
+                rowVal = int(row[0])
+            else:
+                print 'Unknown datatype !' # datetime stored as string
+                sys.exit(0)
         except:
             rowVal = unicodedata.normalize('NFKD', row[0]).encode('ascii', 'ignore') # for unicode and non-ascii
         distinctVals.append(rowVal)
@@ -66,12 +73,18 @@ def createSortedRangesPerCol(distinctVals):
         startIndex = endIndex + 1
     return rangeBinsCol
 
+def findColType(tableName, colName, selPredObj):
+    offset = selPredObj.schemaDicts.colDict[tableName].index(colName)
+    colType = selPredObj.colTypeDict[tableName][offset]
+    return colType
+
 def createSelPredColRangeBins(selPredObj):
     for selPredCol in selPredObj.selPredCols:
         tableName = selPredCol.split(".")[0]
         colName = selPredCol.split(".")[1]
+        colType = findColType(tableName, colName, selPredObj)
         print "Creating Sorted Range Bins for column "+selPredCol
-        distinctVals = projectDistinctVals(selPredObj, tableName, colName)
+        distinctVals = projectDistinctVals(selPredObj, tableName, colName, colType)
         rangeBinsCol = createSortedRangesPerCol(distinctVals)
         if rangeBinsCol is None:
             rangeBinsCol = []
