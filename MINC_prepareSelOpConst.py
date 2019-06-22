@@ -94,10 +94,10 @@ def createSelPredColRangeBins(selPredObj):
 
 def createSelPredOpBitPosDict(selPredObj):
     endPos = -1
-    comparisonOps = ['eq', 'neq', 'leq', 'geq', 'lt', 'gt']
+    comparisonOps = ['eq', 'neq', 'leq', 'geq', 'lt', 'gt', 'LIKE']
     for selPredCol in selPredObj.selPredCols:
         startPos = endPos + 1
-        endPos = startPos + len(comparisonOps) - 1 # for the 6 comparison ops -- eq,neq,leq,geq,lt,gt
+        endPos = startPos + len(comparisonOps) - 1 # for the 7 comparison ops -- eq,neq,leq,geq,lt,gt,like
         selPredObj.selPredOpBitPosDict[selPredCol] = str(startPos) + "," + str(endPos)
     return
 
