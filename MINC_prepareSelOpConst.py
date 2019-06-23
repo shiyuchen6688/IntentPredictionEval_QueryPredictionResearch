@@ -68,7 +68,7 @@ def createSortedRangesPerCol(distinctVals):
     startIndex = 0
     while startIndex < len(distinctVals):
         endIndex = min(startIndex + binSize-1, len(distinctVals)-1)
-        pair = str(distinctVals[startIndex])+","+str(distinctVals[endIndex])
+        pair = str(distinctVals[startIndex])+";"+str(distinctVals[endIndex])
         rangeBinsCol.append(pair)
         startIndex = endIndex + 1
     return rangeBinsCol
@@ -88,7 +88,7 @@ def createSelPredColRangeBins(selPredObj):
         rangeBinsCol = createSortedRangesPerCol(distinctVals)
         if rangeBinsCol is None:
             rangeBinsCol = []
-        rangeBinsCol.append(('NULL', 'NULL')) # for comparison with is null
+        rangeBinsCol.append('NULL;NULL') # for comparison with is null
         selPredObj.selPredColRangeBinDict[selPredCol] = rangeBinsCol
     return
 
