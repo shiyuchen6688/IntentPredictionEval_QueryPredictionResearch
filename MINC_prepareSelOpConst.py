@@ -88,16 +88,14 @@ def createSelPredColRangeBins(selPredObj):
         colName = selPredCol.split(".")[1]
         colType = findColType(tableName, colName, selPredObj)
         print "Creating Sorted Range Bins for column "+selPredCol
-        if selPredCol == "jos_community_photos_albums.groupid":
-            print "trying"
         distinctVals = projectDistinctVals(selPredObj, tableName, colName, colType)
         rangeBinsCol = createSortedRangesPerCol(distinctVals, numBins)
         if rangeBinsCol is None:
             rangeBinsCol = []
-        rangeBinsCol.append('NULL;NULL') # for comparison with is null
+        rangeBinsCol.append('NULL;NULL') # extra bin for comparison with null -- IS (NOT) NULL
         selPredObj.selPredColRangeBinDict[selPredCol] = rangeBinsCol
-        if len(rangeBinsCol) > 11:
-            print ">11"
+        if len(rangeBinsCol) > numBins+1:
+            print "numBins > Limit of "+str(numBins+1)
     return
 
 def createSelPredOpBitPosDict(selPredObj):
