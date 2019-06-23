@@ -72,7 +72,7 @@ def createSortedRangesPerCol(distinctVals):
             endIndex = len(distinctVals) - 1 # merge the last bin into the before last bin
         else:
             endIndex = min(startIndex + binSize-1, len(distinctVals)-1)
-        pair = str(distinctVals[startIndex])+";"+str(distinctVals[endIndex])
+        pair = str(distinctVals[startIndex]).replace("\'","")+";"+str(distinctVals[endIndex]).replace("\'","")
         rangeBinsCol.append(pair)
         startIndex = endIndex + 1
     return rangeBinsCol
