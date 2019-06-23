@@ -14,6 +14,7 @@ import CreateSQLFromIntentVec
 import ReverseEnggQueries
 import MINC_prepareJoinKeyPairs
 import unicodedata
+import math
 
 class SelPredObj:
     def __init__(self, configDict):
@@ -64,14 +65,14 @@ def createSortedRangesPerCol(distinctVals):
     elif len(distinctVals) < numBins:
         binSize = 1
     else:
-        binSize = len(distinctVals) / 10
+        binSize = math.ceil(len(distinctVals) / 10)
     startIndex = 0
     while startIndex < len(distinctVals):
-        diff = len(distinctVals) - 1 - (startIndex +binSize - 1)
-        if diff < binSize:
-            endIndex = len(distinctVals) - 1 # merge the last bin into the before last bin
-        else:
-            endIndex = min(startIndex + binSize-1, len(distinctVals)-1)
+        #diff = len(distinctVals) - 1 - (startIndex +binSize - 1)
+        #if diff < binSize:
+        #    endIndex = len(distinctVals) - 1 # merge the last bin into the before last bin
+        #else:
+        endIndex = min(startIndex + binSize-1, len(distinctVals)-1)
         pair = str(distinctVals[startIndex]).replace("\'","")+";"+str(distinctVals[endIndex]).replace("\'","")
         rangeBinsCol.append(pair)
         startIndex = endIndex + 1
