@@ -68,7 +68,7 @@ def createSortedRangesPerCol(distinctVals):
     startIndex = 0
     while startIndex < len(distinctVals):
         endIndex = min(startIndex + binSize-1, len(distinctVals)-1)
-        pair = (distinctVals[startIndex], distinctVals[endIndex])
+        pair = str(distinctVals[startIndex])+","+str(distinctVals[endIndex])
         rangeBinsCol.append(pair)
         startIndex = endIndex + 1
     return rangeBinsCol
