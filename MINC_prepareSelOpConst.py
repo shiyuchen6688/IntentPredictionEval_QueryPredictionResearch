@@ -65,7 +65,7 @@ def createSortedRangesPerCol(distinctVals):
     elif len(distinctVals) < numBins:
         binSize = 1
     else:
-        binSize = math.ceil(len(distinctVals) / 10)
+        binSize = int(math.ceil(len(distinctVals) / float(10)))
     startIndex = 0
     while startIndex < len(distinctVals):
         #diff = len(distinctVals) - 1 - (startIndex +binSize - 1)
