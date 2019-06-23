@@ -30,6 +30,7 @@ MINC_JOIN_PRED_BIT_POS=Documents/DataExploration-Research/MINC/InputOutput/MincJ
 MINC_SEL_PRED_OP_BIT_POS=Documents/DataExploration-Research/MINC/InputOutput/MincSelPredOpBitPos
 MINC_SEL_PRED_COL_RANGE_BINS=Documents/DataExploration-Research/MINC/InputOutput/MincSelPredColRangeBins
 MINC_SEL_PRED_COL_BIT_POS=Documents/DataExploration-Research/MINC/InputOutput/MincSelPredColBitPos
+MINC_NUM_BINS_PER_SEL_COL=10
 NUMCOLS=19
 NUMQUERIES=1190
 BIT_OR_WEIGHTED=BIT

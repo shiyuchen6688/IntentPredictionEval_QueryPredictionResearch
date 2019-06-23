@@ -53,9 +53,7 @@ def projectDistinctVals(selPredObj, tableName, colName, colType):
         distinctVals.append(rowVal)
     return distinctVals
 
-def createSortedRangesPerCol(distinctVals):
-    # hardcoding for 10 bins -- can add a configParam later
-    numBins = 10
+def createSortedRangesPerCol(distinctVals, numBins):
     distinctVals.sort()
     rangeBinsCol = []
     binSize = 1
@@ -84,6 +82,7 @@ def findColType(tableName, colName, selPredObj):
     return colType
 
 def createSelPredColRangeBins(selPredObj):
+    numBins = int(selPredObj.configDict['MINC_NUM_BINS_PER_SEL_COL'])
     for selPredCol in selPredObj.selPredCols:
         tableName = selPredCol.split(".")[0]
         colName = selPredCol.split(".")[1]
@@ -92,13 +91,13 @@ def createSelPredColRangeBins(selPredObj):
         if selPredCol == "jos_community_photos_albums.groupid":
             print "trying"
         distinctVals = projectDistinctVals(selPredObj, tableName, colName, colType)
-        rangeBinsCol = createSortedRangesPerCol(distinctVals)
+        rangeBinsCol = createSortedRangesPerCol(distinctVals, numBins)
         if rangeBinsCol is None:
             rangeBinsCol = []
         rangeBinsCol.append('NULL;NULL') # for comparison with is null
         selPredObj.selPredColRangeBinDict[selPredCol] = rangeBinsCol
-        if len(rangeBinsCol) > 10:
-            print ">10"
+        if len(rangeBinsCol) > 11:
+            print ">11"
     return
 
 def createSelPredOpBitPosDict(selPredObj):
