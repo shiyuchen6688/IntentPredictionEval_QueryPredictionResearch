@@ -88,6 +88,8 @@ def createSelPredColRangeBins(selPredObj):
         colName = selPredCol.split(".")[1]
         colType = findColType(tableName, colName, selPredObj)
         print "Creating Sorted Range Bins for column "+selPredCol
+        if selPredCol == "jos_community_photos_albums.groupid":
+            print "trying"
         distinctVals = projectDistinctVals(selPredObj, tableName, colName, colType)
         rangeBinsCol = createSortedRangesPerCol(distinctVals)
         if rangeBinsCol is None:
