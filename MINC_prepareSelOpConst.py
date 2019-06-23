@@ -97,6 +97,8 @@ def createSelPredColRangeBins(selPredObj):
             rangeBinsCol = []
         rangeBinsCol.append('NULL;NULL') # for comparison with is null
         selPredObj.selPredColRangeBinDict[selPredCol] = rangeBinsCol
+        if len(rangeBinsCol) > 10:
+            print ">10"
     return
 
 def createSelPredOpBitPosDict(selPredObj):
