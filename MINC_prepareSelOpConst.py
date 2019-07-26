@@ -111,7 +111,7 @@ def createSelPredColBitPosDict(selPredObj):
     endPos = -1
     for selPredCol in selPredObj.selPredCols:
         startPos = endPos+1
-        endPos = startPos+len(selPredObj.selPredColRangeBinDict[selPredCol])
+        endPos = startPos+len(selPredObj.selPredColRangeBinDict[selPredCol])-1
         selPredObj.selPredColBitPosDict[selPredCol] = str(startPos)+","+str(endPos)
     return
 
