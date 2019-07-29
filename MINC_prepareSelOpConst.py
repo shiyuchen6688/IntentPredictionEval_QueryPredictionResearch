@@ -71,7 +71,7 @@ def createSortedRangesPerCol(distinctVals, numBins):
         #    endIndex = len(distinctVals) - 1 # merge the last bin into the before last bin
         #else:
         endIndex = min(startIndex + binSize-1, len(distinctVals)-1)
-        pair = str(distinctVals[startIndex]).replace("\'","")+";"+str(distinctVals[endIndex]).replace("\'","")
+        pair = str(distinctVals[startIndex]).replace("\'","")+"%"+str(distinctVals[endIndex]).replace("\'","")
         rangeBinsCol.append(pair)
         startIndex = endIndex + 1
     return rangeBinsCol
@@ -92,7 +92,7 @@ def createSelPredColRangeBins(selPredObj):
         rangeBinsCol = createSortedRangesPerCol(distinctVals, numBins)
         if rangeBinsCol is None:
             rangeBinsCol = []
-        rangeBinsCol.append('NULL;NULL') # extra bin for comparison with null -- IS (NOT) NULL
+        rangeBinsCol.append('NULL%NULL') # extra bin for comparison with null -- IS (NOT) NULL
         selPredObj.selPredColRangeBinDict[selPredCol] = rangeBinsCol
         if len(rangeBinsCol) > numBins+1:
             print "numBins > Limit of "+str(numBins+1)
