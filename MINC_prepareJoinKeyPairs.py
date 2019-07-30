@@ -146,8 +146,8 @@ def createTabColBitPosDict(tabColDict, tableDict):
     tabIndex=0
     colIndex = 0
     tabColBitPosDict = {}
-    for table in sorted_tableDict:
-        assert sorted_tableDict[table] == tabIndex
+    for (table, tabIndex) in sorted_tableDict:
+        assert tableDict[table] == tabIndex
         colArr = tabColDict[table]
         for col in colArr:
             tabColBitPosDict[table+"."+col] = colIndex
