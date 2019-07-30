@@ -128,7 +128,7 @@ def populateJoinPreds(schemaDicts):
         startEndBitPos = schemaDicts.joinPredBitPosDict[tablePairIndex]
         startBitPos = startEndBitPos[0]+schemaDicts.joinPredicatesStartBitIndex
         endBitPos = startEndBitPos[1]+schemaDicts.joinPredicatesStartBitIndex
-        for indexToSet in range(startBitPos, endBitPos):
+        for indexToSet in range(startBitPos, endBitPos+1):
             joinColPair = schemaDicts.joinPredDict[tablePairIndex][indexToSet-startBitPos]
             joinStrToAppend = tablePairIndex.split(",")[0] + "." + joinColPair.split(",")[0]+ "," + tablePairIndex.split(",")[1] + "." + joinColPair.split(",")[1]
             if indexToSet in schemaDicts.forwardMapBitsToOps:
@@ -260,7 +260,7 @@ def checkSanity(joinPredDict, joinPredBitPosDict):
     joinPredBitPosCount = 0
     for key in joinPredDict:
         joinPredCount += len(joinPredDict[key])
-        joinPredBitPosCount += joinPredBitPosDict[key][1] - joinPredBitPosDict[key][0]
+        joinPredBitPosCount += joinPredBitPosDict[key][1] - joinPredBitPosDict[key][0] + 1
     assert len(joinPredDict) == len(joinPredBitPosDict)
     assert joinPredCount == joinPredBitPosCount
     #print "joinPredCount: "+str(joinPredCount)+", joinPredBitPosCount: "+str(joinPredBitPosCount)

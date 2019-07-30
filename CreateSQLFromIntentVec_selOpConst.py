@@ -175,7 +175,7 @@ def populateJoinPredsStr(intentObj):
         startEndBitPos = intentObj.schemaDicts.joinPredBitPosDict[tablePairIndex]
         startBitPos = startEndBitPos[0]
         endBitPos = startEndBitPos[1]
-        for i in range(startBitPos, endBitPos):
+        for i in range(startBitPos, endBitPos+1): # endPos+1 because we want to go from start to endBitPos
             if int(intentObj.joinPredicatesBitMap[i])==1:
                 joinColPair = intentObj.schemaDicts.joinPredDict[tablePairIndex][i-startBitPos]
                 joinStrToAppend = tablePairIndex.split(",")[0] + "." + joinColPair.split(",")[0]+ "," + tablePairIndex.split(",")[1] + "." + joinColPair.split(",")[1]
