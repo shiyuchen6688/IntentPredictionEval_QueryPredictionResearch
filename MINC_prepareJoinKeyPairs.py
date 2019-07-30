@@ -9,6 +9,7 @@ import re
 import mysql.connector
 from mysql.connector import errorcode
 from ParseConfigFile import getConfig
+import operator
 
 def connectToMySQL(configDict):
     try:
@@ -115,7 +116,7 @@ def createJoinPredBitPosDict(joinPairDict):
     endPos = -1
     for tabPair in joinPairDict:
         startPos = endPos+1
-        endPos = startPos+len(joinPairDict[tabPair])
+        endPos = startPos+len(joinPairDict[tabPair])-1
         bitPosDict[tabPair] = str(startPos)+","+str(endPos)
     return bitPosDict
 
@@ -132,23 +133,39 @@ def writeSchemaInfoToFile(dict, fn):
         f.close()
     print "Wrote to file "+fn
 
-def writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict, configDict):
+def writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict, configDict):
     writeSchemaInfoToFile(tableDict, getConfig(configDict['MINC_TABLES']))
     writeSchemaInfoToFile(tabColDict, getConfig(configDict['MINC_COLS']))
     writeSchemaInfoToFile(tabColTypeDict, getConfig(configDict['MINC_COL_TYPES']))
+    writeSchemaInfoToFile(tabColBitPosDict, getConfig(configDict['MINC_COL_BIT_POS']))
     writeSchemaInfoToFile(joinPairDict, getConfig(configDict['MINC_JOIN_PREDS']))
     writeSchemaInfoToFile(joinPredBitPosDict, getConfig(configDict['MINC_JOIN_PRED_BIT_POS']))
+
+def createTabColBitPosDict(tabColDict, tableDict):
+    sorted_tableDict = sorted(tableDict.items(), key=operator.itemgetter(1))
+    tabIndex=0
+    colIndex = 0
+    tabColBitPosDict = {}
+    for table in sorted_tableDict:
+        assert sorted_tableDict[table] == tabIndex
+        colArr = tabColDict[table]
+        for col in colArr:
+            tabColBitPosDict[table+"."+col] = colIndex
+            colIndex+=1
+        tabIndex+=1
+    return tabColBitPosDict
 
 def fetchSchema(configDict):
     cnx = connectToMySQL(configDict)
     tableDict = createTableDict(cnx)
     (tabColDict, tabColTypeDict) = createTabColDict(cnx, tableDict)
+    tabColBitPosDict = createTabColBitPosDict(tabColDict, tableDict)
     joinPairDict = createJoinPairDict(tabColDict, tabColTypeDict)
     joinPairDict = pruneEmptyJoinPairs(joinPairDict)
     joinPredBitPosDict = createJoinPredBitPosDict(joinPairDict)
     print "Writing Dictionaries To Files"
-    writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict, configDict)
-    return (tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict)
+    writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict, configDict)
+    return (tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict)
 
 def countTables(fileName):
     count = 0
@@ -172,9 +189,22 @@ def countJoinPredsFromBitPos(fileName):
             count += int(startEndPos[1]) - int(startEndPos[0]) + 1
     return count
 
+def countColsFromBitPos(fileName):
+    count = 0
+    maxBitPos = -1
+    with open(fileName) as f:
+        for line in f:
+            bitPos = int(line.split(":")[1])
+            if bitPos > maxBitPos:
+                maxBitPos = bitPos
+            count += 1
+    assert count == maxBitPos+1
+    return count
+
 def printStats(configDict):
     print "# Tables: "+str(countTables(getConfig(configDict['MINC_TABLES'])))
     print "# Columns: "+str(countCols(getConfig(configDict['MINC_COLS'])))
+    print "# Columns from bit positions: " + str(countColsFromBitPos(getConfig(configDict['MINC_COL_BIT_POS'])))
     joinPredCountFromBitPos = countJoinPredsFromBitPos(getConfig(configDict['MINC_JOIN_PRED_BIT_POS']))
     print "# JoinPreds from bit positions: "+str(joinPredCountFromBitPos)
 
@@ -184,5 +214,5 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    #(tableDict, tabColDict, tabColTypeDict, joinPairDict, joinPredBitPosDict) = fetchSchema(configDict)
+    (tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict) = fetchSchema(configDict)
     printStats(configDict)

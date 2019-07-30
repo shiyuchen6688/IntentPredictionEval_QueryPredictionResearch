@@ -71,6 +71,7 @@ TUPLEINTENTSESSIONS_RNN_EMBEDDING=Documents/DataExploration-Research/MINC/InputO
 SCHEMA=Documents/DataExploration-Research/MINC/InputOutput/MincSchema
 MINC_TABLES=Documents/DataExploration-Research/MINC/InputOutput/MincTables
 MINC_COLS=Documents/DataExploration-Research/MINC/InputOutput/MincColumns
+MINC_COL_BIT_POS=Documents/DataExploration-Research/MINC/InputOutput/MincColBitPos
 MINC_COL_TYPES=Documents/DataExploration-Research/MINC/InputOutput/MincColTypes
 MINC_JOIN_PREDS=Documents/DataExploration-Research/MINC/InputOutput/MincJoinPreds
 MINC_JOIN_PRED_BIT_POS=Documents/DataExploration-Research/MINC/InputOutput/MincJoinPredBitPos
