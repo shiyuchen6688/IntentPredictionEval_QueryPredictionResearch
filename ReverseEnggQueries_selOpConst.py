@@ -347,7 +347,7 @@ def readSchemaDicts(configDict):
     colDict = readColDict(getConfig(configDict['MINC_COLS']))
     (joinPredDict, joinPredBitPosDict) = readJoinColDicts(getConfig(configDict['MINC_JOIN_PREDS']), getConfig(configDict['MINC_JOIN_PRED_BIT_POS']))
     #schemaDicts = SchemaDicts(tableDict, tableOrderDict, colDict, joinPredDict, joinPredBitPosDict)
-    (selPredOpBitPosDict, selPredColRangeBinDict, selPredColRangeBitPosDict) = readSelPredOpConstDicts(getConfig(configDict['MINC_SEL_PRED_OP_BIT_POS']), getConfig(configDict['MINC_SEL_PRED_COL_RANGE_BINS']), getConfig(configDict['MINC_SEL_PRED_COL_BIT_POS']))
+    (selPredOpBitPosDict, selPredColRangeBinDict, selPredColRangeBitPosDict) = readSelPredOpConstDicts(getConfig(configDict['MINC_SEL_PRED_OP_BIT_POS']), getConfig(configDict['MINC_SEL_PRED_COL_RANGE_BINS']), getConfig(configDict['MINC_SEL_PRED_COL_RANGE_BIT_POS']))
     schemaDicts = SchemaDictsOpConst(tableDict, tableOrderDict, colDict, joinPredDict, joinPredBitPosDict, selPredOpBitPosDict, selPredColRangeBinDict, selPredColRangeBitPosDict)
     return schemaDicts
 

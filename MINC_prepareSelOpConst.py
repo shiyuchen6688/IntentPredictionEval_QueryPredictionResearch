@@ -30,7 +30,7 @@ class SelPredObj:
         self.selPredCols = list(self.selCols.union(self.joinCols)) # we union selCols with joinCols to build selPredCols -- to account for misses
         self.selPredOpBitPosDict = {} # key is selPredCol and value is startBitPos,endBitPos reqd for eq,neq,leq,geq,lt,gt in the same order
         self.selPredColRangeBinDict = {} # key is selPredCol and value is the list of range bins [(minBinVal,maxBinval),..,]
-        self.selPredColBitPosDict = {} # key is selPredCol and value is startBitPos,endBitPos reqd for that selPredCol
+        self.selPredColRangeBitPosDict = {} # key is selPredCol and value is startBitPos,endBitPos reqd for that selPredCol
         self.commonDataTypes = ['int(11) unsigned', 'varchar(100)', 'int(11)', 'int(10)', 'int(16)', 'tinyint(3) unsigned', 'varchar(61)', 'text', 'int(1)', 'tinyint(1) unsigned', 'varchar(200)', 'varchar(255)', 'tinyint(3)', 'varchar(64)', 'tinyint(4)', 'int(255)', 'varchar(14)', 'int(10) unsigned', 'tinyint(1)']
 
 def projectDistinctVals(selPredObj, tableName, colName, colType):
@@ -107,25 +107,25 @@ def createSelPredOpBitPosDict(selPredObj):
         selPredObj.selPredOpBitPosDict[selPredCol] = str(startPos) + "," + str(endPos)
     return
 
-def createSelPredColBitPosDict(selPredObj):
+def createSelPredColRangeBitPosDict(selPredObj):
     endPos = -1
     for selPredCol in selPredObj.selPredCols:
         startPos = endPos+1
         endPos = startPos+len(selPredObj.selPredColRangeBinDict[selPredCol])-1
-        selPredObj.selPredColBitPosDict[selPredCol] = str(startPos)+","+str(endPos)
+        selPredObj.selPredColRangeBitPosDict[selPredCol] = str(startPos)+","+str(endPos)
     return
 
 def writeSchemaInfoToFiles(selPredObj):
     MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredOpBitPosDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_OP_BIT_POS']))
     MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredColRangeBinDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_COL_RANGE_BINS']))
-    MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredColBitPosDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_COL_BIT_POS']))
+    MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredColRangeBitPosDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_COL_RANGE_BIT_POS']))
     return
 
 def buildSelPredDicts(configDict):
     selPredObj = SelPredObj(configDict)
     createSelPredOpBitPosDict(selPredObj)
     createSelPredColRangeBins(selPredObj)
-    createSelPredColBitPosDict(selPredObj)
+    createSelPredColRangeBitPosDict(selPredObj)
     print "Writing Dictionaries To Files"
     writeSchemaInfoToFiles(selPredObj)
     return
