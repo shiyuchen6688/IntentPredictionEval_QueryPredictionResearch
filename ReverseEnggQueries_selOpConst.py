@@ -204,9 +204,9 @@ def populateBiDirectionalLookupMap(schemaDicts):
     schemaDicts = populateSelPredColRangeBins(schemaDicts)
     #print len(schemaDicts.forwardMapBitsToOps)
     #print len(schemaDicts.backwardMapOpsToBits)
-    #print schemaDicts.allOpSize - len(schemaDicts.joinPredDict)
+    #print schemaDicts.allOpSize
     assert len(schemaDicts.forwardMapBitsToOps) == len(schemaDicts.backwardMapOpsToBits)
-    assert len(schemaDicts.forwardMapBitsToOps) == schemaDicts.allOpSize - len(schemaDicts.joinPredDict)
+    assert len(schemaDicts.forwardMapBitsToOps) == schemaDicts.allOpSize
     return (schemaDicts.forwardMapBitsToOps, schemaDicts.backwardMapOpsToBits)
 
 def estimateSelPredColRangeBinSize(schemaDicts):
