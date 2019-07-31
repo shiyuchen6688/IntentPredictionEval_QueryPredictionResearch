@@ -210,10 +210,10 @@ def populateBiDirectionalLookupMap(schemaDicts):
     return (schemaDicts.forwardMapBitsToOps, schemaDicts.backwardMapOpsToBits)
 
 def estimateSelPredColRangeBinSize(schemaDicts):
-    selPredColRangeBins = schemaDicts.selPredColRangeBins
+    selPredColRangeBitPosDict = schemaDicts.selPredColRangeBitPosDict
     selPredColRangeBinCount = 0
-    for selCol in selPredColRangeBins:
-        selPredColRangeBinCount += selPredColRangeBins[selCol][1] - selPredColRangeBins[selCol][0] + 1
+    for selCol in selPredColRangeBitPosDict:
+        selPredColRangeBinCount += selPredColRangeBitPosDict[selCol][1] - selPredColRangeBitPosDict[selCol][0] + 1
     return selPredColRangeBinCount
 
 def estimateSelPredOpBitMapSize(schemaDicts):
@@ -309,6 +309,15 @@ def readJoinPredDict(fn):
             joinPredDict[key] = columns
     return joinPredDict
 
+def readSelPredColRangeBinDict(fn):
+    selPredColRangeBinDict = {}
+    with open(fn) as f:
+        for line in f:
+            tokens = line.strip().split(":")
+            key = tokens[0]
+            selPredColRangeBinDict[key] = eval(''.join(tokens[1:]))
+    return selPredColRangeBinDict
+
 def readJoinPredBitPosDict(fn):
     joinPredBitPosDict = {}
     with open(fn) as f:
@@ -338,7 +347,7 @@ def readJoinColDicts(joinPredFile, joinPredBitPosFile):
 
 def readSelPredOpConstDicts(selPredOpBitPosFile, selPredColRangeBinsFile, selPredColBitPosFile):
     selPredOpBitPosDict = readJoinPredBitPosDict(selPredOpBitPosFile) # same code invoked as joinPred for bit pos
-    selPredColRangeBinDict = readJoinPredDict(selPredColRangeBinsFile) # same code invoked as joinPred for predColRanges
+    selPredColRangeBinDict = readSelPredColRangeBinDict(selPredColRangeBinsFile) # same code invoked as joinPred for predColRanges
     selPredColRangeBitPosDict = readJoinPredBitPosDict(selPredColBitPosFile) # same code invoked as joinpred for bit pos
     return (selPredOpBitPosDict, selPredColRangeBinDict, selPredColRangeBitPosDict)
 

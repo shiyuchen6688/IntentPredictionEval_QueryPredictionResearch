@@ -899,3 +899,4 @@ if __name__ == "__main__":
     intentObj = createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict)
     printSQLOps(intentObj)
     #createSQLFromIntent(schemaDicts, intentObjDict['intentVector'])
+

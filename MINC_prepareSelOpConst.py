@@ -115,7 +115,23 @@ def createSelPredColRangeBitPosDict(selPredObj):
         selPredObj.selPredColRangeBitPosDict[selPredCol] = str(startPos)+","+str(endPos)
     return
 
+def writeSelPredColDict(selPredCols, fn):
+    try:
+        os.remove(fn)
+    except OSError:
+        pass
+    # key,value pair from each dictionary is written as key:value in each separate row in the file
+    selPredColIndex = 0
+    with open(fn, 'a') as f:
+        for key in selPredCols:
+            f.write(str(key)+":"+str(selPredColIndex)+"\n")
+            selPredColIndex += 1
+        f.flush()
+        f.close()
+    print "Wrote to file "+fn
+
 def writeSchemaInfoToFiles(selPredObj):
+    writeSelPredColDict(selPredObj.selPredCols, getConfig(selPredObj.configDict['MINC_SEL_PRED_COLS']))
     MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredOpBitPosDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_OP_BIT_POS']))
     MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredColRangeBinDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_COL_RANGE_BINS']))
     MINC_prepareJoinKeyPairs.writeSchemaInfoToFile(selPredObj.selPredColRangeBitPosDict, getConfig(selPredObj.configDict['MINC_SEL_PRED_COL_RANGE_BIT_POS']))

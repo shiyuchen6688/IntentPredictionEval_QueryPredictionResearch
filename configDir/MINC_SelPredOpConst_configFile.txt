@@ -27,6 +27,7 @@ MINC_COLS=Documents/DataExploration-Research/MINC/InputOutput/MincColumns
 MINC_COL_BIT_POS=Documents/DataExploration-Research/MINC/InputOutput/MincColBitPos
 MINC_COL_TYPES=Documents/DataExploration-Research/MINC/InputOutput/MincColTypes
 MINC_JOIN_PREDS=Documents/DataExploration-Research/MINC/InputOutput/MincJoinPreds
+MINC_SEL_PRED_COLS=Documents/DataExploration-Research/MINC/InputOutput/MincSelPredCols
 MINC_JOIN_PRED_BIT_POS=Documents/DataExploration-Research/MINC/InputOutput/MincJoinPredBitPos
 MINC_SEL_PRED_OP_BIT_POS=Documents/DataExploration-Research/MINC/InputOutput/MincSelPredOpBitPos
 MINC_SEL_PRED_COL_RANGE_BINS=Documents/DataExploration-Research/MINC/InputOutput/MincSelPredColRangeBins
