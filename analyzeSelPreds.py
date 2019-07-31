@@ -82,6 +82,8 @@ def evalSelCols(configDict, schemaDicts):
     totalTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincTotalTables.pickle")
     selTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincSelTables.pickle")
     selCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincSelCols.pickle")
+    selCols.add('jos_menu.parent')
+    QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincSelCols.pickle", selCols)
     joinTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincJoinTables.pickle")
     joinCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincJoinCols.pickle")
     print "joinTables - selTables: " + str(joinTables - selTables)
