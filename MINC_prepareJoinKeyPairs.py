@@ -78,8 +78,8 @@ def createCrossJoinPairs(curTabName, tabColDict, tabColTypeDict, tableDict, join
     curTabCols = tabColDict[curTabName]
     curTabColTypes = tabColTypeDict[curTabName]
     nextTabIndex = tabIndex+1
-    while nextTabIndex < len(tabColDict):
-        nextTabName = tabColDict.keys()[nextTabIndex]
+    while nextTabIndex < len(tableDict):
+        nextTabName = tableDict[nextTabIndex]
         nextTabCols = tabColDict[nextTabName]
         nextTabColTypes = tabColTypeDict[nextTabName]
         joinPairDict[str(curTabName)+","+str(nextTabName)] = []
