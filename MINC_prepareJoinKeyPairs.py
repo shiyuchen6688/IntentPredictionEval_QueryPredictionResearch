@@ -64,16 +64,17 @@ def createTabColDict(cnx, tableDict):
         tabColTypeDict[table] = colTypeList
     return (tabColDict, tabColTypeDict)
 
-def createSelfJoinPairs(tabIndex, tabColDict, joinPairDict):
-    curTabID = tabColDict.keys()[tabIndex]
+def createSelfJoinPairs(curTabID, tabColDict, joinPairDict):
+    #curTabID = tabColDict.keys()[tabIndex]
     # key is curTabID,curTabID and value is a list of columns paired to themselves
     joinPairDict[str(curTabID)+","+str(curTabID)] = []
     for colName in tabColDict[curTabID]:
         joinPairDict[str(curTabID) + "," + str(curTabID)].append(colName+","+colName)
     return joinPairDict
 
-def createCrossJoinPairs(tabIndex, tabColDict, tabColTypeDict, joinPairDict):
-    curTabName = tabColDict.keys()[tabIndex]
+def createCrossJoinPairs(curTabName, tabColDict, tabColTypeDict, tableDict, joinPairDict):
+    #curTabName = tabColDict.keys()[tabIndex]
+    tabIndex = tableDict[curTabName]
     curTabCols = tabColDict[curTabName]
     curTabColTypes = tabColTypeDict[curTabName]
     nextTabIndex = tabIndex+1
@@ -101,16 +102,14 @@ def pruneEmptyJoinPairs(joinPairDict):
             del joinPairDict[tabPair]
     return joinPairDict
 
-def createJoinPairDict(tabColDict, tabColTypeDict):
+def createJoinPairDict(tabColDict, tabColTypeDict, tableDict):
     joinPairDict = {}
     # key is the table ID pair and value is the list of possible join key pairs, we store both self join and cross-table join.
     # if in the future query a join predicate has tab2.Col2 = tab1.Col3, it will always be chronologically stored as tab1.Col3 = tab2.Col2
     # we restrict self-joins to be on the same col. That is a reasonable assumption & will confine the dimensionality.
-    tabIndex = 0
-    while tabIndex < len(tabColDict):
-        joinPairDict = createSelfJoinPairs(tabIndex, tabColDict, joinPairDict)
-        joinPairDict = createCrossJoinPairs(tabIndex, tabColDict, tabColTypeDict, joinPairDict)
-        tabIndex+=1
+    for tableName in tableDict:
+        joinPairDict = createSelfJoinPairs(tableName, tabColDict, joinPairDict)
+        joinPairDict = createCrossJoinPairs(tableName, tabColDict, tabColTypeDict, tableDict, joinPairDict)
     return joinPairDict
 
 def createJoinPredBitPosDict(joinPairDict):
@@ -163,7 +162,7 @@ def fetchSchema(configDict):
     tableDict = createTableDict(cnx)
     (tabColDict, tabColTypeDict) = createTabColDict(cnx, tableDict)
     tabColBitPosDict = createTabColBitPosDict(tabColDict, tableDict)
-    joinPairDict = createJoinPairDict(tabColDict, tabColTypeDict)
+    joinPairDict = createJoinPairDict(tabColDict, tabColTypeDict, tableDict)
     joinPairDict = pruneEmptyJoinPairs(joinPairDict)
     joinPredBitPosDict = createJoinPredBitPosDict(joinPairDict)
     print "Writing Dictionaries To Files"
