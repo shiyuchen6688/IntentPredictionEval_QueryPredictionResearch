@@ -41,7 +41,7 @@ def createTableDict(cnx):
         print "tablename: "+str(tableName)+", index: "+str(index)
         index+=1
     sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))
-    tableDict = collections.orderedDict(sorted_x)
+    tableDict = collections.OrderedDict(sorted_x)
     return tableDict
 
 def createTabColDict(cnx, tableDict):
