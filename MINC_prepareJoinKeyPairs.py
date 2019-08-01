@@ -10,6 +10,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from ParseConfigFile import getConfig
 import operator
+import collections
 
 def connectToMySQL(configDict):
     try:
@@ -39,6 +40,8 @@ def createTableDict(cnx):
         tableDict[tableName] = index
         print "tablename: "+str(tableName)+", index: "+str(index)
         index+=1
+    sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))
+    tableDict = collections.orderedDict(sorted_x)
     return tableDict
 
 def createTabColDict(cnx, tableDict):
@@ -214,5 +217,5 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    #(tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict) = fetchSchema(configDict)
+    (tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict) = fetchSchema(configDict)
     printStats(configDict)
