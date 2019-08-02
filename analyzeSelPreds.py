@@ -83,6 +83,8 @@ def evalSelCols(configDict, schemaDicts):
     selTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincSelTables.pickle")
     selCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincSelCols.pickle")
     #selCols.add('jos_community_photos.permissions')
+    #selCols.add('jos_community_photos.owner')
+    #selCols.add('jos_community_courses.approvals')
     #QR.writeToPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincSelCols.pickle", selCols)
     joinTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincJoinTables.pickle")
     joinCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR'])+"../MincJoinCols.pickle")
