@@ -106,6 +106,6 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
-    convertSeqToConcFile(configDict)
-    #createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
+    #convertSeqToConcFile(configDict)
+    createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
     print "Completed concurrent session order creation"

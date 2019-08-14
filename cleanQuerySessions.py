@@ -9,7 +9,7 @@ def appendToFile(outputFile, outputLine):
 
 def cleanEachQuery(sessQuery):
     sessQuery = ' '.join(sessQuery.split())
-    (sessQuery, selectList, projectList, groupByList, havingList, tableList) = qp.parseNYCQuery(sessQuery)
+    (sessQuery, selectList, projectList, groupByList, havingList, tableList, orderByList, limitList) = qp.parseNYCQuery(sessQuery)
     for parseLevel in projectList:
         cols = projectList[parseLevel].split(",")
         for col in cols:
