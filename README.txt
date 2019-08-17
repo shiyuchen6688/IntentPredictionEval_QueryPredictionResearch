@@ -67,17 +67,17 @@ appended Session 29611, Query 3, absQueryCount: 80000
 appended Session 24310, Query 3, absQueryCount: 90000
 appended Session 19728, Query 5, absQueryCount: 100000
 appended Session 33893, Query 13, absQueryCount: 110000
-Created intent vectors for # Sessions: 43802 and # Queries: 114343
+Created intent vectors for # Sessions: 43892 and # Queries: 114607
 
 ## 2) Step 2: You can run two kinds of experiments with this -- singularity or sustenance (schemaDicts are assumed to have been created)
 # Create a folder for this new dataset in InputOutput/ClusterRuns/
-mkdir ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114343-Constants
+mkdir ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants
 
 # 3) Step 3: Copy feature vectors (full and for tabels alone) MincBitFragmentIntentSessions and MincBitFragmentTableIntentSessions just created to the new folder
 # The feature vectors created here will be used for Singularity Experiments
-cp ~/Documents/DataExploration-Research/MINC/InputOutput/MincBitFragment* ClusterRuns/NovelTables-114343-Constants/.
-mv ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114343-Constants/MincBitFragmentIntentSessions{,Singularity}
-mv ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114343-Constants/MincBitFragmentTableIntentSessions{,Singularity}
+cp ~/Documents/DataExploration-Research/MINC/InputOutput/MincBitFragment* ClusterRuns/NovelTables-114607-Constants/.
+mv ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/MincBitFragmentIntentSessions{,Singularity}
+mv ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/MincBitFragmentTableIntentSessions{,Singularity}
 cp ~/Documents/DataExploration-Research/MINC/InputOutput/MincQuerySessions ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/.
 cp ~/Documents/DataExploration-Research/MINC/InputOutput/MincConcurrentSessions ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/.
 
@@ -85,15 +85,15 @@ cp ~/Documents/DataExploration-Research/MINC/InputOutput/MincConcurrentSessions 
 python createTrainTestSessions.py -config configDir/MINC_FragmentQueries_Keep_configFile.txt
 
 # 5) Step 5: Concatenate any single fold of train and test folds created under InputOutput/kFold directory into a single file and copy it to the ClusterRuns/NovelTables-1143# 43-Constants/ 
-cat ~/Documents/DataExploration-Research/MINC/InputOutput/kFold/MincBitFragmentIntentSessions_CONC_TRAIN_FOLD_2 ~/Documents/DataExploration-Research/MINC/InputOutput/kFold/MincBitFragmentIntentSessions_CONC_TEST_FOLD_2 > ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114343-Constants/MincBitFragmentIntentSessionsConcTrainTestSustenance_0.8
+cat ~/Documents/DataExploration-Research/MINC/InputOutput/kFold/MincBitFragmentIntentSessions_CONC_TRAIN_FOLD_2 ~/Documents/DataExploration-Research/MINC/InputOutput/kFold/MincBitFragmentIntentSessions_CONC_TEST_FOLD_2 > ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/MincBitFragmentIntentSessionsConcTrainTestSustenance_0.8
 # Above chooses FOLD 2 to concatenate train and test sets from.
 
 # 6) Step 6: Above chooses FOLD 2 to concatenate train and test sets from. Now do the following to run either SINGULARITY or SUSTENANCE experiments
 -----------
 SINGULARITY
 ----------- 
-cp ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114343-Constants/MincBitFragmentIntentSessionsSingularity ~/Documents/DataExploration-Research/MINC/InputOutput/MincBitFragmentIntentSessions
+cp ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/MincBitFragmentIntentSessionsSingularity ~/Documents/DataExploration-Research/MINC/InputOutput/MincBitFragmentIntentSessions
 ----------
 SUSTENANCE
 ----------
-cp ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114343-Constants/MincBitFragmentIntentSessionsConcTrainTestSustenance_0.8 ~/Documents/DataExploration-Research/MINC/InputOutput/MincBitFragmentIntentSessions
+cp ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/MincBitFragmentIntentSessionsConcTrainTestSustenance_0.8 ~/Documents/DataExploration-Research/MINC/InputOutput/MincBitFragmentIntentSessions
