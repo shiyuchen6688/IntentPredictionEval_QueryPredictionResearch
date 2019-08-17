@@ -84,6 +84,8 @@ cp ~/Documents/DataExploration-Research/MINC/InputOutput/MincConcurrentSessions 
 
 # 4) Step 4: Create the K-Fold train and test sets with 80% train and 20% test (Required for Sustenance Experiemnts) 
 python createTrainTestSessions.py -config configDir/MINC_FragmentQueries_Keep_configFile.txt
+# SEQ_OR_CONC_TRAIN_TEST=CONC in the configFile because we want to have concurrent sessions both in train and test individually, KEEP because we have pruned during 
+# FV creation phase in the Java code. Now we do not need to prune any recurrent repetition of queries as they no longer exist
 
 # 5) Step 5: Concatenate any single fold of train and test folds created under InputOutput/kFold directory into a single file and copy it to the ClusterRuns/NovelTables-1143# 43-Constants/ 
 cat ~/Documents/DataExploration-Research/MINC/InputOutput/kFold/MincBitFragmentIntentSessions_CONC_TRAIN_FOLD_2 ~/Documents/DataExploration-Research/MINC/InputOutput/kFold/MincBitFragmentIntentSessions_CONC_TEST_FOLD_2 > ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/MincBitFragmentIntentSessionsConcTrainTestSustenance_0.8
