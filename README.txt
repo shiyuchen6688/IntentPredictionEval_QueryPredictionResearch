@@ -78,6 +78,8 @@ mkdir ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTab
 cp ~/Documents/DataExploration-Research/MINC/InputOutput/MincBitFragment* ClusterRuns/NovelTables-114343-Constants/.
 mv ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114343-Constants/MincBitFragmentIntentSessions{,Singularity}
 mv ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114343-Constants/MincBitFragmentTableIntentSessions{,Singularity}
+cp ~/Documents/DataExploration-Research/MINC/InputOutput/MincQuerySessions ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/.
+cp ~/Documents/DataExploration-Research/MINC/InputOutput/MincConcurrentSessions ~/Documents/DataExploration-Research/MINC/InputOutput/ClusterRuns/NovelTables-114607-Constants/.
 
 # 4) Step 4: Create the K-Fold train and test sets with 80% train and 20% test (Required for Sustenance Experiemnts) 
 python createTrainTestSessions.py -config configDir/MINC_FragmentQueries_Keep_configFile.txt
