@@ -42,6 +42,7 @@ cp ~/Documents/DataExploration-Research/MINC/InputOutput/TempOutput/* ~/Document
 
 # Next run the following command from IntentPredictionEval directory for source code
 python MINC_FragmentIntent.py -config configDir/MINC_FragmentQueries_Keep_configFile.txt
+# In the config file, set QUERY_LIMIT=0 if you want to create fragments for all the tuples, else to a limit of QUERY_LIMIT=114607 if u want those many tuples
 
 # The output is typically like the following ##
 Using TensorFlow backend.
