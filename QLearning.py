@@ -279,9 +279,9 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj, keyOrder):
 
 def saveModelToFile(qObj):
     QR.writeToPickleFile(
-        getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle", qObj.qTable)
+        getConfig(configDict['OUTPUT_DIR']) + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_QTable.pickle", qObj.qTable)
     QR.writeToPickleFile(
-        getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle", qObj.queryVocab)
+        getConfig(configDict['OUTPUT_DIR']) + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_QLQueryVocab.pickle", qObj.queryVocab)
     return
 
 def trainTestBatchWise(qObj):
@@ -332,8 +332,8 @@ def trainTestBatchWise(qObj):
     CF_SVD.updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
 
 def loadModel(qObj):
-    qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QLQueryVocab.pickle")
-    qObj.qTable = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "QTable.pickle")
+    qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_QLQueryVocab.pickle")
+    qObj.qTable = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_QTable.pickle")
     print "Loaded len(queryVocab): "+str(len(qObj.queryVocab))+", len(qObj.qTable): "+str(len(qObj.qTable))
     notInQT = 0
     notInSessionStreamDict = 0
@@ -428,7 +428,10 @@ def testModelSustenance(testKeyOrder, qObj):
 
 def evalSustenance(qObj):
     (trainKeyOrder, testKeyOrder) = LSTM_RNN_Parallel.splitIntoTrainTestSets(qObj.keyOrder, qObj.configDict)
+    sustStartTrainTime = time.time()
     trainModelSustenance(trainKeyOrder, qObj)
+    sustTotalTrainTime = float(time.time() - sustStartTrainTime)
+    print "Sustanace Train Time: "+str(sustTotalTrainTime)
     testModelSustenance(testKeyOrder, qObj)
 
 def runQLearning(configDict):
