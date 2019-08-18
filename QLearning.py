@@ -431,7 +431,7 @@ def evalSustenance(qObj):
     sustStartTrainTime = time.time()
     trainModelSustenance(trainKeyOrder, qObj)
     sustTotalTrainTime = float(time.time() - sustStartTrainTime)
-    print "Sustanace Train Time: "+str(sustTotalTrainTime)
+    print "Sustenace Train Time: "+str(sustTotalTrainTime)
     testModelSustenance(testKeyOrder, qObj)
 
 def runQLearning(configDict):

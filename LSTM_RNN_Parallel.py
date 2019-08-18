@@ -868,12 +868,15 @@ def testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpi
 
 def evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict):
     (trainKeyOrder, testKeyOrder) = splitIntoTrainTestSets(keyOrder, configDict)
+    sustStartTrainTime = time.time()
     assert configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
     if configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
         episodicTraining = 'True'
         (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = trainModelSustenance(episodicTraining, trainKeyOrder, sampledQueryHistory, queryKeysSetAside, sessionDictGlobal, sessionStreamDict, modelRNN, max_lookback, configDict)
     elif configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = loadModelSustenance(configDict)
+    sustTotalTrainTime = float(time.time() - sustStartTrainTime)
+    print "Sustenace Train Time: " + str(sustTotalTrainTime)
     testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
