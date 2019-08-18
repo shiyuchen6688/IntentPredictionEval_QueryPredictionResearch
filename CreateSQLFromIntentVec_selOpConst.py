@@ -543,9 +543,9 @@ def fixSelPredOp(selCol, intentObj, precOrRecallFavor):
     opEndIndex = endBitPos - absStartBit
     maxOpIndex, maxWeightVal = max(enumerate(intentObj.predictedY[opStartIndex:opEndIndex]), key=operator.itemgetter(1))
     opToSet = selOps[maxOpIndex]  # maxOpIndex is relative to opStartIndex
-    intentObj.selPredOps.append(selCol + "." + opToSet)
     opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[selCol + "." + opToSet + ";selPredOp"]
     intentObj = setBit(opDimBit, intentObj)
+    intentObj.selPredOps.append(selCol + "." + opToSet)
     return intentObj
 
 def fixSelPredOpForCol(retVal, selCol, intentObj, precOrRecallFavor):
@@ -577,10 +577,10 @@ def fixSelPredColRangeBin(selCol, intentObj, precOrRecallFavor):
     maxColRangeBinIndex, maxWeightVal = max(enumerate(intentObj.predictedY[colRangeBinStartIndex:colRangeBinEndIndex]),
                                             key=operator.itemgetter(1))
     colRangeBinToSet = selCol+"."+intentObj.schemaDicts.selPredColRangeBins[selCol][maxColRangeBinIndex]
-    intentObj.selPredColRangeBins.append(colRangeBinToSet)
     colRangeBinDimBit = intentObj.schemaDicts.backwardMapOpsToBits[
         colRangeBinToSet + ";selPredColRangeBin"]
     intentObj = setBit(colRangeBinDimBit, intentObj)
+    intentObj.selPredColRangeBins.append(colRangeBinToSet)
     return intentObj
 
 def fixSelPredColRangeBinForCol(retVal, selCol, intentObj, precOrRecallFavor):
@@ -629,10 +629,11 @@ def fixSelColForColRangeBin(retVal, selPredColRangeBin, selCol, intentObj, precO
 def fixOpColRangeForSelPreds(intentObj, precOrRecallFavor):
     copySelCols = list(intentObj.selCols)
     for selCol in copySelCols:
-        retVal = searchForSelCol(selCol, intentObj.selPredOps)
-        intentObj = fixSelPredOpForCol(retVal, selCol, intentObj, precOrRecallFavor)
-        retVal = searchForSelCol(selCol, intentObj.selPredColRangeBins)
-        intentObj = fixSelPredColRangeBinForCol(retVal, selCol, intentObj, precOrRecallFavor)
+        if selCol in intentObj.schemaDicts.selPredColRangeBins:
+            retVal = searchForSelCol(selCol, intentObj.selPredOps)
+            intentObj = fixSelPredOpForCol(retVal, selCol, intentObj, precOrRecallFavor)
+            retVal = searchForSelCol(selCol, intentObj.selPredColRangeBins)
+            intentObj = fixSelPredColRangeBinForCol(retVal, selCol, intentObj, precOrRecallFavor)
     return intentObj
 
 def fixSelPredsColRangeForOp(intentObj, precOrRecallFavor):
