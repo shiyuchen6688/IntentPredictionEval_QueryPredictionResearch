@@ -34,6 +34,7 @@ import multiprocessing
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 import ReverseEnggQueries
+import ReverseEnggQueries_selOpConst
 from keras.models import load_model
 
 
@@ -358,12 +359,15 @@ def concatenateLocalDicts(localCosineSimDicts, cosineSimDict):
 
 def computePredictedIntentsRNN(threadID, predictedY, schemaDicts, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
     assert configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True' or configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False'
+    assert configDict['INCLUDE_SEL_OP_CONST'] == 'True' or configDict['INCLUDE_SEL_OP_CONST'] == 'False'
     if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
         return computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID,
                                               sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
     elif configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'True':
-        return ReverseEnggQueries.predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict, sessionStreamDict[str(curSessID)+","+str(curQueryID)])
-
+        if configDict['INCLUDE_SEL_OP_CONST'] == 'False':
+            return ReverseEnggQueries.predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict, sessionStreamDict[str(curSessID)+","+str(curQueryID)])
+        else:
+            return ReverseEnggQueries_selOpConst.predictTopKNovelIntents(threadID, predictedY, schemaDicts, configDict, sessionStreamDict[str(curSessID)+","+str(curQueryID)])
 
 def computePredictedIntentsRNNFromHistory(threadID, predictedY, configDict, curSessID, curQueryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict):
     #predictedY = ReverseEnggQueries.pruneUnImportantDimensions(predictedY, float(configDict['RNN_WEIGHT_VECTOR_THRESHOLD']))
@@ -975,7 +979,11 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
 def initRNNSingularity(configDict):
     intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     sampledQueryHistory = set() # it is a set -- required for predicting from historical query pool
-    schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict) # -- required for predicting completely new queries
+    assert configDict['INCLUDE_SEL_OP_CONST'] == 'True' or configDict['INCLUDE_SEL_OP_CONST'] == 'False'
+    if configDict['INCLUDE_SEL_OP_CONST'] == 'False':
+        schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict) # -- required for predicting completely new queries
+    else:
+        schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(configDict)
     numEpisodes = 0
     max_lookback = 0
     queryKeysSetAside = []
@@ -1061,7 +1069,11 @@ def runRNNKFoldExp(configDict):
     avgTrainTime = []
     avgTestTime = []
     algoName = configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"]
-    schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
+    assert configDict['INCLUDE_SEL_OP_CONST'] == 'True' or configDict['INCLUDE_SEL_OP_CONST'] == 'False'
+    if configDict['INCLUDE_SEL_OP_CONST'] == 'False':
+        schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
+    else:
+        schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(configDict)
     print "Num Folds to Run: "+str(int(configDict['NUM_FOLDS_TO_RUN']))
     for foldID in range(int(configDict['NUM_FOLDS_TO_RUN'])):
         outputIntentFileName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + algoName + "_" + \
