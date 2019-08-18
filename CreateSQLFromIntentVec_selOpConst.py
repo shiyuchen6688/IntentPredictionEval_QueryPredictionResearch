@@ -576,10 +576,10 @@ def fixSelPredColRangeBin(selCol, intentObj, precOrRecallFavor):
     colRangeBinEndIndex = endBitPos - absStartBit
     maxColRangeBinIndex, maxWeightVal = max(enumerate(intentObj.predictedY[colRangeBinStartIndex:colRangeBinEndIndex]),
                                             key=operator.itemgetter(1))
-    colRangeBinToSet = intentObj.selPredColRangeBins[selCol][maxColRangeBinIndex]
-    intentObj.selPredColRangeBins.append(selCol + "." + colRangeBinToSet)
+    colRangeBinToSet = intentObj.selPredColRangeBins[maxColRangeBinIndex]
+    intentObj.selPredColRangeBins.append(colRangeBinToSet)
     colRangeBinDimBit = intentObj.schemaDicts.backwardMapOpsToBits[
-        selCol + "." + colRangeBinToSet + ";selPredColRangeBin"]
+        colRangeBinToSet + ";selPredColRangeBin"]
     intentObj = setBit(colRangeBinDimBit, intentObj)
     return intentObj
 
