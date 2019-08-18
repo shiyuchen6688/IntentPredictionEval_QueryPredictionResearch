@@ -20,6 +20,8 @@ from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 import ReverseEnggQueries
 import CreateSQLFromIntentVec
+import ReverseEnggQueries_selOpConst
+import CreateSQLFromIntentVec_selOpConst
 
 def readFromConcurrentFile(concSessFile):
     # Note that query IDs start in the file from 1 but in the outputIntent, query ID starts from 0: so Decrement by 1
@@ -50,6 +52,11 @@ def readFromOutputEvalFile(outputEvalQualityFileName):
 
 def procPredictedIntents(configDict, schemaDicts, curQueryDict, outputEvalDict, outputIntentFileName, outputSQLLog):
     QR.deleteIfExists(outputSQLLog)
+    assert configDict['INCLUDE_SEL_OP_CONST'] == 'True' or configDict['INCLUDE_SEL_OP_CONST'] == 'False'
+    if configDict['INCLUDE_SEL_OP_CONST'] == 'False':
+        createSqlLib = CreateSQLFromIntentVec
+    else:
+        createSqlLib = CreateSQLFromIntentVec_selOpConst
     assert configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY' or configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE'
     with open(outputIntentFileName) as f:
         for line in f:
@@ -63,22 +70,22 @@ def procPredictedIntents(configDict, schemaDicts, curQueryDict, outputEvalDict, 
             outputSQLStr += "Next Query: "+curQueryDict[tokens[0]+";"+nextQueryID]+"\n"
             actualIntent = BitMap.fromstring(tokens[3].split(":")[1])
             if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
-                actualIntentObj = CreateSQLFromIntentVec.regenerateSQL(actualIntent, schemaDicts)
-                outputSQLStr += "Actual SQL Ops:\n" + CreateSQLFromIntentVec.createSQLString(actualIntentObj)
+                actualIntentObj = createSqlLib.regenerateSQL(actualIntent, schemaDicts)
+                outputSQLStr += "Actual SQL Ops:\n" + createSqlLib.createSQLString(actualIntentObj)
             elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
-                actualIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(actualIntent, None, schemaDicts, configDict)
-                outputSQLStr += "Actual SQL Ops:\n" + CreateSQLFromIntentVec.createSQLStringForTable(actualIntentObj)
+                actualIntentObj = createSqlLib.regenerateSQLTable(actualIntent, None, schemaDicts, configDict)
+                outputSQLStr += "Actual SQL Ops:\n" + createSqlLib.createSQLStringForTable(actualIntentObj)
             for i in range(4, len(tokens)):
                 predictedIntent = BitMap.fromstring(tokens[i].split(":")[1])
                 relIndex = i - 4
                 if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
-                    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQL(predictedIntent, schemaDicts)
+                    predictedIntentObj = createSqlLib.regenerateSQL(predictedIntent, schemaDicts)
                     outputSQLStr += "Predicted SQL Ops " + str(
-                        relIndex) + ":\n" + CreateSQLFromIntentVec.createSQLString(predictedIntentObj)
+                        relIndex) + ":\n" + createSqlLib.createSQLString(predictedIntentObj)
                 elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
-                    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQLTable(predictedIntent, None, schemaDicts, configDict)
+                    predictedIntentObj = createSqlLib.regenerateSQLTable(predictedIntent, None, schemaDicts, configDict)
                     outputSQLStr += "Predicted SQL Ops " + str(
-                        relIndex) + ":\n" + CreateSQLFromIntentVec.createSQLStringForTable(predictedIntentObj)
+                        relIndex) + ":\n" + createSqlLib.createSQLStringForTable(predictedIntentObj)
             ti.appendToFile(outputSQLLog, outputSQLStr)
     return
 
@@ -131,7 +138,11 @@ def createSQLLogsFromConfigDict(configDict, args):
         outputSQLLog = getConfig(configDict['OUTPUT_DIR']) + "/outputSQLLog"
     curQueryDict = readFromConcurrentFile(concSessFile)
     outputEvalDict = readFromOutputEvalFile(outputEvalQualityFileName)
-    schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
+    assert configDict['INCLUDE_SEL_OP_CONST'] == 'True' or configDict['INCLUDE_SEL_OP_CONST'] == 'False'
+    if configDict['INCLUDE_SEL_OP_CONST'] == 'False':
+        schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
+    else:
+        schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(configDict)
     procPredictedIntents(configDict, schemaDicts, curQueryDict, outputEvalDict, outputIntentFileName, outputSQLLog)
     return
 
