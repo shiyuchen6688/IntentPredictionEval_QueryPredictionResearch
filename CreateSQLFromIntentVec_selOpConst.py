@@ -527,7 +527,7 @@ def fixJoinViolations(intentObj, precOrRecallFavor):
 
 def searchForSelCol(selCol, selPredOpsOrColRangeBins):
     for candOpColRangeBin in selPredOpsOrColRangeBins:
-        candSelCol = str(candOpColRangeBin.split(".")[0:1]) # tableName.ColName.Op/ColRangeBin split
+        candSelCol = str('.'.join(candOpColRangeBin.split(".")[0:2])) # tableName.ColName.Op/ColRangeBin split
         if selCol == candSelCol:
             return True
     return False
