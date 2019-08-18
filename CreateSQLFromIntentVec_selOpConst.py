@@ -543,7 +543,7 @@ def fixSelPredOp(selCol, intentObj, precOrRecallFavor):
     opEndIndex = endBitPos - absStartBit
     maxOpIndex, maxWeightVal = max(enumerate(intentObj.predictedY[opStartIndex:opEndIndex]), key=operator.itemgetter(1))
     opToSet = selOps[maxOpIndex]  # maxOpIndex is relative to opStartIndex
-    intentObj.selOps.append(selCol + "." + opToSet)
+    intentObj.selPredOps.append(selCol + "." + opToSet)
     opDimBit = intentObj.schemaDicts.backwardMapOpsToBits[selCol + "." + opToSet + ";selPredOp"]
     intentObj = setBit(opDimBit, intentObj)
     return intentObj
