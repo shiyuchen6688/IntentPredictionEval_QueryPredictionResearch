@@ -638,7 +638,7 @@ def fixOpColRangeForSelPreds(intentObj, precOrRecallFavor):
 def fixSelPredsColRangeForOp(intentObj, precOrRecallFavor):
     copySelPredOps = list(intentObj.selPredOps)
     for selPredOp in copySelPredOps:
-        selCol = str(selPredOp.split(".")[0:1]) # table.Col.Op is split
+        selCol = str('.'.join(selPredOp.split(".")[0:2])) # table.Col.Op is split
         retVal = selCol in intentObj.selCols
         intentObj = fixSelColForOp(retVal, selPredOp, selCol, intentObj, precOrRecallFavor)
         retVal = searchForSelCol(selCol, intentObj.selPredColRangeBins)
@@ -648,7 +648,7 @@ def fixSelPredsColRangeForOp(intentObj, precOrRecallFavor):
 def fixSelPredsOpForColRange(intentObj, precOrRecallFavor):
     copySelPredColRangeBins = list(intentObj.selPredColRangeBins)
     for selPredColRangeBin in copySelPredColRangeBins:
-        selCol = str(selPredColRangeBin.split(".")[0:1]) # table.Col.colRangeBin is split
+        selCol = str('.'.join(selPredColRangeBin.split(".")[0:2])) # table.Col.colRangeBin is split
         retVal = selCol in intentObj.selCols
         intentObj = fixSelColForColRangeBin(retVal, selPredColRangeBin, selCol, intentObj, precOrRecallFavor)
         retVal = searchForSelCol(selCol, intentObj.selPredOps)
