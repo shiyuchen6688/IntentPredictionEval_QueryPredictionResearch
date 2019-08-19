@@ -659,6 +659,14 @@ def regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts, config
     intentObj = createSQLTableFromIntentBits(intentObj)
     return intentObj
 
+def regenerateSQLTable(dummyParam, topKCandidateVector, curIntentBitVec, schemaDicts, configDict):
+    #dummyParam to be consistent with the five param usage in CreateSQLFromIntentVec_selOpConst.py
+    return regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts, configDict)
+
+def regenerateSQL(dummyParam, topKCandidateVector, schemaDicts):
+    #dummyParam to be consistent with the three param usage in CreateSQLFromIntentVec_selOpConst.py
+    return regenerateSQL(topKCandidateVector, schemaDicts)
+
 def regenerateSQL(topKCandidateVector, schemaDicts):
     setBitPosList = topKCandidateVector.nonzero()
     #print setBitPosList

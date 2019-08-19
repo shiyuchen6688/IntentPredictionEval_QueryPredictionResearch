@@ -70,20 +70,20 @@ def procPredictedIntents(configDict, schemaDicts, curQueryDict, outputEvalDict, 
             outputSQLStr += "Next Query: "+curQueryDict[tokens[0]+";"+nextQueryID]+"\n"
             actualIntent = BitMap.fromstring(tokens[3].split(":")[1])
             if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
-                actualIntentObj = createSqlLib.regenerateSQL(actualIntent, schemaDicts)
+                actualIntentObj = createSqlLib.regenerateSQL(None, actualIntent, schemaDicts)
                 outputSQLStr += "Actual SQL Ops:\n" + createSqlLib.createSQLString(actualIntentObj)
             elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
-                actualIntentObj = createSqlLib.regenerateSQLTable(actualIntent, None, schemaDicts, configDict)
+                actualIntentObj = createSqlLib.regenerateSQLTable(None, actualIntent, None, schemaDicts, configDict)
                 outputSQLStr += "Actual SQL Ops:\n" + createSqlLib.createSQLStringForTable(actualIntentObj)
             for i in range(4, len(tokens)):
                 predictedIntent = BitMap.fromstring(tokens[i].split(":")[1])
                 relIndex = i - 4
                 if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
-                    predictedIntentObj = createSqlLib.regenerateSQL(predictedIntent, schemaDicts)
+                    predictedIntentObj = createSqlLib.regenerateSQL(None, predictedIntent, schemaDicts)
                     outputSQLStr += "Predicted SQL Ops " + str(
                         relIndex) + ":\n" + createSqlLib.createSQLString(predictedIntentObj)
                 elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
-                    predictedIntentObj = createSqlLib.regenerateSQLTable(predictedIntent, None, schemaDicts, configDict)
+                    predictedIntentObj = createSqlLib.regenerateSQLTable(None, predictedIntent, None, schemaDicts, configDict)
                     outputSQLStr += "Predicted SQL Ops " + str(
                         relIndex) + ":\n" + createSqlLib.createSQLStringForTable(predictedIntentObj)
             ti.appendToFile(outputSQLLog, outputSQLStr)
