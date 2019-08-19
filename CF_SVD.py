@@ -445,7 +445,10 @@ def testModelSustenance(testKeyOrder, svdObj):
 
 def evalSustenance(svdObj):
     (trainKeyOrder, testKeyOrder) = LSTM_RNN_Parallel.splitIntoTrainTestSets(svdObj.keyOrder, svdObj.configDict)
+    sustStartTrainTime = time.time()
     trainModelSustenance(trainKeyOrder, svdObj)
+    sustTotalTrainTime = float(time.time() - sustStartTrainTime)
+    print "Sustenace Train Time: " + str(sustTotalTrainTime)
     testModelSustenance(testKeyOrder, svdObj)
     return
 

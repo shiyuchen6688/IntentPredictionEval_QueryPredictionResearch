@@ -989,7 +989,10 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
 def evalSustenance(sessionSummaries, sessionSampleDict, queryKeysSetAside, resultDict, sessionStreamDict, numEpisodes,
      episodeResponseTimeDictName, episodeResponseTime, keyOrder, startEpisode, outputIntentFileName):
     (trainKeyOrder, testKeyOrder) = LSTM_RNN_Parallel.splitIntoTrainTestSets(keyOrder, configDict)
+    sustStartTrainTime = time.time()
     (sessionSummaries, sessionSampleDict) = trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict)
+    sustTotalTrainTime = float(time.time() - sustStartTrainTime)
+    print "Sustenace Train Time: " + str(sustTotalTrainTime)
     testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,
                         episodeResponseTimeDictName, episodeResponseTime, testKeyOrder, startEpisode, outputIntentFileName)
     return
