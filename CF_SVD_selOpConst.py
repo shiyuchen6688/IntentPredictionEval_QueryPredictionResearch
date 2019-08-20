@@ -82,9 +82,16 @@ def createMatrix(svdObj):
     rowEntry = [0.0] * len(svdObj.queryVocab)
     svdObj.matrix.append(rowEntry)
 
+def computeHexDigest(curBitMap):
+    # hexDigest = hashlib.sha512(curBitMap.tostring()).hexdigest()
+    arr = curBitMap.nonzero()
+    arrStr = ','.join([str(pos) for pos in arr])
+    hexDigest = hashlib.sha256(arrStr).hexdigest()
+    return hexDigest
+
 def findIfQueryInside(sessQueryID, distinctQueries, svdObj):
     curBitMap = svdObj.sessionStreamDict[sessQueryID]
-    hexDigest = hashlib.sha512(curBitMap.tostring()).hexdigest()
+    hexDigest = computeHexDigest(curBitMap)
     try:
         oldSessQueryID = svdObj.queryVocab[hexDigest]
         return (hexDigest, oldSessQueryID, distinctQueries)
