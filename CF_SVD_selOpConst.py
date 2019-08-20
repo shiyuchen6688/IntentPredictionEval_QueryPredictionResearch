@@ -236,7 +236,8 @@ def predictTopKIntents(threadID, matrix, sessionSummaries, sessionSummarySample,
     # zip(*sorted(enumerate(a), key=operator.itemgetter(1)))[0][-topK:]
     topKSessQueryIndices = []
     for topKIndex in topKIndices:
-        topKSessQueryIndices.append(queryVocab[topKIndex])
+        topKHashDigestKey = queryVocab.keys()[topKIndex]
+        topKSessQueryIndices.append(queryVocab[topKHashDigestKey])
     return topKSessQueryIndices
 
 
