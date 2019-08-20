@@ -1,7 +1,7 @@
 #!/bin/sh
 #python QLearning.py -config configDir/MINC_QL_sustenance_configFile.txt
 #python QLearning.py -config configDir/MINC_QL_configFile.txt
-python CF_SVD.py -config configDir/MINC_SVD_singularity_configFile.txt
+python CF_SVD_selOpConst.py -config configDir/MINC_SVD_singularity_configFile.txt
 python CreateSQLLogs.py -config configDir/MINC_SVD_singularity_configFile.txt
 #python CFCosineSim_Parallel.py -config configDir/MINC_CF_COSINESIM_sustenance_configFile.txt
 #python ActiveLearning_Parallel.py -config MINC_configFile.txt
