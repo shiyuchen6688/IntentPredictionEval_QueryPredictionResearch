@@ -27,12 +27,13 @@ class Q_Obj:
         self.configDict = configDict
         self.intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
         self.episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
-            'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + \
+            'ALGORITHM'] + "_" + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_" + configDict['INTENT_REP'] + "_" + \
                                       configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                           'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
                                           'EPISODE_IN_QUERIES'] + ".pickle"
         self.outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
-            'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
+            'ALGORITHM'] + "_" + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_" + configDict['INTENT_REP'] + "_" + \
+                                    configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                    'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
         self.numEpisodes = 0
         self.queryKeysSetAside = []
