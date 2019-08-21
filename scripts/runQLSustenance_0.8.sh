@@ -1,5 +1,5 @@
 #!/bin/sh
-python QLearning.py -config configDir/MINC_QL_trainTest_sustenance_0.8_configFile.txt
+python QLearning_selOpConst.py -config configDir/MINC_QL_trainTest_sustenance_0.8_configFile.txt
 python CreateSQLLogs.py -config configDir/MINC_QL_trainTest_sustenance_0.8_configFile.txt
 #python QLearning.py -config configDir/MINC_QL_configFile.txt
 #python CF_SVD.py -config MINC_configFile.txt
