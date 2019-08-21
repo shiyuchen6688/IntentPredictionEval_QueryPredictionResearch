@@ -297,7 +297,7 @@ def trainTestBatchWise(qObj):
         if len(qObj.queryVocab) > 2:
             refineQTableUsingBellmanUpdate(qObj)
             saveModelToFile(qObj)
-            #printQTable(qObj.qTable, qObj.queryVocabValOrder) # only enabled for debugging purposes
+            printQTable(qObj.qTable, qObj.queryVocabValOrder) # only enabled for debugging purposes
         totalTrainTime = float(time.time() - startTrainTime)
         print "Total Train Time: " + str(totalTrainTime)
         assert qObj.configDict['QL_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or qObj.configDict[
