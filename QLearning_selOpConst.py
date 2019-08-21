@@ -193,7 +193,7 @@ def predictTopKIntents(threadID, qTable, queryVocabValOrder, sessQueryID, sessio
     topKSessQueryIndices = []
     for topKIndex in topKIndices:
         topKSessQueryIndices.append(queryVocabValOrder[topKIndex])
-    #print "maxSimSessQueryID: "+str(maxSimSessQueryID)+", topKIndices: "+str(topKIndices)+", topKSessQueryIndices: "+str(topKSessQueryIndices)
+    print "maxSimSessQueryID: "+str(maxSimSessQueryID)+", topKIndices: "+str(topKIndices)+", topKSessQueryIndices: "+str(topKSessQueryIndices)
     return topKSessQueryIndices
 
 def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocabValOrder, sessionStreamDict, configDict)):
