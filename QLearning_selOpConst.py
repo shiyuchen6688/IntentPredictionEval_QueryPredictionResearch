@@ -198,7 +198,7 @@ def predictTopKIntents(threadID, qTable, queryVocabValOrder, sessQueryID, sessio
 
 def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocabValOrder, sessionStreamDict, configDict)):
     #printQTable(qTable, queryVocabValOrder)
-    #print "QueryVocabValOrder:"+str(queryVocabValOrder)
+    print "QueryVocabValOrder:"+str(queryVocabValOrder)
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
