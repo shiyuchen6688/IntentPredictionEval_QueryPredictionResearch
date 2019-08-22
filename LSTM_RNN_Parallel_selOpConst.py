@@ -712,7 +712,7 @@ def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside
     sampleFrac = float(configDict['RNN_SAMPLING_FRACTION'])
     distinctQueries = []
     for sessQueryID in queryKeysSetAside:
-        (oldSessQueryID, distinctQueries, sampledQueryHistory) = findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, distinctQueries)
+        (oldSessQueryID, distinctQueries, sampledQueryHistory) = findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, sampleFrac, distinctQueries)
     if sampleFrac != 1.0:
         # employ uniform sampling for repeatability on the same dataset
         count = int(float(configDict['EPISODE_IN_QUERIES']) * sampleFrac)
