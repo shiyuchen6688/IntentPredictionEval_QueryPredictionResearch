@@ -105,10 +105,15 @@ def createSQLLogsFromConfigDict(configDict, args):
                            configDict['CF_COSINESIM_MF'] + "_" + \
                            configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
-    elif configDict['ALGORITHM'] == 'SVD' or configDict['ALGORITHM'] == 'QLEARNING':
+    elif configDict['ALGORITHM'] == 'SVD':
         outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
             'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
         configDict[
+            'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
+    elif configDict['ALGORITHM'] == 'QLEARNING':
+        outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
+            'ALGORITHM'] + "_" + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_" + configDict['INTENT_REP'] + "_" + \
+        configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
             'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
     if args.eval is not None:
         outputEvalQualityFileName = args.eval
