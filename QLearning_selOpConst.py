@@ -274,6 +274,35 @@ def saveModelToFile(qObj):
         qObj.queryVocabValOrder)
     return
 
+def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
+    accThres = float(configDict['ACCURACY_THRESHOLD'])
+    QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
+                                  configDict['ALGORITHM']  + "_" + configDict['QL_BOOLEAN_NUMERIC_REWARD'])
+    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
+                               configDict['ALGORITHM'] + "_" + configDict['QL_BOOLEAN_NUMERIC_REWARD'])
+
+    outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + configDict[
+        'ALGORITHM'] + "_" + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                    'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                                configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+    outputExcelQuality = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelQuality_" + configDict['ALGORITHM'] \
+                         + "_" + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                             'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                             'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + ".xlsx"
+    ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
+
+    outputEvalTimeFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalTimeShortTermIntent_" + configDict[
+        'ALGORITHM'] + "_" + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES']
+    outputExcelTimeEval = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelTime_" + configDict['ALGORITHM']  + "_" +\
+                          configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                              'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                          configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+    ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
+    return (outputIntentFileName, episodeResponseTimeDictName)
+
 def trainTestBatchWise(qObj):
     batchSize = int(qObj.configDict['EPISODE_IN_QUERIES'])
     lo = 0
@@ -319,7 +348,7 @@ def trainTestBatchWise(qObj):
                 qObj.episodeResponseTimeDictName, qObj.episodeResponseTime, qObj.numEpisodes, qObj.startEpisode,
                 elapsedAppendTime)
             qObj.resultDict = LSTM_RNN_Parallel.clear(qObj.resultDict)
-    CF_SVD_selOpConst.updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
+    updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
 
 def loadModel(qObj):
     qObj.queryVocabValOrder = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_QLQueryVocabValOrder.pickle")
@@ -414,7 +443,7 @@ def testModelSustenance(testKeyOrder, qObj):
                     qObj.episodeResponseTimeDictName, qObj.episodeResponseTime, qObj.numEpisodes, qObj.startEpisode,
                     elapsedAppendTime)
                 qObj.resultDict = LSTM_RNN_Parallel.clear(qObj.resultDict)
-    CF_SVD_selOpConst.updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
+    updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
     return
 
 def evalSustenance(qObj):
