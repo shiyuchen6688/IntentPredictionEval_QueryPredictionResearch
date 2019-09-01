@@ -402,14 +402,20 @@ def compUpdateOpMetrics(predOpList, actualOpList, evalOpsP, evalOpsR, evalOpsF, 
 
 def compUpdateSelMetrics(predOpsObj, nextActualOpsObj, evalOpsObj):
     try:
-        predSelCols = predOpsObj.selCols
+        predOpList = predOpsObj.selCols
         predSelOps = predOpsObj.selPredOps
         predSelColRangeBins = predOpsObj.selPredColRangeBins
-        predOpList = list(set().union(predSelCols,predSelOps,predSelColRangeBins))
-        actualSelCols = nextActualOpsObj.selCols
+        if predSelOps is not None and len(predSelOps) > 0:
+            predOpList = list(set().union(predOpList, predSelOps))
+        if predSelColRangeBins is not None and len(predSelColRangeBins) > 0:
+            predOpList = list(set().union(predOpList,predSelColRangeBins))
+        actualOpList = nextActualOpsObj.selCols
         actualSelOps = nextActualOpsObj.selPredOps
         actualSelColRangeBins = nextActualOpsObj.selPredColRangeBins
-        actualOpList = list(set().union(actualSelCols, actualSelOps, actualSelColRangeBins))
+        if actualSelOps is not None and len(actualSelOps) > 0:
+            actualOpList = list(set().union(actualOpList, actualSelOps))
+        if actualSelColRangeBins is not None and len(actualSelColRangeBins) > 0:
+            actualOpList = list(set().union(actualOpList, actualSelColRangeBins))
         compUpdateOpMetrics(predOpList, actualOpList, evalOpsObj.selPredsP, evalOpsObj.selPredsR, evalOpsObj.selPredsF,
                             evalOpsObj.numSelPredsQueries, evalOpsObj)
     except:
@@ -427,15 +433,21 @@ def compUpdateCondSelMetrics(predOpsObj, nextActualOpsObj, evalOpsObj):
                 and evalOpsObj.curEpisode in evalOpsObj.selPredsR and evalOpsObj.curEpisode in evalOpsObj.selPredsF: # partial overlap of tables
             accTables = list(set(predOpsObj.tables).intersection(set(nextActualOpsObj.tables)))
             if len(accTables) > 0:
-                relPredCols = computeRelevantSelColOpColRangeBins(accTables, predOpsObj.selCols)
+                relPredOpList = computeRelevantSelColOpColRangeBins(accTables, predOpsObj.selCols)
                 relPredOps = computeRelevantSelColOpColRangeBins(accTables, predOpsObj.selPredOps)
                 relPredColRangeBins = computeRelevantSelColOpColRangeBins(accTables, predOpsObj.selPredColRangeBins)
-                predOpList = list(set().union(relPredCols, relPredOps, relPredColRangeBins))
-                relActualCols = computeRelevantSelColOpColRangeBins(accTables, nextActualOpsObj.selCols)
+                if relPredOps is not None and len(relPredOps) > 0:
+                    relPredOpList = list(set().union(relPredOpList, relPredOps))
+                if relPredColRangeBins is not None and len(relPredColRangeBins) > 0:
+                    relPredOpList = list(set().union(relPredOpList, relPredColRangeBins))
+                relActualOpList = computeRelevantSelColOpColRangeBins(accTables, nextActualOpsObj.selCols)
                 relActualOps = computeRelevantSelColOpColRangeBins(accTables, nextActualOpsObj.selPredOps)
                 relActualColRangeBins = computeRelevantSelColOpColRangeBins(accTables, nextActualOpsObj.selPredColRangeBins)
-                actualOpList = list(set().union(relActualCols, relActualOps, relActualColRangeBins))
-                compUpdateOpMetrics(predOpList, actualOpList, evalOpsObj.condSelPredsP, evalOpsObj.condSelPredsR,
+                if relActualOps is not None and len(relActualOps) > 0:
+                    relActualOpList = list(set().union(relActualOpList, relActualOps))
+                if relActualColRangeBins is not None and len(relActualColRangeBins) > 0:
+                    relActualOpList = list(set().union(relActualOpList, relActualColRangeBins))
+                compUpdateOpMetrics(relPredOpList, relActualOpList, evalOpsObj.condSelPredsP, evalOpsObj.condSelPredsR,
                                     evalOpsObj.condSelPredsF, evalOpsObj.numCondSelPredsQueries, evalOpsObj)
     except:
         pass
