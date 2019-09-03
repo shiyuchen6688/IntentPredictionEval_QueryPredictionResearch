@@ -113,7 +113,7 @@ def createIntentObjDict(schemaDicts, intentFileName):
             if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
                 intentObj = CreateSQLFromIntentVec.regenerateSQL(curIntentBitMap, schemaDicts)
             elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
-                intentObj = CreateSQLFromIntentVec.regenerateSQLTable(curIntentBitMap, None, schemaDicts, configDict)
+                intentObj = CreateSQLFromIntentVec.regenerateSQLTable(None, curIntentBitMap, None, schemaDicts, configDict)
             intentObjDict[sessQueryID] = intentObj
     return intentObjDict
 
