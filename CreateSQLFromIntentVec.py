@@ -646,7 +646,7 @@ def convertOldToNewSetBitsTable(schemaDicts, setBitPosList):
             newSetBitPosList.append(newBitPos)
     return newSetBitPosList
 
-def regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts, configDict):
+def regenerateSQLTableOrig(topKCandidateVector, curIntentBitVec, schemaDicts, configDict):
     setBitPosList = topKCandidateVector.nonzero()
     #print setBitPosList
     #print schemaDicts.allOpSize
@@ -661,7 +661,7 @@ def regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts, config
 
 def regenerateSQLTable(dummyParam, topKCandidateVector, curIntentBitVec, schemaDicts, configDict):
     #dummyParam to be consistent with the five param usage in CreateSQLFromIntentVec_selOpConst.py
-    return regenerateSQLTable(topKCandidateVector, curIntentBitVec, schemaDicts, configDict)
+    return regenerateSQLTableOrig(topKCandidateVector, curIntentBitVec, schemaDicts, configDict)
 
 def regenerateSQL(dummyParam, topKCandidateVector, schemaDicts):
     #dummyParam to be consistent with the three param usage in CreateSQLFromIntentVec_selOpConst.py
