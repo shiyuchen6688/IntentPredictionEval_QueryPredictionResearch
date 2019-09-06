@@ -1,46 +1,8 @@
 from __future__ import print_function
-from __future__ import division
 from sys import getsizeof, stderr
 from itertools import chain
 from collections import deque
-import sys, operator
-import os
-import time
-import QueryRecommender as QR
-from bitmap import BitMap
-import math
-import heapq
-import TupleIntent as ti
-import ParseConfigFile as parseConfig
-import ParseResultsToExcel
-import ConcurrentSessions
-import numpy as np
-import pandas as pd
-from numpy import dot
-from numpy.linalg import norm
-import matplotlib.pyplot as plt
-import keras
-import tensorflow as tf
-from keras import backend as K
-from keras.datasets import imdb
-from keras.preprocessing import sequence
-from keras.preprocessing.sequence import pad_sequences
-from keras import regularizers
-from keras.callbacks import ModelCheckpoint
-from keras.models import Sequential
-from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU, BatchNormalization
-import CFCosineSim
-import argparse
-from ParseConfigFile import getConfig
-import threading
-import copy
-import multiprocessing
-from multiprocessing.pool import ThreadPool
-from multiprocessing import Array
-import ReverseEnggQueries
-import ReverseEnggQueries_selOpConst
 from keras.models import load_model
-import CF_SVD_selOpConst
 import argparse
 import QueryRecommender as QR
 try:
