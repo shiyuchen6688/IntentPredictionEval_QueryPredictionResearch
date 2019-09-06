@@ -54,12 +54,13 @@ def total_size(o, handlers={}, verbose=False):
 ##### Example call #####
 
 def computeMemoryReq(args):
-    fileList = args.list.split(";")
-    for fileName in fileList:
-        fileName = fileName.replace("\"","")
-        obj = QR.readFromPickleFile(fileName)
-        fileSize = total_size(obj, verbose=False)
-        print("Size of "+fileName+" is "+str(fileSize))
+    if args.list is not None:
+        fileList = args.list.split(";")
+        for fileName in fileList:
+            fileName = fileName.replace("\"","")
+            obj = QR.readFromPickleFile(fileName)
+            fileSize = total_size(obj, verbose=False)
+            print("Size of "+fileName+" is "+str(fileSize))
     if args.model is not None:
         modelRNN = load_model(args.model)
         fileSize = total_size(modelRNN, verbose=False)
