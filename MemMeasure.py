@@ -39,8 +39,8 @@ def total_size(o, handlers={}, verbose=False):
         seen.add(id(o))
         s = getsizeof(o, default_size)
 
-        #if verbose:
-            #print(s, type(o), repr(o), file=stderr)
+        if verbose:
+            print(s, type(o), repr(o), file=stderr)
 
         for typ, handler in all_handlers.items():
             if isinstance(o, typ):
@@ -58,10 +58,13 @@ def computeMemoryReq(args):
     for fileName in fileList:
         fileName = fileName.replace("\"","")
         obj = QR.readFromPickleFile(fileName)
-        print(total_size(obj, verbose=True))
+        fileSize = total_size(obj, verbose=False)
+        print("Size of "+fileName+" is "+str(fileSize))
     if args.model is not None:
         modelRNN = load_model(args.model)
-        print(total_size(modelRNN, verbose=True))
+        fileSize = total_size(modelRNN, verbose=False)
+        print("Size of " + args.model + " is " + str(fileSize))
+    return
 
 if __name__ == '__main__':
     #d = dict(a=1, b=2, c=3, d=[4,5,6,7], e='a string of chars')
