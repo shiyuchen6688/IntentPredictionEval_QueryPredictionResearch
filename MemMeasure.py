@@ -54,7 +54,8 @@ def total_size(o, handlers={}, verbose=False):
 ##### Example call #####
 
 def computeMemoryReq(args):
-    for fileName in eval(args.list):
+    fileList = args.list.split(";")
+    for fileName in fileList:
         obj = QR.readFromPickleFile(fileName)
         print(total_size(obj, verbose=True))
     if args.model is not None:
@@ -64,9 +65,8 @@ def computeMemoryReq(args):
 if __name__ == '__main__':
     #d = dict(a=1, b=2, c=3, d=[4,5,6,7], e='a string of chars')
     parser = argparse.ArgumentParser()
-    parser.add_argument("-list", help="list of paths to tuple/list/deque/dict/set/frozenset obj", type=str, required=True)
+    parser.add_argument("-list", help="semicolon separated list of paths to tuple/list/deque/dict/set/frozenset obj", type=str, required=True)
     parser.add_argument("-model", help="path to RNN model filename to analyze", type=str, required=False)
     # parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
     computeMemoryReq(args)
-    print(total_size(d, verbose=True))
