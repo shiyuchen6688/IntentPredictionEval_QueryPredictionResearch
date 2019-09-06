@@ -1,8 +1,8 @@
 from __future__ import print_function
+from __future__ import division
 from sys import getsizeof, stderr
 from itertools import chain
 from collections import deque
-from __future__ import division
 import sys, operator
 import os
 import time
