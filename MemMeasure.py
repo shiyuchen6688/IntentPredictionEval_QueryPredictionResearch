@@ -2,6 +2,16 @@ from __future__ import print_function
 from sys import getsizeof, stderr
 from itertools import chain
 from collections import deque
+import keras
+import tensorflow as tf
+from keras import backend as K
+from keras.datasets import imdb
+from keras.preprocessing import sequence
+from keras.preprocessing.sequence import pad_sequences
+from keras import regularizers
+from keras.callbacks import ModelCheckpoint
+from keras.models import Sequential
+from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU, BatchNormalization
 from keras.models import load_model
 import argparse
 import QueryRecommender as QR
