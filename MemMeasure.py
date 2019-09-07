@@ -3,6 +3,7 @@ from sys import getsizeof, stderr
 from itertools import chain
 from collections import deque
 from keras.models import load_model
+import ReverseEnggQueries_selOpConst
 import argparse
 import QueryRecommender as QR
 try:
@@ -65,11 +66,16 @@ def computeMemoryReq(args):
         modelRNN = load_model(args.model)
         fileSize = total_size(modelRNN, verbose=False)
         print("Size of " + args.model + " is " + str(fileSize))
+        schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(args.configDict)
+        for key in schemaDicts:
+            schemaDictSize = total_size(schemaDicts[key], verbose=False)
+            print("Size of " + key + "is "+ str(schemaDictSize))
     return
 
 if __name__ == '__main__':
     #d = dict(a=1, b=2, c=3, d=[4,5,6,7], e='a string of chars')
     parser = argparse.ArgumentParser()
+    parser.add_argument("-config", help="path to config dictionary", type=str, required=True)
     parser.add_argument("-list", help="semicolon separated list of paths to tuple/list/deque/dict/set/frozenset obj", type=str, required=False)
     parser.add_argument("-model", help="path to RNN model filename to analyze", type=str, required=False)
     # parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
