@@ -70,9 +70,8 @@ def computeMemoryReq(args):
         print("Size of " + args.model + " is " + str(fileSize))
         configDict = parseConfig.parseConfigFile(args.config)
         schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(configDict)
-        for key in schemaDicts:
-            schemaDictSize = total_size(schemaDicts[key], verbose=False)
-            print("Size of " + key + "is "+ str(schemaDictSize))
+        schemaDictSize = total_size(schemaDicts, verbose=False)
+        print("Size of schemaDicts is " + str(schemaDictSize))
     return
 
 if __name__ == '__main__':
