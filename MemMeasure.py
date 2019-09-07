@@ -5,6 +5,7 @@ from collections import deque
 from keras.models import load_model
 import ReverseEnggQueries_selOpConst
 import argparse
+from ParseConfigFile import getConfig
 import QueryRecommender as QR
 try:
     from reprlib import repr
@@ -66,7 +67,8 @@ def computeMemoryReq(args):
         modelRNN = load_model(args.model)
         fileSize = total_size(modelRNN, verbose=False)
         print("Size of " + args.model + " is " + str(fileSize))
-        schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(args.configDict)
+        configDict = parseConfig.parseConfigFile(args.config)
+        schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(configDict)
         for key in schemaDicts:
             schemaDictSize = total_size(schemaDicts[key], verbose=False)
             print("Size of " + key + "is "+ str(schemaDictSize))
