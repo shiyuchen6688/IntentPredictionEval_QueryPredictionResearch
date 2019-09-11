@@ -11,8 +11,19 @@ from mysql.connector import errorcode
 from ParseConfigFile import getConfig
 import operator
 import collections
+import psycopg2
+import psycopg2.extras
 
-def connectToMySQL(configDict):
+def connectToBusTracker(configDict):
+    try:
+        uname = configDict['PSQL_UNAME']
+        dbname = configDict['PSQL_DB']
+        conn = psycopg2.connect("dbname='vmeduri' user='vmeduri' password=''")
+    except:
+        print ("I am unable to connect to the database.")
+    return conn
+
+def connectToMinc(configDict):
     try:
         uname=configDict['MYSQL_UNAME']
         passwd=configDict['MYSQL_PASSWORD']
@@ -28,11 +39,39 @@ def connectToMySQL(configDict):
             print(err)
     return cnx
 
-def createTableDict(cnx):
-    tableDict = {}
-    query = "SHOW TABLES"
+def connectToDB(configDict):
+    try:
+        if configDict['DATASET'] == 'MINC':
+            connectToMinc(configDict)
+        elif configDict['DATASET'] == 'BUSTRACKER':
+            connectToBusTracker(configDict)
+    except:
+            print "Error in DBName !"
+            sys.exit(0)
+
+
+def execShowTableQuery(cnx, configDict):
+    cursor = cnx.cursor()
+    if configDict['DATASET'] == 'MINC':
+        query = "SHOW TABLES"
+    elif configDict['DATASET'] == 'BUSTRACKER':
+        psqlSchema = configDict['PSQL_SCHEMA']
+        cursor.execute("SET search_path TO " + psqlSchema)
+        query = "select table_name from information_schema.tables where table_schema ="+psqlSchema
+    else:
+        print "Error in execShowTableQuery !"
+        sys.exit(0)
     cursor = cnx.cursor()
     cursor.execute(query)
+    return cursor
+
+
+def createTableDict(cnx, configDict):
+    tableDict = {}
+    cursor = execShowTableQuery(cnx, configDict)
+    #query = "SHOW TABLES"
+    #cursor = cnx.cursor()
+    #cursor.execute(query)
     index = 0
     for cols in cursor:
         tableName = str(cols[0])
@@ -44,14 +83,31 @@ def createTableDict(cnx):
     tableDict = collections.OrderedDict(sorted_x)
     return tableDict
 
+def execDescTableQuery(cnx, table, configDict):
+    cursor = cnx.cursor()
+    if configDict['DATASET'] == 'MINC':
+        query = "desc "+table
+    elif configDict['DATASET'] == 'BUSTRACKER':
+        psqlSchema = configDict['PSQL_SCHEMA']
+        cursor.execute("SET search_path TO " + psqlSchema)
+        query = "select column_name, udt_name from information_schema.columns where table_schema ="+psqlSchema +\
+                " and table_name =" +table
+    else:
+        print "Error in execShowTableQuery !"
+        sys.exit(0)
+    cursor = cnx.cursor()
+    cursor.execute(query)
+    return cursor
+
 def createTabColDict(cnx, tableDict):
     tabColDict = {}
     tabColTypeDict = {}
     # key is tableID and value is list of name,type
     for table in tableDict:
-        query = "desc "+table
-        cursor = cnx.cursor()
-        cursor.execute(query)
+        cursor = execDescTableQuery(cnx, table, configDict)
+        #query = "desc "+table
+        #cursor = cnx.cursor()
+        #cursor.execute(query)
         #desc query o/p has 5 fields: field, type, null, key, default, extra
         colList = []
         colTypeList = []
@@ -159,8 +215,8 @@ def createTabColBitPosDict(tabColDict, tableDict):
     return tabColBitPosDict
 
 def fetchSchema(configDict):
-    cnx = connectToMySQL(configDict)
-    tableDict = createTableDict(cnx)
+    cnx = connectToDB(configDict)
+    tableDict = createTableDict(cnx, configDict)
     (tabColDict, tabColTypeDict) = createTabColDict(cnx, tableDict)
     tabColBitPosDict = createTabColBitPosDict(tabColDict, tableDict)
     joinPairDict = createJoinPairDict(tabColDict, tabColTypeDict, tableDict)

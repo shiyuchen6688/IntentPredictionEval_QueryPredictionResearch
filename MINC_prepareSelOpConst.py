@@ -21,7 +21,7 @@ class SelPredObj:
         self.configDict = configDict
         self.schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
         self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(configDict['MINC_COL_TYPES']))
-        self.cnx = MINC_prepareJoinKeyPairs.connectToMySQL(configDict)
+        self.cnx = MINC_prepareJoinKeyPairs.connectToDB(configDict)
         self.totalTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "../MincTotalTables.pickle")
         self.selTables = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "../MincSelTables.pickle")
         self.selCols = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + "../MincSelCols.pickle")
