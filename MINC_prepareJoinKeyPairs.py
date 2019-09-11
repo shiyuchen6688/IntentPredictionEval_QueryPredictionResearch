@@ -57,7 +57,7 @@ def execShowTableQuery(cnx, configDict):
     elif configDict['DATASET'] == 'BUSTRACKER':
         psqlSchema = configDict['PSQL_SCHEMA']
         cursor.execute("SET search_path TO " + psqlSchema)
-        query = "select table_name from information_schema.tables where table_schema ="+psqlSchema
+        query = "select table_name from information_schema.tables where table_schema =\""+psqlSchema+"\""
     else:
         print "Error in execShowTableQuery !"
         sys.exit(0)
@@ -90,8 +90,8 @@ def execDescTableQuery(cnx, table, configDict):
     elif configDict['DATASET'] == 'BUSTRACKER':
         psqlSchema = configDict['PSQL_SCHEMA']
         cursor.execute("SET search_path TO " + psqlSchema)
-        query = "select column_name, udt_name from information_schema.columns where table_schema ="+psqlSchema +\
-                " and table_name =" +table
+        query = "select column_name, udt_name from information_schema.columns where table_schema =\""+psqlSchema +\
+                "\" and table_name =\"" +table+"\""
     else:
         print "Error in execShowTableQuery !"
         sys.exit(0)
