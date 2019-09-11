@@ -42,9 +42,9 @@ def connectToMinc(configDict):
 def connectToDB(configDict):
     try:
         if configDict['DATASET'] == 'MINC':
-            connectToMinc(configDict)
+            return connectToMinc(configDict)
         elif configDict['DATASET'] == 'BUSTRACKER':
-            connectToBusTracker(configDict)
+            return connectToBusTracker(configDict)
     except:
             print "Error in DBName !"
             sys.exit(0)
