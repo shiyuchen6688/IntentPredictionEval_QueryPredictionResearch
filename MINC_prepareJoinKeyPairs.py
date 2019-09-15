@@ -56,20 +56,20 @@ def createBusTrackerTableDict(cnx, configDict):
     psqlSchemaStr = configDict['PSQL_SCHEMA']
     schemaList = psqlSchemaStr.split(",")
     for psqlSchema in schemaList:
+        index = 0
         cursor.execute("SET search_path TO " + psqlSchema)
         query = "select table_name from information_schema.tables where table_schema =\'" + psqlSchema + "\'"
         cursor = cnx.cursor()
         cursor.execute(query)
-        index = 0
         for cols in cursor:
             tableName = psqlSchema + "_" + str(cols[0])
             assert tableName not in tableDict
             tableDict[tableName] = index
             print "tablename: " + str(tableName) + ", index: " + str(index)
             index += 1
-        sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))
-        tableDict = collections.OrderedDict(sorted_x)
-        return tableDict
+    sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))
+    tableDict = collections.OrderedDict(sorted_x)
+    return tableDict
 
 
 def createMincTableDict(cnx):
