@@ -50,28 +50,34 @@ def connectToDB(configDict):
             sys.exit(0)
 
 
-def execShowTableQuery(cnx, configDict):
+def createBusTrackerTableDict(cnx, configDict):
     cursor = cnx.cursor()
-    if configDict['DATASET'] == 'MINC':
-        query = "SHOW TABLES"
-    elif configDict['DATASET'] == 'BUSTRACKER':
-        psqlSchema = configDict['PSQL_SCHEMA']
+    tableDict = {}
+    psqlSchemaStr = configDict['PSQL_SCHEMA']
+    schemaList = psqlSchemaStr.split(",")
+    for psqlSchema in schemaList:
         cursor.execute("SET search_path TO " + psqlSchema)
-        query = "select table_name from information_schema.tables where table_schema =\'"+psqlSchema+"\'"
-    else:
-        print "Error in execShowTableQuery !"
-        sys.exit(0)
+        query = "select table_name from information_schema.tables where table_schema =\'" + psqlSchema + "\'"
+        cursor = cnx.cursor()
+        cursor.execute(query)
+        index = 0
+        for cols in cursor:
+            tableName = psqlSchema + "_" + str(cols[0])
+            assert tableName not in tableDict
+            tableDict[tableName] = index
+            print "tablename: " + str(tableName) + ", index: " + str(index)
+            index += 1
+        sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))
+        tableDict = collections.OrderedDict(sorted_x)
+        return tableDict
+
+
+def createMincTableDict(cnx):
+    tableDict = {}
+    #cursor = execShowTableQuery(cnx, configDict)
+    query = "SHOW TABLES"
     cursor = cnx.cursor()
     cursor.execute(query)
-    return cursor
-
-
-def createTableDict(cnx, configDict):
-    tableDict = {}
-    cursor = execShowTableQuery(cnx, configDict)
-    #query = "SHOW TABLES"
-    #cursor = cnx.cursor()
-    #cursor.execute(query)
     index = 0
     for cols in cursor:
         tableName = str(cols[0])
@@ -88,7 +94,9 @@ def execDescTableQuery(cnx, table, configDict):
     if configDict['DATASET'] == 'MINC':
         query = "desc "+table
     elif configDict['DATASET'] == 'BUSTRACKER':
-        psqlSchema = configDict['PSQL_SCHEMA']
+        psqlSchema = table.split("_")[0]
+        subList = table.split("_")[1:]
+        table = "_".join(subList)
         cursor.execute("SET search_path TO " + psqlSchema)
         query = "select column_name, udt_name from information_schema.columns where table_schema =\'"+psqlSchema +\
                 "\' and table_name =\'" +table+"\'"
@@ -128,7 +136,14 @@ def createSelfJoinPairs(curTabID, tabColDict, joinPairDict):
         joinPairDict[str(curTabID) + "," + str(curTabID)].append(colName+","+colName)
     return joinPairDict
 
-def createCrossJoinPairs(curTabName, tabColDict, tabColTypeDict, tableDict, joinPairDict):
+def checkIfSameSchema(curTabName, nextTabName):
+    curSchema = curTabName.split("_")[0]
+    nextSchema = nextTabName.split("_")[1]
+    if curSchema == nextSchema:
+        return True
+    return False
+
+def createCrossJoinPairs(dataset, curTabName, tabColDict, tabColTypeDict, tableDict, joinPairDict):
     #curTabName = tabColDict.keys()[tabIndex]
     tabIndex = tableDict[curTabName]
     curTabCols = tabColDict[curTabName]
@@ -137,6 +152,11 @@ def createCrossJoinPairs(curTabName, tabColDict, tabColTypeDict, tableDict, join
     while nextTabIndex < len(tableDict):
         nextTabName = tableDict.keys()[nextTabIndex]
         assert tableDict[nextTabName] == nextTabIndex
+        if dataset == "BusTracker":
+            isValid = checkIfSameSchema(curTabName, nextTabName)
+            if isValid is False:
+                nextTabName += 1
+                continue
         nextTabCols = tabColDict[nextTabName]
         nextTabColTypes = tabColTypeDict[nextTabName]
         joinPairDict[str(curTabName)+","+str(nextTabName)] = []
@@ -159,14 +179,14 @@ def pruneEmptyJoinPairs(joinPairDict):
             del joinPairDict[tabPair]
     return joinPairDict
 
-def createJoinPairDict(tabColDict, tabColTypeDict, tableDict):
+def createJoinPairDict(dataset, tabColDict, tabColTypeDict, tableDict):
     joinPairDict = {}
     # key is the table ID pair and value is the list of possible join key pairs, we store both self join and cross-table join.
     # if in the future query a join predicate has tab2.Col2 = tab1.Col3, it will always be chronologically stored as tab1.Col3 = tab2.Col2
     # we restrict self-joins to be on the same col. That is a reasonable assumption & will confine the dimensionality.
     for tableName in tableDict:
         joinPairDict = createSelfJoinPairs(tableName, tabColDict, joinPairDict)
-        joinPairDict = createCrossJoinPairs(tableName, tabColDict, tabColTypeDict, tableDict, joinPairDict)
+        joinPairDict = createCrossJoinPairs(dataset, tableName, tabColDict, tabColTypeDict, tableDict, joinPairDict)
     return joinPairDict
 
 def createJoinPredBitPosDict(joinPairDict):
@@ -216,12 +236,17 @@ def createTabColBitPosDict(tabColDict, tableDict):
 
 def fetchSchema(configDict):
     cnx = connectToDB(configDict)
-    tableDict = createTableDict(cnx, configDict)
+    tableDict = None
+    if configDict['DATASET'] == 'MINC':
+        tableDict = createMincTableDict(cnx)
+    elif configDict['DATASET'] == 'BusTracker':
+        tableDict = createBusTrackerTableDict(cnx, configDict)
     (tabColDict, tabColTypeDict) = createTabColDict(cnx, tableDict)
     tabColBitPosDict = createTabColBitPosDict(tabColDict, tableDict)
-    joinPairDict = createJoinPairDict(tabColDict, tabColTypeDict, tableDict)
+    joinPairDict = createJoinPairDict(configDict['DATASET'], tabColDict, tabColTypeDict, tableDict)
     joinPairDict = pruneEmptyJoinPairs(joinPairDict)
     joinPredBitPosDict = createJoinPredBitPosDict(joinPairDict)
+
     print "Writing Dictionaries To Files"
     writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict, configDict)
     return (tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict)

@@ -57,4 +57,4 @@ MYSQL_HOST=127.0.0.1
 MYSQL_DB=minc_education
 PSQL_UNAME=vmeduri
 PSQL_DB=vmeduri
-PSQL_SCHEMA=dv
+PSQL_SCHEMA=dv,g,h,m,r
