@@ -43,7 +43,7 @@ def connectToDB(configDict):
     try:
         if configDict['DATASET'] == 'MINC':
             return connectToMinc(configDict)
-        elif configDict['DATASET'] == 'BUSTRACKER':
+        elif configDict['DATASET'] == 'BusTracker':
             return connectToBusTracker(configDict)
     except:
             print "Error in DBName !"
@@ -93,7 +93,7 @@ def execDescTableQuery(cnx, table, configDict):
     cursor = cnx.cursor()
     if configDict['DATASET'] == 'MINC':
         query = "desc "+table
-    elif configDict['DATASET'] == 'BUSTRACKER':
+    elif configDict['DATASET'] == 'BusTracker':
         psqlSchema = table.split("_")[0]
         subList = table.split("_")[1:]
         table = "_".join(subList)
