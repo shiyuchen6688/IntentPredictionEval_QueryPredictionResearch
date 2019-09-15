@@ -155,7 +155,7 @@ def createCrossJoinPairs(dataset, curTabName, tabColDict, tabColTypeDict, tableD
         if dataset == "BusTracker":
             isValid = checkIfSameSchema(curTabName, nextTabName)
             if isValid is False:
-                nextTabName += 1
+                nextTabIndex += 1
                 continue
         nextTabCols = tabColDict[nextTabName]
         nextTabColTypes = tabColTypeDict[nextTabName]
