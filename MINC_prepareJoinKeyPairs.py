@@ -55,8 +55,8 @@ def createBusTrackerTableDict(cnx, configDict):
     tableDict = {}
     psqlSchemaStr = configDict['PSQL_SCHEMA']
     schemaList = psqlSchemaStr.split(",")
+    index = 0
     for psqlSchema in schemaList:
-        index = 0
         cursor.execute("SET search_path TO " + psqlSchema)
         query = "select table_name from information_schema.tables where table_schema =\'" + psqlSchema + "\'"
         cursor = cnx.cursor()
