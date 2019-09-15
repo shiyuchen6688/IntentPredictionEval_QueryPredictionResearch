@@ -138,7 +138,7 @@ def createSelfJoinPairs(curTabID, tabColDict, joinPairDict):
 
 def checkIfSameSchema(curTabName, nextTabName):
     curSchema = curTabName.split("_")[0]
-    nextSchema = nextTabName.split("_")[1]
+    nextSchema = nextTabName.split("_")[0]
     if curSchema == nextSchema:
         return True
     return False
