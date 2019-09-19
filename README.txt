@@ -38,7 +38,7 @@ mvn exec:java -Dexec.mainClass="MINCFragmentIntent"
 # This requires you use the python code from IntentPredictionEval
 
 # First copy all the sequential session files from TempOutput to BakOutput folder
-cp ~/Documents/DataExploration-Research/MINC/InputOutput/TempOutput/* ~/Documents/DataExploration-Research/MINC/InputOutput/BakOutput/*
+cp ~/Documents/DataExploration-Research/MINC/InputOutput/TempOutput/* ~/Documents/DataExploration-Research/MINC/InputOutput/BakOutput/.
 
 # Next run the following command from IntentPredictionEval directory for source code
 python MINC_FragmentIntent.py -config configDir/MINC_FragmentQueries_Keep_configFile.txt
