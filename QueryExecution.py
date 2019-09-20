@@ -92,10 +92,10 @@ def executeMINCQueryWithIntent(sessQuery, configDict, queryVocabulary):
 
 
 def executeQueryWithIntent(sessQuery, configDict, queryVocabulary):
-    assert configDict['DATASET'] == 'NYCTaxitrips' or configDict['DATASET'] == 'MINC'
+    assert configDict['DATASET'] == 'NYCTaxitrips' or configDict['DATASET'] == 'MINC' or configDict['DATASET'] == 'BusTracker'
     if configDict['DATASET'] == 'NYCTaxiTrips':
         return executeNYCQueryWithIntent(sessQuery, configDict, queryVocabulary)
-    elif configDict['DATASET'] == 'MINC':
+    elif configDict['DATASET'] == 'MINC' or configDict['DATASET'] == 'BusTracker':
         return executeMINCQueryWithIntent(sessQuery, configDict, queryVocabulary)
 
 if __name__ == "__main__":

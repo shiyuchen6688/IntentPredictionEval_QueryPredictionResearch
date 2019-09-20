@@ -159,7 +159,7 @@ def updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpis
     return (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime)
 
 def createQueryExecIntentCreationTimes(configDict):
-    assert configDict['DATASET'] == 'NYCTaxitrips' or configDict['DATASET'] == 'MINC'
+    assert configDict['DATASET'] == 'NYCTaxitrips' or configDict['DATASET'] == 'MINC' or configDict['DATASET'] == 'BusTracker'
     numQueries = 0
     episodeQueryExecutionTime = {}
     episodeIntentCreationTime = {}
