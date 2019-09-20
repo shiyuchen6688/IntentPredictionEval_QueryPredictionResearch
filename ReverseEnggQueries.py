@@ -292,10 +292,10 @@ def topKThres(configDict):
 def refineIntentForQuery(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
     # Step 1: regenerate the query ops from the topKCandidateVector
     # print "-----------Original SQL----------------"
-    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQL(topKCandidateVector, schemaDicts)
+    predictedIntentObj = CreateSQLFromIntentVec.regenerateSQL(None, topKCandidateVector, schemaDicts)
     curIntentObj = None
     if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentBitVec is not None:
-        curIntentObj = CreateSQLFromIntentVec.regenerateSQL(curIntentBitVec, schemaDicts)
+        curIntentObj = CreateSQLFromIntentVec.regenerateSQL(None, curIntentBitVec, schemaDicts)
     # Step 2: refine SQL violations
     intentObj = CreateSQLFromIntentVec.fixSQLViolations(predictedIntentObj, precOrRecallFavor, curIntentObj)
     # print "-----------Refined SQL-----------------"

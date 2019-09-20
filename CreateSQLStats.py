@@ -111,7 +111,7 @@ def createIntentObjDict(schemaDicts, intentFileName):
             sessQueryID = str(sessID)+","+str(queryID)
             curIntentBitMap = BitMap.fromstring(tokens[2])
             if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'QUERY':
-                intentObj = CreateSQLFromIntentVec.regenerateSQL(curIntentBitMap, schemaDicts)
+                intentObj = CreateSQLFromIntentVec.regenerateSQL(None, curIntentBitMap, schemaDicts)
             elif configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
                 intentObj = CreateSQLFromIntentVec.regenerateSQLTable(None, curIntentBitMap, None, schemaDicts, configDict)
             intentObjDict[sessQueryID] = intentObj

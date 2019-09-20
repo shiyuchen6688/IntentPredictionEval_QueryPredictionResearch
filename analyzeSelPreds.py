@@ -40,7 +40,7 @@ def countConstTabPreds(configDict, schemaDicts):
     with open(intentSessionFile) as f:
         for line in f:
             (sessID, queryID, curQueryIntent) = QR.retrieveSessIDQueryIDIntent(line, configDict)
-            intentObj = CreateSQLFromIntentVec.regenerateSQL(curQueryIntent, schemaDicts)
+            intentObj = CreateSQLFromIntentVec.regenerateSQL(None, curQueryIntent, schemaDicts)
             totalTables.update(intentObj.tables)
             if intentObj.joinPreds is not None and len(intentObj.joinPreds) > 0:
                 for joinPred in intentObj.joinPreds:

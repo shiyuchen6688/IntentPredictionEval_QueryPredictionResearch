@@ -665,9 +665,9 @@ def regenerateSQLTable(dummyParam, topKCandidateVector, curIntentBitVec, schemaD
 
 def regenerateSQL(dummyParam, topKCandidateVector, schemaDicts):
     #dummyParam to be consistent with the three param usage in CreateSQLFromIntentVec_selOpConst.py
-    return regenerateSQL(topKCandidateVector, schemaDicts)
+    return regenerateSQLOrig(topKCandidateVector, schemaDicts)
 
-def regenerateSQL(topKCandidateVector, schemaDicts):
+def regenerateSQLOrig(topKCandidateVector, schemaDicts):
     setBitPosList = topKCandidateVector.nonzero()
     #print setBitPosList
     #print schemaDicts.allOpSize
@@ -692,7 +692,7 @@ def createSQLFromIntentBitMapSanityCheck(schemaDicts, intentObjDict):
     #intentObj = initIntentStrObj(schemaDicts, intentStr)
     #assertIntentOpObjects(intentObj, intentObjDict)
     #createSQLFromIntentStringBitPos(intentObj, newSetBitPosList)
-    intentObj = regenerateSQL(intentBitMap, schemaDicts)
+    intentObj = regenerateSQL(None, intentBitMap, schemaDicts)
     return intentObj
 
 if __name__ == "__main__":
