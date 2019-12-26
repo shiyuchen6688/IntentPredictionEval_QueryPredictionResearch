@@ -86,24 +86,24 @@ if __name__ == "__main__":
     r2 = [x+barwidth for x in r1]
     r3 = [x+barwidth for x in r2]
     fig, ax = plt.subplots()
-    rects1 = ax.bar(r1, fscore, color='b', width = barwidth, edgecolor='black', label='F1-Score', hatch='-') 
-    rects2 = ax.bar(r2, precision, color='g', width = barwidth, edgecolor='black', label='Precision', hatch = '+') 
-    rects3 = ax.bar(r3, recall, color='r', width = barwidth, edgecolor='black', label='Recall', hatch='x') 
+    rects1 = ax.bar(r1, fscore, color='deepskyblue', width = barwidth, edgecolor='black', label='F1-Score', hatch='*') 
+    rects2 = ax.bar(r2, precision, color='lawngreen', width = barwidth, edgecolor='black', label='Precision', hatch = 'O') 
+    rects3 = ax.bar(r3, recall, color='lightcoral', width = barwidth, edgecolor='black', label='Recall', hatch='x') 
 
     ax.set_title('Sustenance - Avg Quality Measures\n (Course Website)', fontsize=22)
     ax.set_xticks(r1+barwidth)
-    ax.set_xticklabels(('Q-Learning', 'RNN-Synth', 'NMF-SVD-CF', 'CosineSim-CF', 'RNN-Hist'), fontsize=20)
+    ax.set_xticklabels(('Q-Learn', 'RNN-S', 'CF-SVD', 'CF-Cos', 'RNN-H'), fontsize=25)
     #ax.set_yscale('log')
     #plt.ylabel('log-scale',fontsize=20)
-    plt.yticks(np.arange(0, 1.1, 0.1))
-    ax.tick_params(labelsize=14)
-    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=3, prop={'size':16})
+    plt.yticks(np.arange(0, 1.1, 0.2),fontsize=25)
+    ax.tick_params(labelsize=16)
+    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=3, prop={'size':14})
     
     #autolabel(rects1, "center")
     #autolabel(rects2, "center")
     #autolabel(rects3, "center")
     fig.tight_layout()
-    #plt.savefig('SustQualityCourse.eps')
+    #plt.savefig('sustQualityCourse.eps')
     plt.show()
     
 
