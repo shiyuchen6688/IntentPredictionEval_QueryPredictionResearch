@@ -76,31 +76,29 @@ if __name__ == "__main__":
     font = {'size'   : 14}
     plt.rc('font', **font)
      
-    trainT = [4072.15, 43725.25, 58446.89, 41846.28, 45367.74] 
-    testT = [22632.29, 7525.06, 25012.92, 22166.63, 62598.0] 
+    mrr = [0.8872, 0.841296, 0.630548, 0.961469, 0.654446] 
     Types = 5
     barwidth = 1.0/(Types+2)
     
-    r1 = np.arange(len(trainT))
-    r2 = [x+barwidth for x in r1]
+    r1 = np.arange(len(mrr))
     fig, ax = plt.subplots()
-    rects1 = ax.bar(r1, trainT, color='deepskyblue', width = barwidth, edgecolor='black', label='Train', hatch='*') 
-    rects2 = ax.bar(r2, testT, color='lightcoral', width = barwidth, edgecolor='black', label='Test', hatch='x') 
+    rects1 = ax.bar(r1, mrr, color='deepskyblue', width = barwidth, edgecolor='black') 
 
-    ax.set_title('Sustenance - Train and Test Times (secs)\n (Course Website, log-scale)', fontsize=22)
+    ax.set_title('Sustenance - Avg Mean Reciprocal Rank\n (Course Website)', fontsize=22)
     ax.set_xticks(r1+barwidth)
     ax.set_xticklabels(('Q-Learn', 'RNN-S', 'CF-SVD', 'CF-Cos', 'RNN-H'), fontsize=25)
-    ax.set_yscale('log')
-    ax.set_ylim(1e-1, 1e5)
+    #ax.set_yscale('log')
+    #ax.set_ylim(1e-1, 1e5)
     #plt.ylabel('log-scale',fontsize=20)
-    #plt.yticks(np.arange(0, 1.1, 0.2),fontsize=25)
+    plt.yticks(np.arange(0, 1.1, 0.2),fontsize=25)
     ax.tick_params(labelsize=16)
-    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=2, prop={'size':14})
+    #ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=2, prop={'size':14})
     
     #autolabel(rects1, "center")
     #autolabel(rects2, "center")
+    #autolabel(rects3, "center")
     fig.tight_layout()
-    #plt.savefig('sustTimeCourse.eps')
+    #plt.savefig('sustMRRCourse.eps')
     plt.show()
     
 
