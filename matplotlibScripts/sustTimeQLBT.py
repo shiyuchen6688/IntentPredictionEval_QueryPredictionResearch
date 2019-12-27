@@ -87,7 +87,7 @@ if __name__ == "__main__":
     rects1 = ax.bar(r1, trainT, color='lightskyblue', width = barwidth, edgecolor='black', label='Train', hatch='*') 
     rects2 = ax.bar(r2, testT, color='gold', width = barwidth, edgecolor='black', label='Test', hatch='x') 
 
-    ax.set_title('Train & Test Times (secs)\n of QL Variants (Course Website)', fontsize=28)
+    ax.set_title('Train & Test Times (secs)\n of QL Variants (Bus Tracker)', fontsize=28)
     ax.set_xticks(r1+0.5*barwidth)
     ax.set_xticklabels(('QL-Numeric', 'QL-Boolean'), fontsize=24)
     #ax.set_yscale('log')

@@ -91,7 +91,7 @@ if __name__ == "__main__":
     rects3 = ax.bar(r3, recall, color='gold', width = barwidth, edgecolor='black', label='Recall', hatch='x') 
 
     ax.set_title('Quality of QL Variants\n (Bus Tracker)', fontsize=42)
-    ax.set_xticks(r1+0.5*barwidth)
+    ax.set_xticks(r1+barwidth)
     ax.set_xticklabels(('QL-Numeric', 'QL-Boolean'), fontsize=28)
     #ax.set_yscale('log')
     ax.set_ylim(0.0, 1.1)
