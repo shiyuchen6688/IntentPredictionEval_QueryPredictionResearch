@@ -90,11 +90,16 @@ if __name__ == "__main__":
     r4 = [x+barwidth for x in r3]
     r5 = [x+barwidth for x in r4]
     fig, ax = plt.subplots()
-    rects1 = ax.bar(r1, QL, color='deepskyblue', width = barwidth, edgecolor='black', label='Q-Learn', hatch='*') 
-    rects2 = ax.bar(r2, RNNS, color='lawngreen', width = barwidth, edgecolor='black', label='RNN-S', hatch = 'O') 
-    rects3 = ax.bar(r3, CFSVD, color='lightcoral', width = barwidth, edgecolor='black', label='CF-SVD', hatch='x') 
-    rects4 = ax.bar(r4, CFCos, color='magenta', width = barwidth, edgecolor='black', label='CF-Cos', hatch='//') 
-    rects5 = ax.bar(r5, RNNH, color='darkkhaki', width = barwidth, edgecolor='black', label='RNN-H', hatch='.') 
+    rects1 = ax.bar(r1, QL, color='g', width = barwidth, edgecolor='black', label='Q-Learn', hatch='*') 
+    rects2 = ax.bar(r2, RNNS, color='r', width = barwidth, edgecolor='black', label='RNN-S', hatch = 'O') 
+    rects3 = ax.bar(r3, CFSVD, color='orange', width = barwidth, edgecolor='black', label='CF-SVD', hatch='x') 
+    rects4 = ax.bar(r4, CFCos, color='b', width = barwidth, edgecolor='black', label='CF-Cos', hatch='//') 
+    rects5 = ax.bar(r5, RNNH, color='magenta', width = barwidth, edgecolor='black', label='RNN-H', hatch='.') 
+    #rects1 = ax.bar(r1, QL, color='deepskyblue', width = barwidth, edgecolor='black', label='Q-Learn', hatch='*') 
+    #rects2 = ax.bar(r2, RNNS, color='lawngreen', width = barwidth, edgecolor='black', label='RNN-S', hatch = 'O') 
+    #rects3 = ax.bar(r3, CFSVD, color='lightcoral', width = barwidth, edgecolor='black', label='CF-SVD', hatch='x') 
+    #rects4 = ax.bar(r4, CFCos, color='magenta', width = barwidth, edgecolor='black', label='CF-Cos', hatch='//') 
+    #rects5 = ax.bar(r5, RNNH, color='darkkhaki', width = barwidth, edgecolor='black', label='RNN-H', hatch='.') 
 
     ax.set_title('F1-Score Distribution for Precision!=Recall\n(Course Website, log-scale)', fontsize=32)
     ax.set_xticks(r1+2*barwidth)
