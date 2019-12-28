@@ -88,7 +88,7 @@ if __name__ == "__main__":
     #plt.yticks(np.arange(0, 1.1, 0.1))
     plt.yscale('log')
     plt.ylabel('# Queries (log-scale)',fontsize=38)
-    plt.title("Frequency Distribution of Query Type\n(Bus Tracker)", fontsize=38)
+    plt.title("Query Type Distribution\n(Bus Tracker)", fontsize=38)
     plt.legend(loc = 'lower left', prop={'size':25}) 
     #plt.plot([1,2,3,4],[5,6,7,8], 'ro')
     #plt.savefig('BusTrackerQTDist.png')

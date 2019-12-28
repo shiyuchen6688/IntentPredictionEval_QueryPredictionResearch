@@ -75,14 +75,14 @@ def autolabel(rects, xpos='center'):
 if __name__ == "__main__":
     font = {'size'   : 14}
     plt.rc('font', **font)
-    with open('CourseWebsiteSessLength.csv') as f:
+    with open('BusTrackerQueryDist.csv') as f:
         lines = f.readlines()
         header = lines[0]
         tokens = header.split(",") # last col is labels
         cols = {}
         for token in tokens:
             cols[token] = []
-        for j in range(2,49):
+        for j in range(2,23):
             line = lines[j]
             lineToks = line.split(",")
             assert len(lineToks) == len(cols)
@@ -91,10 +91,11 @@ if __name__ == "__main__":
                     cols[tokens[i]].append(float(lineToks[i]))
     some_Stuff()
     plt.bar(cols[tokens[1]], cols[tokens[0]])
-    plt.yscale('log')
-    plt.xlabel('Session Length', fontsize=38)
-    plt.ylabel('Count (log-scale)', fontsize=38)
-    plt.title("Session Lengths\n(Course Website)", fontsize=38)
+    #plt.yscale('log')
+    plt.xticks(np.arange(2,23,5))
+    plt.xlabel('#Episodes', fontsize=38)
+    plt.ylabel('#Queries', fontsize=38)
+    plt.title("Query Distribution\n(Bus Tracker)", fontsize=38)
     plt.show()
  
     '''

@@ -94,7 +94,7 @@ if __name__ == "__main__":
     plt.yscale('log')
     plt.xlabel('Session Length', fontsize=38)
     plt.ylabel('Count (log-scale)', fontsize=38)
-    plt.title("Frequency Distribution of Session Lengths\n(Bus Tracker)", fontsize=38)
+    plt.title("Session Lengths\n(Bus Tracker)", fontsize=38)
     plt.show()
  
     '''

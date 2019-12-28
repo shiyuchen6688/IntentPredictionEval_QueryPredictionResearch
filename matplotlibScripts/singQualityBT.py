@@ -54,14 +54,14 @@ def f(t):
 
 
 if __name__ == "__main__":
-    with open('BusTrackerQueryProgression.csv') as f:
+    with open('singQualityBT.csv') as f:
         lines = f.readlines()
         header = lines[0]
         tokens = header.split(",") # last col is labels
         cols = {}
         for token in tokens:
             cols[token] = []
-        for j in range(2,48):
+        for j in range(2,23):
             line = lines[j]
             lineToks = line.split(",")
             assert len(lineToks) == len(cols)
@@ -78,19 +78,20 @@ if __name__ == "__main__":
     #plt.plot(cols[tokens[6]], cols[tokens[1]], 'g', linewidth = 2, marker = '+', label= 'Margin')
     #plt.plot(cols[tokens[6]], cols[tokens[0]], 'r--', linewidth = 2, label = 'createQBC(2)')
     #plt.plot(cols[tokens[6]], cols[tokens[1]], 'b--', linewidth = 2, label = 'createQBC(20)')
-    #plt.plot(cols[tokens[4]], cols[tokens[0]], 'm', linewidth = 4, marker = '^', markevery=15, markersize = 16, label= '#DELETE')
-    #plt.plot(cols[tokens[4]], cols[tokens[1]], 'r', linewidth = 4, marker = '*', markevery=15, markersize = 16, label= '#INSERT')
-    #plt.plot(cols[tokens[4]], cols[tokens[2]], 'g', linewidth = 4, marker = 'o', markevery=15, markersize = 16, label= '#SELECT')
-    plt.plot(cols[tokens[1]], cols[tokens[0]], 'b', linewidth = 4, marker = 'v', markerfacecolor='red', markevery=1, markersize = 16)
+    plt.plot(cols[tokens[5]], cols[tokens[0]], 'g', linewidth = 4, marker = '^', markevery=2, markersize = 16, label= 'Q-Learn')
+    plt.plot(cols[tokens[5]], cols[tokens[1]], 'r', linewidth = 4, marker = 's', markevery=2, markersize = 16, label= 'RNN-S')
+    plt.plot(cols[tokens[5]], cols[tokens[2]], 'orange', linewidth = 4, marker = 'o', markevery=2, markersize = 16, label= 'CF-SVD')
+    plt.plot(cols[tokens[5]], cols[tokens[3]], 'b', linewidth = 4, marker = 'v', markevery=2, markersize = 16, label= 'CF-Cos')
+    plt.plot(cols[tokens[5]], cols[tokens[4]], 'm', linewidth = 4, marker = '*', markevery=2, markersize = 16, label= 'RNN-H')
     
-    plt.xticks(np.arange(2,48,5))
-    plt.xlabel('QueryID',fontsize=38)
-    #plt.yticks(np.arange(0, 1.1, 0.1))
+    plt.xticks(np.arange(2,23,2))
+    plt.xlabel('#Episodes',fontsize=38)
+    plt.yticks(np.arange(0, 1.1, 0.1))
     #plt.yscale('log')
-    plt.ylabel('Starting Episode ID',fontsize=38)
-    plt.title("Query Progression\n(Bus Tracker)", fontsize=38)
-    #plt.legend(loc = 'lower left', prop={'size':22}) 
+    plt.ylabel('Test F1',fontsize=38)
+    plt.title("Singularity - Test F1 vs. #Episodes\n(Bus Tracker)", fontsize=38)
+    plt.legend(loc = 'lower right', ncol=3, prop={'size':25}) 
     #plt.plot([1,2,3,4],[5,6,7,8], 'ro')
-    #plt.savefig('BusTrackerQueryProgression.png')
+    #plt.savefig('CourseWebsiteQTDist.png')
     plt.show()
 
