@@ -90,7 +90,7 @@ if __name__ == "__main__":
     plt.ylim([1e2, 1e4])
     plt.yscale('log')
     plt.ylabel('Response Time per Episode (secs)',fontsize=38)
-    plt.title("Singularity - Response Time vs. #Episodes\n(Course Website)", fontsize=38)
+    plt.title("Singularity - Response Time vs. #Episodes\n(Course Website, log-scale)", fontsize=38)
     plt.legend(loc = 'upper left', ncol=3, prop={'size':25}) 
     #plt.plot([1,2,3,4],[5,6,7,8], 'ro')
     #plt.savefig('CourseWebsiteQTDist.png')
