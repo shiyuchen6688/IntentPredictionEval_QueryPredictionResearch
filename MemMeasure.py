@@ -75,11 +75,12 @@ def computeMemoryReq(args):
     return
 
 def computeMemQueries(args):
-    intentSessionFile = QR.fetchIntentFileFromConfigDict(args.configDict)
+    configDict = parseConfig.parseConfigFile(args.config)
+    intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
     sessionStreamDict = {}
     with open(intentSessionFile) as f:
         for line in f:
-            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, args.configDict,
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, configDict,
                                                                                         sessionStreamDict)
     f.close()
     size = total_size(sessionStreamDict, verbose=False)
