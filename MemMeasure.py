@@ -84,7 +84,7 @@ def computeMemQueries(args):
                                                                                         sessionStreamDict)
     f.close()
     size = total_size(sessionStreamDict, verbose=False)
-    print("Size of sessionStreamDict is: "+size)
+    print("Size of sessionStreamDict is: "+str(size))
 
 if __name__ == '__main__':
     #d = dict(a=1, b=2, c=3, d=[4,5,6,7], e='a string of chars')
