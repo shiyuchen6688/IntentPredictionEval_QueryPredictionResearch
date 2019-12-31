@@ -74,6 +74,17 @@ def computeMemoryReq(args):
         print("Size of schemaDicts is " + str(schemaDictSize))
     return
 
+def computeMemQueries(args):
+    intentSessionFile = QR.fetchIntentFileFromConfigDict(args.configDict)
+    sessionStreamDict = {}
+    with open(intentSessionFile) as f:
+        for line in f:
+            (sessID, queryID, curQueryIntent, sessionStreamDict) = QR.updateSessionDict(line, args.configDict,
+                                                                                        sessionStreamDict)
+    f.close()
+    size = total_size(sessionStreamDict, verbose=False)
+    print("Size of sessionStreamDict is: "+size)
+
 if __name__ == '__main__':
     #d = dict(a=1, b=2, c=3, d=[4,5,6,7], e='a string of chars')
     parser = argparse.ArgumentParser()
@@ -82,4 +93,5 @@ if __name__ == '__main__':
     parser.add_argument("-model", help="path to RNN model filename to analyze", type=str, required=False)
     # parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
-    computeMemoryReq(args)
+   # computeMemoryReq(args)
+    computeMemQueries(args)
