@@ -637,8 +637,7 @@ def findTableRowStats(configFileName):
     tableDict = {}
     # cursor = execShowTableQuery(cnx, configDict)
     query = "SHOW TABLES"
-    cursor = cnx.cursor()
-    cursor.execute(query)
+    cursor = QExec.executeMINCQuery(query, configDict)
     index = 0
     for cols in cursor:
         tableName = str(cols[0])
