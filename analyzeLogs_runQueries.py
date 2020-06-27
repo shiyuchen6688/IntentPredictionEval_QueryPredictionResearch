@@ -632,6 +632,26 @@ def executeExpectedQueries(configFileName, logFile):
         return evalOpsObj
 '''
 
+def findTableRowStats(configFileName):
+    configDict = parseConfig.parseConfigFile(configFileName)
+    tableDict = {}
+    # cursor = execShowTableQuery(cnx, configDict)
+    query = "SHOW TABLES"
+    cursor = cnx.cursor()
+    cursor.execute(query)
+    index = 0
+    for cols in cursor:
+        tableName = str(cols[0])
+        assert tableName not in tableDict
+        query = "SELECT COUNT(*) FROM "+tableName
+        cursor = QExec.executeMINCQuery(query, configDict)
+        records = cursor.fetchAll()
+        tableDict[tableName] = int(records[0][0])
+        "tablename: " + str(tableName) + ", count: " + str(table[tableName])
+        index += 1
+    sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))
+    tableDict = collections.OrderedDict(sorted_x)
+    return tableDict
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -639,7 +659,8 @@ if __name__ == "__main__":
     parser.add_argument("-log", help="log filename to analyze", type=str, required=True)
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
-    executeExpectedQueries(args.config, args.log)
+    findTableRowStats(args.config)
+    #executeExpectedQueries(args.config, args.log)
     #evalOpsObj = evalOps(args.config, args.log)
     #evalOpsObj = createEvalMetricsOpWise(evalOpsObj)
     #plotEvalMetricsOpWise(evalOpsObj)
