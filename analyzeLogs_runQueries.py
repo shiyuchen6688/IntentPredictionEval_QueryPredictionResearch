@@ -583,6 +583,8 @@ def executeExpectedQueries(configFileName, logFile):
                 cursor = QExec.executeMINCQuery(nextQuery, configDict)
                 if cursor is None:
                     missedNextQueryExec += 1
+                    print nextQuery
+                    print "Total #queries: " + str(nextQueryCount) + ", #misses: " + str(missedNextQueryExec)
                 #records = cursor.fetchall()
                 #print "Total rows are: " +str(len(records))
                 nextQueryCount+=1
