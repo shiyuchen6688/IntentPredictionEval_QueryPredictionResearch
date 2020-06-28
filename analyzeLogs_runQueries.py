@@ -571,6 +571,9 @@ def executeExpectedQueries(configFileName, logFile):
     configDict = parseConfig.parseConfigFile(configFileName)
     newEpFlg = 0
     nextQueryCount = 0
+    insQueryCount = 0
+    updQueryCount = 0
+    delQueryCount = 0
     predictedQueryCount = 0
     nextQuery = None
     predictedQuery = None
@@ -601,7 +604,14 @@ def executeExpectedQueries(configFileName, logFile):
                     nextQueryCount+=1
                     if nextQueryCount % 10000 == 0:
                         print "Total #queries: " + str(nextQueryCount) + ", #misses: " + str(missedNextQueryExec) + ", #zeroRes: " + str(zeroResCount) + ", #nonZeroRes: " + str(nonZeroResCount)
-    print "Total #queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount)
+                elif nextQuery.lower().startswith("insert"):
+                        insQueryCount += 1
+                elif nextQuery.lower().startswith("update"):
+                        updQueryCount += 1
+                elif nextQuery.lower().startswith("delete"):
+                        delQueryCount += 1
+    print "Total Test #SELECT queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount)
+    print "Total Test #INSERT queries: "+str(insQueryCount)+", #UPDATES: "+str(updQueryCount)+", #DELETES: "+str(delQueryCount)
     return
 '''
     def createEvalMetricsOpWise(evalOpsObj):
