@@ -575,6 +575,8 @@ def executeExpectedQueries(configFileName, logFile):
     nextQuery = None
     predictedQuery = None
     missedNextQueryExec = 0
+    zeroResCount = 0
+    nonZeroResCount = 0
     missedPredQueryExec = 0
     with open(logFile) as f:
         for line in f:
@@ -582,15 +584,23 @@ def executeExpectedQueries(configFileName, logFile):
                 newEpFlg = 1
             if line.startswith("Next Query"):
                 nextQuery = line.strip().split(": ")[1].strip()
-                cursor = QExec.executeMINCQuery(nextQuery, configDict)
-                if cursor is None:
-                    missedNextQueryExec += 1
-                    print nextQuery
-                    print "Total #queries: " + str(nextQueryCount) + ", #misses: " + str(missedNextQueryExec)
-                #records = cursor.fetchall()
-                #print "Total rows are: " +str(len(records))
-                nextQueryCount+=1
-    print "Total #queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec)
+                # convert nextquery to lower case and compare with start INSERT, UPDATE, DELETE to ignore them
+                if nextQuery.lower().startswith("select"):
+                    records = QExec.executeMINCQuery(nextQuery, configDict)
+                    if records is None:
+                        missedNextQueryExec += 1
+                        print nextQuery
+                        print "Total #queries: " + str(nextQueryCount) + ", #misses: " + str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount)
+                    else:
+                        print "#Records: "+str(len(records))
+                        if len(records) == 0:
+                            zeroResCount += 1
+                        else:
+                            nonZeroResCount += 1
+                    #records = cursor.fetchall()
+                    #print "Total rows are: " +str(len(records))
+                    nextQueryCount+=1
+    print "Total #queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount)
     return
 '''
     def createEvalMetricsOpWise(evalOpsObj):
@@ -659,8 +669,8 @@ if __name__ == "__main__":
     parser.add_argument("-log", help="log filename to analyze", type=str, required=True)
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
-    findTableRowStats(args.config)
-    #executeExpectedQueries(args.config, args.log)
+    #findTableRowStats(args.config)
+    executeExpectedQueries(args.config, args.log)
     #evalOpsObj = evalOps(args.config, args.log)
     #evalOpsObj = createEvalMetricsOpWise(evalOpsObj)
     #plotEvalMetricsOpWise(evalOpsObj)
