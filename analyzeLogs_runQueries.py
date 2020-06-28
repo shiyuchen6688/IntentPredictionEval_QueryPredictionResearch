@@ -637,14 +637,14 @@ def findTableRowStats(configFileName):
     tableDict = {}
     # cursor = execShowTableQuery(cnx, configDict)
     query = "SHOW TABLES"
-    cursor = QExec.executeMINCQuery(query, configDict)
+    records = QExec.executeMINCQuery(query, configDict)
     index = 0
-    for cols in cursor:
-        tableName = str(cols[0])
+    for row in records:
+        tableName = str(row[0])
         assert tableName not in tableDict
         query = "SELECT COUNT(*) FROM "+tableName
-        cursor = QExec.executeMINCQuery(query, configDict)
-        tableDict[tableName] = int(cursor[0][0])
+        countRec = QExec.executeMINCQuery(query, configDict)
+        tableDict[tableName] = int(countRec[0][0])
         "tablename: " + str(tableName) + ", count: " + str(table[tableName])
         index += 1
     sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))

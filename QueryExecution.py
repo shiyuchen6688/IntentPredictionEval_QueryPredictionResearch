@@ -81,7 +81,7 @@ def executeMINCQuery(sessQuery, configDict):
     cursor = cnx.cursor()
     try:
         cursor.execute(sessQuery)
-        return cursor
+        return cursor.fetchall()
     except:
         print "Error in executing Query"
         return None
