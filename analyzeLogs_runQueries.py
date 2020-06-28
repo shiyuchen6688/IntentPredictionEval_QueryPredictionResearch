@@ -14,6 +14,7 @@ from pandas import DataFrame
 from openpyxl import load_workbook
 import pandas as pd
 import operator
+import collections
 
 def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, numOpQueryCountDict):
     try:
