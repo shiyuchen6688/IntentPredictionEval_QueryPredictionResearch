@@ -589,7 +589,8 @@ def executeExpectedQueries(configFileName, logFile):
                     records = QExec.executeMINCQuery(nextQuery, configDict)
                     if records is None:
                         missedNextQueryExec += 1
-                        print nextQuery
+                        print "NonExecQuery: "+nextQuery
+                    if nextQueryCount%10000 == 0:
                         print "Total #queries: " + str(nextQueryCount) + ", #misses: " + str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount)
                     else:
                         #print "#Records: "+str(len(records))
