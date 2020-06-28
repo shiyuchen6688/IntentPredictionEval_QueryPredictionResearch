@@ -645,7 +645,7 @@ def findTableRowStats(configFileName):
         query = "SELECT COUNT(*) FROM "+tableName
         countRec = QExec.executeMINCQuery(query, configDict)
         tableDict[tableName] = int(countRec[0][0])
-        "tablename: " + str(tableName) + ", count: " + str(table[tableName])
+        "tablename: " + str(tableName) + ", count: " + str(tableDict[tableName])
         index += 1
     sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))
     tableDict = collections.OrderedDict(sorted_x)
