@@ -13,6 +13,7 @@ import argparse
 from pandas import DataFrame
 from openpyxl import load_workbook
 import pandas as pd
+import operator
 
 def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, numOpQueryCountDict):
     try:
