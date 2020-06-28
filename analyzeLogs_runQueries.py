@@ -592,7 +592,7 @@ def executeExpectedQueries(configFileName, logFile):
                         print nextQuery
                         print "Total #queries: " + str(nextQueryCount) + ", #misses: " + str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount)
                     else:
-                        print "#Records: "+str(len(records))
+                        #print "#Records: "+str(len(records))
                         if len(records) == 0:
                             zeroResCount += 1
                         else:
