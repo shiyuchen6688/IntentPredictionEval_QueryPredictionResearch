@@ -590,8 +590,6 @@ def executeExpectedQueries(configFileName, logFile):
                     if records is None:
                         missedNextQueryExec += 1
                         print "NonExecQuery: "+nextQuery
-                    if nextQueryCount%10000 == 0:
-                        print "Total #queries: " + str(nextQueryCount) + ", #misses: " + str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount)
                     else:
                         #print "#Records: "+str(len(records))
                         if len(records) == 0:
@@ -601,6 +599,8 @@ def executeExpectedQueries(configFileName, logFile):
                     #records = cursor.fetchall()
                     #print "Total rows are: " +str(len(records))
                     nextQueryCount+=1
+                    if nextQueryCount % 10000 == 0:
+                        print "Total #queries: " + str(nextQueryCount) + ", #misses: " + str(missedNextQueryExec) + ", #zeroRes: " + str(zeroResCount) + ", #nonZeroRes: " + str(nonZeroResCount)
     print "Total #queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount)
     return
 '''
