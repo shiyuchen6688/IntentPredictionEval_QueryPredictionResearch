@@ -788,7 +788,7 @@ def executeExpectedQueries(evalExecObj):
     rank = float("-inf")
     curQueryIndex = float("-inf")
     predOpsObj = None
-    with open(logFile) as f:
+    with open(evalExecObj.logFile) as f:
         for line in f:
             if line.startswith("#Episodes"):
                 newEpFlg = 1
