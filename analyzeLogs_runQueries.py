@@ -792,6 +792,7 @@ def executeExpectedQueries(evalExecObj):
         for line in f:
             if line.startswith("#Episodes"):
                 newEpFlg = 1
+                numTokens = len(line.strip().split(";"))
                 rank = int(line.strip().split(";")[numTokens - 3].split(":")[1])
                 if rank == -1:  # this can happen when all predicted queries are equally bad
                     rank = 0
