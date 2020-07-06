@@ -290,8 +290,8 @@ class evalExec:
         self.configDict = parseConfig.parseConfigFile(configFileName)
         self.logFile = logFile
         self.curEpisode = 0
-        self.schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
-        self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(configDict['MINC_COL_TYPES']))
+        self.schemaDicts = ReverseEnggQueries.readSchemaDicts(self.configDict)
+        self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
 
 class nextActualOps:
     def __init__(self):
