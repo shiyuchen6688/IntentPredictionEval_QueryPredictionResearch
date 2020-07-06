@@ -3,6 +3,7 @@ import sys
 import os
 import time
 import QueryExecution as QExec
+import ReverseEnggQueries
 from bitmap import BitMap
 import CFCosineSim
 import TupleIntent as ti
@@ -282,6 +283,15 @@ class evalOps:
         self.condJoinPredsR = {}
         self.condJoinPredsF = {}
         self.numCondJoinPredsColsQueries = {}
+
+class evalExec:
+    def __init__(self, configFileName, logFile):
+        self.configFileName = configFileName
+        self.configDict = parseConfig.parseConfigFile(configFileName)
+        self.logFile = logFile
+        self.curEpisode = 0
+        self.schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
+        self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(configDict['MINC_COL_TYPES']))
 
 class nextActualOps:
     def __init__(self):
@@ -570,17 +580,19 @@ def createEvalMetricsOpWise(evalOpsObj):
 def appendProjCols(predictedQuery, predOpsObj):
     for i in range(len(predOpsObj.projCols)):
         colName = predOpsObj.projCols[i]
-        colToAppend = colName
-        if predOpsObj.avgCols is not None and colName in predOpsObj.avgCols:
-            colToAppend = "AVG("+colName+")"
+        colToAppend = colName.replace("'","")
+        if predOpsObj.groupByCols is not None and colName in predOpsObj.groupByCols:
+            colToAppend = colToAppend # do nothing, do not check for further stuff
+        elif predOpsObj.avgCols is not None and colName in predOpsObj.avgCols:
+            colToAppend = "AVG("+colToAppend+")"
         elif predOpsObj.minCols is not None and colName in predOpsObj.minCols:
-            colToAppend = "MIN("+colName+")"
+            colToAppend = "MIN("+colToAppend+")"
         elif predOpsObj.maxCols is not None and colName in predOpsObj.maxCols:
-            colToAppend = "MAX("+colName+")"
+            colToAppend = "MAX("+colToAppend+")"
         elif predOpsObj.sumCols is not None and colName in predOpsObj.sumCols:
-            colToAppend = "SUM("+colName+")"
+            colToAppend = "SUM("+colToAppend+")"
         elif predOpsObj.countCols is not None and colName in predOpsObj.countCols:
-            colToAppend = "COUNT("+colName+")"
+            colToAppend = "COUNT("+colToAppend+")"
         predictedQuery += " "+colToAppend
         if i<len(predOpsObj.projCols)-1:
             predictedQuery += ","
@@ -589,24 +601,45 @@ def appendProjCols(predictedQuery, predOpsObj):
 def appendTables(predictedQuery, predOpsObj):
     predictedQuery += " FROM"
     for i in range(len(predOpsObj.tables)):
-        tabName = predOpsObj.tables[i]
+        tabName = predOpsObj.tables[i].replace("'","")
         predictedQuery += " "+tabName
         if i < len(predOpsObj.tables)-1:
             predictedQuery += ","
     return predictedQuery
 
-def appendSelPreds(predictedQuery, predOpsObj):
+def findColType(tableName, colName, evalExecObj):
+    offset = evalExecObj.schemaDicts.colDict[tableName].index(colName)
+    colType = evalExecObj.colTypeDict[tableName][offset]
+    return colType
+
+def findQuoteIncl(selCol, evalExecObj):
+    selTabName = selCol.split(".")[0]
+    selColName = selCol.split(".")[1]
+    selColType = findColType(selTabName, selColName, evalExecObj)
+    includeQuote = 1
+    if 'int' in selColType or 'double' in selColName or 'float' in selColType:
+        includeQuote = 0
+    return includeQuote
+
+def quoteModify(selConst, includeQuote):
+    if includeQuote == 0:
+        return selConst
+    else:
+        return "'" +selConst + "'"
+
+def appendSelPreds(predictedQuery, predOpsObj, evalExecObj):
     if predOpsObj.selCols is None:
         return predictedQuery
     strToAppend = ""
     for i in range(len(predOpsObj.selCols)):
         if strToAppend != "":
-            if i == 0:
-                predictedQuery += " WHERE " + strToAppend
-            elif i > 0:
+            if i == 1: # you are in iteration 1 when you append for iteration 0
+                predictedQuery += strToAppend # WHERE has already been added
+            elif i > 1:
                 predictedQuery += " AND " + strToAppend
             strToAppend = ""
-        selCol = predOpsObj.selCols[i]
+        selCol = predOpsObj.selCols[i].replace("'","")
+        includeQuote = findQuoteIncl(selCol, evalExecObj)
         for selPredOp in predOpsObj.selPredOps:
             if strToAppend != "":
                 break
@@ -639,31 +672,82 @@ def appendSelPreds(predictedQuery, predOpsObj):
                             assert len(constBinToks) == 2
                             if constBinToks[0] != "NULL" and constBinToks[1] != "NULL":
                                 if constBinToks[0] == constBinToks[1]:
-                                    strToAppend = selCol + " " +opSym + " " + constBinToks[0]
+                                    strToAppend = selCol + " " +opSym + " " + quoteModify(constBinToks[0], includeQuote)
                                 elif constBinToks[0] != constBinToks[1]:
                                     if opSym == "=":
-                                        strToAppend = selCol + " >= " + constBinToks[0] + " AND " + selCol +" <= "+ constBinToks[1]
+                                        strToAppend = selCol + " >= " + quoteModify(constBinToks[0], includeQuote) + " AND " + selCol +" <= "+ quoteModify(constBinToks[1], includeQuote)
                                     elif opSym == "<=" or opSym == "<":
-                                        strToAppend = selCol + " " + opSym + " " + constBinToks[1]
+                                        strToAppend = selCol + " " + opSym + " " + quoteModify(constBinToks[1], includeQuote)
                                     elif opSym == ">=" or opSym == ">":
-                                        strToAppend = selCol + " " + opSym + " " + constBinToks[0]
+                                        strToAppend = selCol + " " + opSym + " " + quoteModify(constBinToks[0], includeQuote)
                                     elif opSym == "<>":
-                                        strToAppend = selCol + "<>" + constBinToks[0] + "AND" + selCol + "<>" + constBinToks[1]
+                                        strToAppend = selCol + "<>" + quoteModify(constBinToks[0], includeQuote) + "AND" + selCol + "<>" + quoteModify(constBinToks[1], includeQuote)
                                     elif opSym == "LIKE":
-                                        strToAppend = (selCol + "LIKE" + constBinToks[0] + "OR" + selCol + "LIKE" + constBinToks[1])
+                                        strToAppend = "(" + selCol + "LIKE" + quoteModify(constBinToks[0], includeQuote) + "OR" + selCol + "LIKE" + quoteModify(constBinToks[1], includeQuote) + ")"
+    if strToAppend != "":
+        if len(predOpsObj.selCols) == 1:  # you are in iteration 1 when you append for iteration 0
+            predictedQuery += strToAppend  # WHERE has already been added
+        elif len(predOpsObj.selCols) > 1:
+            predictedQuery += " AND " + strToAppend
     return predictedQuery
 
 def appendJoinPreds(predictedQuery, predOpsObj):
+    if predOpsObj.joinPreds is None:
+        return predictedQuery
+    strToAppend = ""
+    for i in range(len(predOpsObj.joinPreds)):
+        if strToAppend != "":
+            if i == 1: # you are in iteration 1 when you append for iteration 0
+                predictedQuery += strToAppend # WHERE has already been added
+            elif i > 1:
+                predictedQuery += " AND " + strToAppend
+            strToAppend = ""
+        joinPred = predOpsObj.joinPreds[i].replace("'","")
+        leftTabCol = joinPred.split(",")[0]
+        rightTabCol = joinPred.split(",")[1]
+        strToAppend = leftTabCol + "=" + rightTabCol
+    if strToAppend != "":
+        if len(predOpsObj.joinPreds) == 1:  # you are in iteration 1 when you append for iteration 0
+            predictedQuery += strToAppend  # WHERE has already been added
+        elif len(predOpsObj.joinPreds) > 1:
+            predictedQuery += " AND " + strToAppend
     return predictedQuery
 
-def createPredictedQuery(predOpsObj):
-    predictedQuery = predOpsObj.queryType
+def appendGrpByPred(predictedQuery, predOpsObj):
+    if predOpsObj.groupByCols is None:
+        return predictedQuery
+    predictedQuery += " GROUP BY "
+    for i in range(len(predOpsObj.groupByCols)):
+        grpByCol = predOpsObj.groupByCols[i].replace("'", "")
+        predictedQuery += grpByCol
+        if i<len(predOpsObj.projCols)-1:
+            predictedQuery += ", "
+    return predictedQuery
+
+def appendOrderByPred(predictedQuery, predOpsObj):
+    if predOpsObj.orderByCols is None:
+        return predictedQuery
+    predictedQuery += " ORDER BY "
+    for i in range(len(predOpsObj.orderByCols)):
+        sortCol = predOpsObj.orderByCols[i].replace("'", "")
+        predictedQuery += sortCol
+        if i<len(predOpsObj.orderByCols)-1:
+            predictedQuery += ", "
+    return predictedQuery
+
+def createPredictedQuery(evalExecObj, predOpsObj):
+    predictedQuery = predOpsObj.queryType.replace("'","")
     predictedQuery = appendProjCols(predictedQuery, predOpsObj)
     predictedQuery = appendTables(predictedQuery, predOpsObj)
     if predOpsObj.selCols is not None or predOpsObj.joinPreds is not None:
-        predictedQuery += " WHERE"
-        predictedQuery = appendSelPreds(predictedQuery, predOpsObj)
+        predictedQuery += " WHERE "
+        predictedQuery = appendSelPreds(predictedQuery, predOpsObj, evalExecObj)
         predictedQuery = appendJoinPreds(predictedQuery, predOpsObj)
+    if predOpsObj.groupByCols is not None:
+        predictedQuery = appendGrpByPred(predictedQuery, predOpsObj)
+    if predOpsObj.orderByCols is not None:
+        predictedQuery = appendOrderByPred(predictedQuery, predOpsObj)
+    return predictedQuery
 '''
         self.queryType = None
         self.tables = None
@@ -683,12 +767,12 @@ def createPredictedQuery(predOpsObj):
         self.joinPreds = None
 '''
 
+def computeExecF1(evalExecObj, predOpsObj, nextQuery):
+    predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
+    print "NextQuery: "+nextQuery+"\n"
+    print "PredictedQuery: "+predictedQuery+"\n"
 
-def computeExecF1(predOpsObj, nextQuery):
-    predQuery = createPredictedQuery(predOpsObj)
-
-def executeExpectedQueries(configFileName, logFile):
-    configDict = parseConfig.parseConfigFile(configFileName)
+def executeExpectedQueries(evalExecObj):
     newEpFlg = 0
     nextQueryCount = 0
     insQueryCount = 0
@@ -703,6 +787,7 @@ def executeExpectedQueries(configFileName, logFile):
     missedPredQueryExec = 0
     rank = float("-inf")
     curQueryIndex = float("-inf")
+    predOpsObj = None
     with open(logFile) as f:
         for line in f:
             if line.startswith("#Episodes"):
@@ -710,12 +795,12 @@ def executeExpectedQueries(configFileName, logFile):
                 rank = int(line.strip().split(";")[numTokens - 3].split(":")[1])
                 if rank == -1:  # this can happen when all predicted queries are equally bad
                     rank = 0
-                assert rank >= 0 and rank < int(evalOpsObj.configDict['TOP_K'])
+                assert rank >= 0 and rank < int(evalExecObj.configDict['TOP_K'])
             if line.startswith("Next Query"):
                 nextQuery = line.strip().split(": ")[1].strip()
                 # convert nextquery to lower case and compare with start INSERT, UPDATE, DELETE to ignore them
                 if nextQuery.lower().startswith("select"):
-                    records = QExec.executeMINCQuery(nextQuery, configDict)
+                    records = QExec.executeMINCQuery(nextQuery, evalExecObj.configDict)
                     if records is None:
                         missedNextQueryExec += 1
                         print "NonExecQuery: "+nextQuery
@@ -742,7 +827,7 @@ def executeExpectedQueries(configFileName, logFile):
                 if curQueryIndex == rank:
                     predOpsObj = nextActualOps()
             elif line.startswith("---") and nextQuery is not None and predOpsObj is not None:
-                computeExecF1(predOpsObj, nextQuery)
+                computeExecF1(evalExecObj, predOpsObj, nextQuery)
                 #computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
             elif curQueryIndex == rank:
                     parseLineAddOp(line, predOpsObj)
@@ -792,18 +877,17 @@ def executeExpectedQueries(configFileName, logFile):
         return evalOpsObj
 '''
 
-def findTableRowStats(configFileName):
-    configDict = parseConfig.parseConfigFile(configFileName)
+def findTableRowStats(evalExecObj):
     tableDict = {}
     # cursor = execShowTableQuery(cnx, configDict)
     query = "SHOW TABLES"
-    records = QExec.executeMINCQuery(query, configDict)
+    records = QExec.executeMINCQuery(query, evalExecObj.configDict)
     index = 0
     for row in records:
         tableName = str(row[0])
         assert tableName not in tableDict
         query = "SELECT COUNT(*) FROM "+tableName
-        countRec = QExec.executeMINCQuery(query, configDict)
+        countRec = QExec.executeMINCQuery(query, evalExecObj.configDict)
         tableDict[tableName] = int(countRec[0][0])
         print "tablename: " + str(tableName) + ", count: " + str(tableDict[tableName])
         index += 1
@@ -817,8 +901,9 @@ if __name__ == "__main__":
     parser.add_argument("-log", help="log filename to analyze", type=str, required=True)
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
-    #findTableRowStats(args.config)
-    executeExpectedQueries(args.config, args.log)
+    evalExecObj = evalExec(args.config, args.log)
+    #findTableRowStats(evalExecObj)
+    executeExpectedQueries(evalExecObj)
     #evalOpsObj = evalOps(args.config, args.log)
     #evalOpsObj = createEvalMetricsOpWise(evalOpsObj)
     #plotEvalMetricsOpWise(evalOpsObj)
