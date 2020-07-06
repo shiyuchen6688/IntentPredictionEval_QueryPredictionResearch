@@ -743,6 +743,8 @@ def createPredictedQuery(evalExecObj, predOpsObj):
         predictedQuery += " WHERE "
         predictedQuery = appendSelPreds(predictedQuery, predOpsObj, evalExecObj)
         predictedQuery = appendJoinPreds(predictedQuery, predOpsObj)
+        if predictedQuery.endswith(" WHERE "):
+            predictedQuery = predictedQuery.replace(" WHERE ", "")
     if predOpsObj.groupByCols is not None:
         predictedQuery = appendGrpByPred(predictedQuery, predOpsObj)
     if predOpsObj.orderByCols is not None:
