@@ -625,6 +625,7 @@ def quoteModify(selConst, includeQuote):
     if includeQuote == 0:
         return selConst
     else:
+        print "Including quote"
         return "'" +selConst + "'"
 
 def appendSelPreds(predictedQuery, predOpsObj, evalExecObj):
