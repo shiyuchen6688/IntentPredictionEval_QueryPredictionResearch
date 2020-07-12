@@ -267,7 +267,6 @@ def createSQLString(intentObj):
         actualSQLStr += "SEL PRED ColRangeBins: " + str(intentObj.selPredColRangeBins) + "\n"
     return actualSQLStr
 
-
 def printSQLOps(intentObj):
     print "Query Type: "+str(intentObj.queryType)
     print "Tables: "+str(intentObj.tables)
