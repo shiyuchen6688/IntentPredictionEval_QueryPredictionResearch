@@ -198,31 +198,31 @@ def createSQLStringForTable(intentObj):
 
 def createSQLString(intentObj):
     actualSQLStr = "Query Type: "+str(intentObj.queryType)+"\n"
-    if len(intentObj.tables) > 0:
+    if intentObj.tables is not None and len(intentObj.tables) > 0:
         actualSQLStr += "Tables: "+str(intentObj.tables) + "\n"
-    if len(intentObj.projCols) > 0:
+    if intentObj.projCols is not None and len(intentObj.projCols) > 0:
         actualSQLStr += "Projected Columns: " + str(intentObj.projCols) + "\n"
-    if len(intentObj.avgCols) > 0:
+    if intentObj.avgCols is not None and len(intentObj.avgCols) > 0:
         actualSQLStr += "AVG Columns: " + str(intentObj.avgCols) + "\n"
-    if len(intentObj.minCols) > 0:
+    if intentObj.minCols is not None and len(intentObj.minCols) > 0:
         actualSQLStr += "MIN Columns: " + str(intentObj.minCols) + "\n"
-    if len(intentObj.maxCols) > 0:
+    if intentObj.maxCols is not None and len(intentObj.maxCols) > 0:
         actualSQLStr += "MAX Columns: " + str(intentObj.maxCols) + "\n"
-    if len(intentObj.sumCols) > 0:
+    if intentObj.sumCols is not None and len(intentObj.sumCols) > 0:
         actualSQLStr += "SUM Columns: " + str(intentObj.sumCols) + "\n"
-    if len(intentObj.countCols) > 0:
+    if intentObj.countCols is not None and len(intentObj.countCols) > 0:
         actualSQLStr += "COUNT Columns: " + str(intentObj.countCols) + "\n"
-    if len(intentObj.selCols) > 0:
+    if intentObj.selCols is not None and len(intentObj.selCols) > 0:
         actualSQLStr += "SEL Columns: " + str(intentObj.selCols) + "\n"
-    if len(intentObj.groupByCols) > 0:
+    if intentObj.groupByCols is not None and len(intentObj.groupByCols) > 0:
         actualSQLStr += "GROUP BY Columns: " + str(intentObj.groupByCols) + "\n"
-    if len(intentObj.orderByCols) > 0:
+    if intentObj.orderByCols is not None and len(intentObj.orderByCols) > 0:
         actualSQLStr += "ORDER BY Columns: " + str(intentObj.orderByCols) + "\n"
-    if len(intentObj.havingCols) > 0:
+    if intentObj.havingCols is not None and len(intentObj.havingCols) > 0:
         actualSQLStr += "HAVING Columns: " + str(intentObj.havingCols) + "\n"
     if intentObj.limit is not None:
         actualSQLStr += "Limit: "+str(intentObj.limit)+"\n"
-    if len(intentObj.joinPreds) > 0:
+    if intentObj.joinPreds is not None and len(intentObj.joinPreds) > 0:
         actualSQLStr += "JOIN PRED ColPairs: " + str(intentObj.joinPreds) + "\n"
     return actualSQLStr
 
