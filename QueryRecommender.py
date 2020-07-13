@@ -71,6 +71,16 @@ def normalizeWeightedVector(curQueryIntent):
     res = ';'.join(normalizedVector)
     return res
 
+def retrieveQueryAndIntent(line, configDict):
+    tokens = line.strip().split(";")
+    sqlQuery = tokens[1]
+    curQueryIntent = ';'.join(tokens[2:])
+    if ";" not in curQueryIntent and configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        curQueryIntent = BitMap.fromstring(curQueryIntent)
+    else:
+        curQueryIntent = normalizeWeightedVector(curQueryIntent)
+    return (sqlQuery, curQueryIntent)
+
 def retrieveSessIDQueryIDIntent(line, configDict):
     tokens = line.strip().split(";")
     sessQueryName = tokens[0]

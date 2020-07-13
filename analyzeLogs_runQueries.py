@@ -3,7 +3,9 @@ import sys
 import os
 import time
 import QueryExecution as QExec
+import QueryRecommender as QR
 import ReverseEnggQueries
+import CreateSQLFromIntentVec_selOpConst
 from bitmap import BitMap
 import CFCosineSim
 import TupleIntent as ti
@@ -284,6 +286,24 @@ class evalOps:
         self.condJoinPredsF = {}
         self.numCondJoinPredsColsQueries = {}
 
+def createSQLFragmentDict(intentSessionFile, schemaDicts, configDict):
+    SQLFragmentDict = {}
+    count = 0
+    with open(intentSessionFile) as f:
+        for line in f:
+            if count > int(configDict['RNN_SUSTENANCE_TRAIN_LIMIT']):
+                f.close()
+                return SQLFragmentDict
+            (sqlQuery, curQueryIntent) = QR.retrieveQueryAndIntent(line, configDict)
+            intentObj = CreateSQLFromIntentVec_selOpConst.regenerateSQL(None, curQueryIntent, schemaDicts)
+            SQLFragStr = CreateSQLFromIntentVec_selOpConst.createSQLString(intentObj)
+            # the following may overwrite key.value pairs but that is fine
+            SQLFragmentDict[SQLFragStr] = sqlQuery
+            count+=1
+    f.close()
+    print "len(SQLFragmentDict): "+str(len(SQLFragmentDict))
+    return SQLFragmentDict
+
 class evalExec:
     def __init__(self, configFileName, logFile):
         self.configFileName = configFileName
@@ -292,6 +312,8 @@ class evalExec:
         self.curEpisode = 0
         self.schemaDicts = ReverseEnggQueries.readSchemaDicts(self.configDict)
         self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
+        self.intentSessionFile = QR.fetchIntentFileFromConfigDict(self.configDict)
+        self.SQLFragmentDict = createSQLFragmentDict(self.intentSessionFile, self.schemaDicts, self.configDict)
 
 class nextActualOps:
     def __init__(self):
@@ -771,9 +793,17 @@ def createPredictedQuery(evalExecObj, predOpsObj):
 '''
 
 def computeExecF1(evalExecObj, predOpsObj, nextQuery):
-    predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
+    predictedSQLFragStr = CreateSQLFromIntentVec_selOpConst.createSQLString(predOpsObj)
+    borrowedQuery = False
+    try:
+        predictedQuery = evalExecObj.SQLFragmentDict[predictedSQLFragStr]
+        borrowedQuery = True
+    except:
+        predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
     print "NextQuery: "+nextQuery+"\n"
     print "PredictedQuery: "+predictedQuery+"\n"
+    print "BorrowedQuery: "+str(borrowedQuery)
+    return borrowedQuery
 
 def executeExpectedQueries(evalExecObj):
     newEpFlg = 0
