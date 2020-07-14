@@ -312,9 +312,12 @@ class evalExec:
         self.curEpisode = 0
         self.schemaDicts = ReverseEnggQueries.readSchemaDicts(self.configDict)
         self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
+        #try:
+        #    self.SQLFragmentDict = QR.readFromPickleFile(self.configDict['PICKLE_TEMP_OUTPUT_DIR']+"SQLFragmentDict.pickle")
+        #except:
         self.intentSessionFile = QR.fetchIntentFileFromConfigDict(self.configDict)
         self.SQLFragmentDict = createSQLFragmentDict(self.intentSessionFile, self.schemaDicts, self.configDict)
-        QR.writeToPickleFile(self.configDict['PICKLE_TEMP_OUTPUT_DIR']+"SQLFragmentDict.pickle", self.SQLFragmentDict)
+        QR.writeToPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle", self.SQLFragmentDict)
 
 class nextActualOps:
     def __init__(self):
