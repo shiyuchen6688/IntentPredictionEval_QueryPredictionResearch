@@ -293,6 +293,7 @@ def createSQLFragmentDict(intentSessionFile, schemaDicts, configDict):
         for line in f:
             if count > int(configDict['RNN_SUSTENANCE_TRAIN_LIMIT']):
                 f.close()
+                print "len(SQLFragmentDict): " + str(len(SQLFragmentDict))
                 return SQLFragmentDict
             (sqlQuery, curQueryIntent) = QR.retrieveQueryAndIntent(line, configDict)
             intentObj = CreateSQLFromIntentVec_selOpConst.regenerateSQL(None, curQueryIntent, schemaDicts)
@@ -315,6 +316,7 @@ class evalExec:
         try:
             self.SQLFragmentDict = QR.readFromPickleFile(self.configDict['PICKLE_TEMP_OUTPUT_DIR']+"SQLFragmentDict.pickle")
             print "Read SQLFragmentDict"
+            print "len(SQLFragmentDict): " + str(len(self.SQLFragmentDict))
             print self.SQLFragmentDict.keys()
         except:
             print "Create SQLFragmentDict"
