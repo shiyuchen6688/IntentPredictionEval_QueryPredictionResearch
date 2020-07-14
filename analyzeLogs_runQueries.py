@@ -314,6 +314,7 @@ class evalExec:
         self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
         self.intentSessionFile = QR.fetchIntentFileFromConfigDict(self.configDict)
         self.SQLFragmentDict = createSQLFragmentDict(self.intentSessionFile, self.schemaDicts, self.configDict)
+        QR.writeToPickleFile(configDict['PICKLE_TEMP_OUTPUT_DIR']+"SQLFragmentDict.pickle", self.SQLFragmentDict)
 
 class nextActualOps:
     def __init__(self):
@@ -802,6 +803,7 @@ def computeExecF1(evalExecObj, predOpsObj, nextQuery):
         predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
     print "NextQuery: "+nextQuery+"\n"
     print "PredictedQuery: "+predictedQuery+"\n"
+    print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
     print "BorrowedQuery: "+str(borrowedQuery)
     return borrowedQuery
 
