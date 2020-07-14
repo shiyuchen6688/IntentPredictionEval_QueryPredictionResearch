@@ -314,8 +314,10 @@ class evalExec:
         self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
         try:
             self.SQLFragmentDict = QR.readFromPickleFile(self.configDict['PICKLE_TEMP_OUTPUT_DIR']+"SQLFragmentDict.pickle")
+            print "Read SQLFragmentDict"
             print self.SQLFragmentDict.keys()
         except:
+            print "Create SQLFragmentDict"
             self.intentSessionFile = QR.fetchIntentFileFromConfigDict(self.configDict)
             self.SQLFragmentDict = createSQLFragmentDict(self.intentSessionFile, self.schemaDicts, self.configDict)
             QR.writeToPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle", self.SQLFragmentDict)
