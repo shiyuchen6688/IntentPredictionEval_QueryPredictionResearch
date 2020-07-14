@@ -819,7 +819,7 @@ def computeExecF1(evalExecObj, predOpsObj, nextQuery):
         predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
     print "NextQuery: "+nextQuery+"\n"
     print "PredictedQuery: "+predictedQuery+"\n"
-    print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
+    #print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
     print "BorrowedQuery: "+str(borrowedQuery)
     return borrowedQuery
 
@@ -839,6 +839,7 @@ def executeExpectedQueries(evalExecObj):
     rank = float("-inf")
     curQueryIndex = float("-inf")
     predOpsObj = None
+    borrowedQueryCount = 0
     with open(evalExecObj.logFile) as f:
         for line in f:
             if line.startswith("#Episodes"):
@@ -879,12 +880,14 @@ def executeExpectedQueries(evalExecObj):
                 if curQueryIndex == rank:
                     predOpsObj = nextActualOps()
             elif line.startswith("---") and nextQuery is not None and predOpsObj is not None:
-                computeExecF1(evalExecObj, predOpsObj, nextQuery)
+                borrowedQuery = computeExecF1(evalExecObj, predOpsObj, nextQuery)
+                if borrowedQuery == True:
+                    borrowedQueryCount+=1
                 #computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
             elif curQueryIndex == rank:
                     parseLineAddOp(line, predOpsObj)
 
-    print "Total Test #SELECT queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount)
+    print "Total Test #SELECT queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount) + ", #borrowedQuery: "+str(borrowedQueryCount)
     print "Total Test #INSERT queries: "+str(insQueryCount)+", #UPDATES: "+str(updQueryCount)+", #DELETES: "+str(delQueryCount)
     return
 '''
