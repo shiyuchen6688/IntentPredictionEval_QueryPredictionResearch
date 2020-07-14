@@ -312,12 +312,13 @@ class evalExec:
         self.curEpisode = 0
         self.schemaDicts = ReverseEnggQueries.readSchemaDicts(self.configDict)
         self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
-        #try:
-        #    self.SQLFragmentDict = QR.readFromPickleFile(self.configDict['PICKLE_TEMP_OUTPUT_DIR']+"SQLFragmentDict.pickle")
-        #except:
-        self.intentSessionFile = QR.fetchIntentFileFromConfigDict(self.configDict)
-        self.SQLFragmentDict = createSQLFragmentDict(self.intentSessionFile, self.schemaDicts, self.configDict)
-        QR.writeToPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle", self.SQLFragmentDict)
+        try:
+            self.SQLFragmentDict = QR.readFromPickleFile(self.configDict['PICKLE_TEMP_OUTPUT_DIR']+"SQLFragmentDict.pickle")
+            print self.SQLFragmentDict.keys()
+        except:
+            self.intentSessionFile = QR.fetchIntentFileFromConfigDict(self.configDict)
+            self.SQLFragmentDict = createSQLFragmentDict(self.intentSessionFile, self.schemaDicts, self.configDict)
+            QR.writeToPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle", self.SQLFragmentDict)
 
 class nextActualOps:
     def __init__(self):
@@ -942,7 +943,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     evalExecObj = evalExec(args.config, args.log)
     #findTableRowStats(evalExecObj)
-    executeExpectedQueries(evalExecObj)
+
+    #executeExpectedQueries(evalExecObj)
+
     #evalOpsObj = evalOps(args.config, args.log)
     #evalOpsObj = createEvalMetricsOpWise(evalOpsObj)
     #plotEvalMetricsOpWise(evalOpsObj)
