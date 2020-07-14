@@ -293,7 +293,6 @@ def createSQLFragmentDict(intentSessionFile, schemaDicts, configDict):
         for line in f:
             if count > int(configDict['RNN_SUSTENANCE_TRAIN_LIMIT']):
                 f.close()
-                print "len(SQLFragmentDict): " + str(len(SQLFragmentDict))
                 return SQLFragmentDict
             (sqlQuery, curQueryIntent) = QR.retrieveQueryAndIntent(line, configDict)
             intentObj = CreateSQLFromIntentVec_selOpConst.regenerateSQL(None, curQueryIntent, schemaDicts)
@@ -302,8 +301,17 @@ def createSQLFragmentDict(intentSessionFile, schemaDicts, configDict):
             SQLFragmentDict[SQLFragStr] = sqlQuery
             count+=1
     f.close()
-    print "len(SQLFragmentDict): "+str(len(SQLFragmentDict))
     return SQLFragmentDict
+
+def printSQLFragmentDict(SQLFragmentDict):
+    count = 0
+    for key in SQLFragmentDict.keys():
+        print "<key,value> pair for SQL query #"+str(count)
+        print "SQLFragments: "+key
+        print "SQLQuery: "+SQLFragmentDict[key]
+        print "================================================"
+        count+=1
+    return
 
 class evalExec:
     def __init__(self, configFileName, logFile):
@@ -314,15 +322,15 @@ class evalExec:
         self.schemaDicts = ReverseEnggQueries.readSchemaDicts(self.configDict)
         self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
         try:
-            self.SQLFragmentDict = QR.readFromPickleFile(self.configDict['PICKLE_TEMP_OUTPUT_DIR']+"SQLFragmentDict.pickle")
+            self.SQLFragmentDict = QR.readFromPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle")
             print "Read SQLFragmentDict"
-            print "len(SQLFragmentDict): " + str(len(self.SQLFragmentDict))
-            print self.SQLFragmentDict.keys()
         except:
             print "Create SQLFragmentDict"
             self.intentSessionFile = QR.fetchIntentFileFromConfigDict(self.configDict)
             self.SQLFragmentDict = createSQLFragmentDict(self.intentSessionFile, self.schemaDicts, self.configDict)
             QR.writeToPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle", self.SQLFragmentDict)
+        print "len(SQLFragmentDict): " + str(len(self.SQLFragmentDict))
+        printSQLFragmentDict(self.SQLFragmentDict)
 
 class nextActualOps:
     def __init__(self):
