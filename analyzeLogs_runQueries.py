@@ -4,7 +4,7 @@ import os
 import time
 import QueryExecution as QExec
 import QueryRecommender as QR
-import ReverseEnggQueries
+import ReverseEnggQueries_selOpConst
 import CreateSQLFromIntentVec_selOpConst
 from bitmap import BitMap
 import CFCosineSim
@@ -307,8 +307,8 @@ def printSQLFragmentDict(SQLFragmentDict):
     count = 0
     for key in SQLFragmentDict.keys():
         print "<key,value> pair for SQL query #"+str(count)
-        print "SQLFragments: "+key
-        print "SQLQuery: "+SQLFragmentDict[key]
+        print key
+        print SQLFragmentDict[key]
         print "================================================"
         count+=1
     return
@@ -319,8 +319,8 @@ class evalExec:
         self.configDict = parseConfig.parseConfigFile(configFileName)
         self.logFile = logFile
         self.curEpisode = 0
-        self.schemaDicts = ReverseEnggQueries.readSchemaDicts(self.configDict)
-        self.colTypeDict = ReverseEnggQueries.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
+        self.schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(self.configDict)
+        self.colTypeDict = ReverseEnggQueries_selOpConst.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
         try:
             self.SQLFragmentDict = QR.readFromPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle")
             print "Read SQLFragmentDict"
@@ -956,7 +956,7 @@ if __name__ == "__main__":
     evalExecObj = evalExec(args.config, args.log)
     #findTableRowStats(evalExecObj)
 
-    #executeExpectedQueries(evalExecObj)
+    executeExpectedQueries(evalExecObj)
 
     #evalOpsObj = evalOps(args.config, args.log)
     #evalOpsObj = createEvalMetricsOpWise(evalOpsObj)
