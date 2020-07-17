@@ -834,10 +834,14 @@ def computeColF1(nextQueryCursor, predictedQueryCursor):
     FP_cols = list(set(predictedQueryCols) - set(TP_cols))
     FN_cols = list(set(nextQueryCols) - set(TP_cols))
     if len(TP_cols) == 0:
-        return 0.0
+        return (0.0, TP_cols, predictedQueryCols, nextQueryCols)
     col_prec = float(len(TP_cols))/float(len(TP_cols) + len(FP_cols))
     col_rec = float(len(TP_cols))/float(len(TP_cols) + len(FN_cols))
     col_F1 = float(2*col_prec*col_rec) / float(col_prec+col_rec)
+    #print col_F1
+    #print TP_cols
+    #print predictedQueryCols
+    #print nextQueryCols
     return (col_F1, TP_cols, predictedQueryCols, nextQueryCols)
 
 def find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols):
