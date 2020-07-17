@@ -823,6 +823,7 @@ def borrowQueryIfPossible(evalExecObj, predOpsObj, nextQuery):
     return (borrowedQuery, predictedQuery)
 
 def extractCols(cursor):
+    print "len(cursor): "+str(len(cursor))
     num_fields = len(cursor.description)
     field_names = [i[0] for i in cursor.description]
     return (num_fields, field_names)
@@ -886,6 +887,10 @@ def execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery):
         return 0.0
     elif len(list(nextQueryRes)) == 0 and len(list(predictedQueryRes)) == 0:
         return 1.0
+    elif len(list(nextQueryRes)) == 0 and len(list(predictedQueryRes)) > 0:
+        return 0.0
+    elif len(list(nextQueryRes)) > 0 and len(list(predictedQueryRes)) == 0:
+        return 0.0
     (col_F1, TP_cols, predictedQueryCols, nextQueryCols) = computeColF1(nextQueryRes, predictedQueryRes)
     #(pred_indices, next_indices) = find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols)
     tup_F1 = computeTupF1(predictedQueryRes, nextQueryRes, TP_cols)
