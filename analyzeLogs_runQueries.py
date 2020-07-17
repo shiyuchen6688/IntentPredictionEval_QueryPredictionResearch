@@ -321,16 +321,18 @@ class evalExec:
         self.curEpisode = 0
         self.schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(self.configDict)
         self.colTypeDict = ReverseEnggQueries_selOpConst.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
-        try:
-            self.SQLFragmentDict = QR.readFromPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle")
-            print "Read SQLFragmentDict"
-        except:
-            print "Create SQLFragmentDict"
-            self.intentSessionFile = QR.fetchIntentFileFromConfigDict(self.configDict)
-            self.SQLFragmentDict = createSQLFragmentDict(self.intentSessionFile, self.schemaDicts, self.configDict)
-            QR.writeToPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle", self.SQLFragmentDict)
-        print "len(SQLFragmentDict): " + str(len(self.SQLFragmentDict))
-        printSQLFragmentDict(self.SQLFragmentDict)
+        assert self.configDict['BORROW_OR_RECONSTRUCT_QUERY'] == "BORROW" or self.configDict['BORROW_OR_RECONSTRUCT_QUERY'] == "RECONSTRUCT"
+        if self.configDict['BORROW_OR_RECONSTRUCT_QUERY'] == "BORROW":
+            try:
+                self.SQLFragmentDict = QR.readFromPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle")
+                print "Read SQLFragmentDict"
+            except:
+                print "Create SQLFragmentDict"
+                self.intentSessionFile = QR.fetchIntentFileFromConfigDict(self.configDict)
+                self.SQLFragmentDict = createSQLFragmentDict(self.intentSessionFile, self.schemaDicts, self.configDict)
+                QR.writeToPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle", self.SQLFragmentDict)
+                print "len(SQLFragmentDict): " + str(len(self.SQLFragmentDict))
+                printSQLFragmentDict(self.SQLFragmentDict)
 
 class nextActualOps:
     def __init__(self):
@@ -809,7 +811,7 @@ def createPredictedQuery(evalExecObj, predOpsObj):
         self.joinPreds = None
 '''
 
-def computeExecF1(evalExecObj, predOpsObj, nextQuery):
+def borrowQueryIfPossible(evalExecObj, predOpsObj, nextQuery):
     predictedSQLFragStr = CreateSQLFromIntentVec_selOpConst.createSQLString(predOpsObj)
     borrowedQuery = False
     try:
@@ -817,11 +819,94 @@ def computeExecF1(evalExecObj, predOpsObj, nextQuery):
         borrowedQuery = True
     except:
         predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
-    print "NextQuery: "+nextQuery+"\n"
-    print "PredictedQuery: "+predictedQuery+"\n"
-    #print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
-    print "BorrowedQuery: "+str(borrowedQuery)
-    return borrowedQuery
+    return (borrowedQuery, predictedQuery)
+
+def extractCols(cursor):
+    num_fields = len(cursor.description)
+    field_names = [i[0] for i in cursor.description]
+    return (num_fields, field_names)
+
+def computeColF1(nextQueryRes, predictedQueryRes):
+    (num_next_fields, nextQueryCols) = extractCols(nextQueryRes)
+    (num_predicted_fields, predictedQueryCols) = extractCols(predictedQueryRes)
+    TP_cols = list(set(nextQueryCols) & set(predictedQueryCols))
+    FP_cols = list(set(predictedQueryCols) - set(TP_cols))
+    FN_cols = list(set(nextQueryCols) - set(TP_cols))
+    if len(TP_cols) == 0:
+        return 0.0
+    col_prec = float(len(TP_cols))/float(len(TP_cols) + len(FP_cols))
+    col_rec = float(len(TP_cols))/float(len(TP_cols) + len(FN_cols))
+    col_F1 = float(2*col_prec*col_rec) / float(col_prec+col_rec)
+    return (col_F1, TP_cols, predictedQueryCols, nextQueryCols)
+
+def find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols):
+    if TP_cols is None or len(TP_cols) == 0:
+        return (None, None)
+    pred_indices = []
+    next_indices = []
+    for tp_col in TP_cols:
+        pred_index = predictedQueryCols.index(tp_col)
+        pred_indices.append(pred_index)
+        next_index = nextQueryCols.index(tp_col)
+        next_indices.append(next_index)
+    return (pred_indices, next_indices)
+
+def computeTupSet(queryRes, colNames):
+    resultSet = set()
+    for row in queryRes:
+        result = ""
+        for i in range(len(colNames)):
+            col = colNames[i]
+            result += row[col]
+            if i < len(colNames)-1:
+                result += ","
+            resultSet.add(result)
+    return resultSet
+
+def computeTupF1(predictedQueryRes, nextQueryRes, TP_cols):
+    nextTupSet = computeTupSet(nextQueryRes, TP_cols)
+    predTupSet = computeTupSet(predictedQueryRes, TP_cols)
+    TP_tups = list(nextTupSet & predTupSet)
+    FP_tups = list(predTupSet - set(TP_tups))
+    FN_tups = list(nextTupSet - set(TP_tups))
+    if len(TP_tups) == 0:
+        return 0.0
+    tup_prec = float(len(TP_tups)) / float(len(TP_tups) + len(FP_tups))
+    tup_rec = float(len(TP_tups)) / float(len(TP_tups) + len(FN_tups))
+    tup_F1 = float(2*tup_prec*tup_rec)/float(tup_prec+tup_rec)
+    return tup_F1
+
+def execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery):
+    nextQueryRes = QExec.executeMINCQuery(nextQuery, evalExecObj.configDict)
+    predictedQueryRes = QExec.executeMINCQuery(predictedQuery, evalExecObj.configDict)
+    if nextQueryRes is None and predictedQueryRes is None:
+        return 1.0
+    elif nextQueryRes is None or predictedQueryRes is None:
+        return 0.0
+    elif len(list(nextQueryRes)) == 0 and len(list(predictedQueryRes)) == 0:
+        return 1.0
+    (col_F1, TP_cols, predictedQueryCols, nextQueryCols) = computeColF1(nextQueryRes, predictedQueryRes)
+    #(pred_indices, next_indices) = find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols)
+    tup_F1 = computeTupF1(predictedQueryRes, nextQueryRes, TP_cols)
+    total_F1 = col_F1 * 0.2 + tup_F1 * 0.8
+    return total_F1
+
+def computeExecF1(evalExecObj, predOpsObj, nextQuery):
+    borrow_or_reconstruct = evalExecObj.configDict['BORROW_OR_RECONSTRUCT_QUERY']
+    assert borrow_or_reconstruct == "BORROW" or borrow_or_reconstruct == "RECONSTRUCT"
+    borrowedQuery = False
+    if borrow_or_reconstruct == "BORROW":
+        (borrowedQuery, predictedQuery) = borrowQueryIfPossible(evalExecObj, predOpsObj, nextQuery)
+    else:
+        predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
+    if predictedQuery.lower().strip().startswith("select") and nextQuery.lower().strip().startswith("select"):
+        total_F1 = execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery)
+        print "NextQuery: " + nextQuery
+        print "PredictedQuery: " + predictedQuery
+        # print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
+        #print "BorrowedQuery: " + str(borrowedQuery)
+        return (total_F1, borrowedQuery)
+    return (0.0, borrowedQuery)
 
 def executeExpectedQueries(evalExecObj):
     newEpFlg = 0
@@ -840,6 +925,8 @@ def executeExpectedQueries(evalExecObj):
     curQueryIndex = float("-inf")
     predOpsObj = None
     borrowedQueryCount = 0
+    execF1Count = 0
+    execTotalF1 = 0.0
     with open(evalExecObj.logFile) as f:
         for line in f:
             if line.startswith("#Episodes"):
@@ -879,14 +966,17 @@ def executeExpectedQueries(evalExecObj):
                 curQueryIndex = int(substrTokens[len(substrTokens) - 1])
                 if curQueryIndex == rank:
                     predOpsObj = nextActualOps()
-            elif line.startswith("---") and nextQuery is not None and predOpsObj is not None:
-                borrowedQuery = computeExecF1(evalExecObj, predOpsObj, nextQuery)
+            elif line.startswith("---") and nextQuery is not None and predOpsObj is not None and nextQuery.lower().strip().startswith("select"):
+                (total_F1, borrowedQuery) = computeExecF1(evalExecObj, predOpsObj, nextQuery)
                 if borrowedQuery == True:
                     borrowedQueryCount+=1
+                execF1Count += 1
+                execTotalF1 += total_F1
                 #computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
             elif curQueryIndex == rank:
                     parseLineAddOp(line, predOpsObj)
-
+    avgExecF1 = float(execTotalF1) / float(execF1Count)
+    print "Avg Exec F1: "+str(avgExecF1)
     print "Total Test #SELECT queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount) + ", #borrowedQuery: "+str(borrowedQueryCount)
     print "Total Test #INSERT queries: "+str(insQueryCount)+", #UPDATES: "+str(updQueryCount)+", #DELETES: "+str(delQueryCount)
     return

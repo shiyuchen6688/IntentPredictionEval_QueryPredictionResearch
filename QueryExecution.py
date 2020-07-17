@@ -75,8 +75,6 @@ def executeNYCQueryWithIntent(sessQuery, configDict, queryVocabulary):
     return (queryVocabulary, resObj, queryExecutionTime, intentCreationTime)
 
 def executeMINCQuery(sessQuery, configDict):
-    resObj = None
-    startTime = time.time()
     cnx =  minc_mysql.connectToMinc(configDict)
     cursor = cnx.cursor()
     try:
@@ -85,8 +83,10 @@ def executeMINCQuery(sessQuery, configDict):
     except:
         print "Error in executing Query"
         return None
-    queryExecutionTime = float(time.time() - startTime)
-    return
+    #resObj = None
+    #startTime = time.time()
+    #queryExecutionTime = float(time.time() - startTime)
+    #return
 
 def executeMINCQueryWithIntent(sessQuery, configDict, queryVocabulary):
     resObj = None
