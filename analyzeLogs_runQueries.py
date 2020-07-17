@@ -827,9 +827,9 @@ def extractCols(cursor):
     field_names = [i[0] for i in cursor.description]
     return (num_fields, field_names)
 
-def computeColF1(nextQueryRes, predictedQueryRes):
-    (num_next_fields, nextQueryCols) = extractCols(nextQueryRes)
-    (num_predicted_fields, predictedQueryCols) = extractCols(predictedQueryRes)
+def computeColF1(nextQueryCursor, predictedQueryCursor):
+    (num_next_fields, nextQueryCols) = extractCols(nextQueryCursor)
+    (num_predicted_fields, predictedQueryCols) = extractCols(predictedQueryCursor)
     TP_cols = list(set(nextQueryCols) & set(predictedQueryCols))
     FP_cols = list(set(predictedQueryCols) - set(TP_cols))
     FN_cols = list(set(nextQueryCols) - set(TP_cols))
