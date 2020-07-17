@@ -858,7 +858,7 @@ def computeTupSet(queryRes, indices):
         result = ""
         for i in range(len(indices)):
             colIndex = indices[i]
-            result += row[colIndex]
+            result += str(row[colIndex])
             if i < len(indices)-1:
                 result += ","
             resultSet.add(result)
