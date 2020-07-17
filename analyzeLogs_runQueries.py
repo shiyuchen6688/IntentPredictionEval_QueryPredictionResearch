@@ -19,6 +19,7 @@ import pandas as pd
 import operator
 import collections
 import mysql.connector
+import unicodedata
 
 def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, numOpQueryCountDict):
     try:
@@ -862,7 +863,10 @@ def computeTupSet(queryRes, indices):
         result = ""
         for i in range(len(indices)):
             colIndex = indices[i]
-            result += str(row[colIndex])
+            try:
+                result += str(row[colIndex])
+            except:
+                result += unicodedata.normalize('NFKD', row[colIndex]).encode('ascii', 'ignore')
             if i < len(indices)-1:
                 result += ","
             resultSet.add(result)
