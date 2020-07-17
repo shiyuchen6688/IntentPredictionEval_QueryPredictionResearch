@@ -74,6 +74,16 @@ def executeNYCQueryWithIntent(sessQuery, configDict, queryVocabulary):
     intentCreationTime = float(time.time() - startTime)
     return (queryVocabulary, resObj, queryExecutionTime, intentCreationTime)
 
+def executeMINCQueryCursor(sessQuery, configDict):
+    cnx =  minc_mysql.connectToMinc(configDict)
+    cursor = cnx.cursor()
+    try:
+        cursor.execute(sessQuery)
+        return cursor
+    except:
+        print "Error in executing Query"
+        return None
+
 def executeMINCQuery(sessQuery, configDict):
     cnx =  minc_mysql.connectToMinc(configDict)
     cursor = cnx.cursor()

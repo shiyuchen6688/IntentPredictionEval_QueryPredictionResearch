@@ -879,8 +879,10 @@ def computeTupF1(predictedQueryRes, nextQueryRes, TP_cols):
     return tup_F1
 
 def execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery):
-    nextQueryRes = QExec.executeMINCQuery(nextQuery, evalExecObj.configDict)
-    predictedQueryRes = QExec.executeMINCQuery(predictedQuery, evalExecObj.configDict)
+    nextQueryCursor = QExec.executeMINCQueryCursor(nextQuery, evalExecObj.configDict)
+    predictedQueryCursor = QExec.executeMINCQueryCursor(predictedQuery, evalExecObj.configDict)
+    nextQueryRes = nextQueryCursor.fetchall()
+    predictedQueryRes = predictedQueryCursor.fetchall()
     if nextQueryRes is None and predictedQueryRes is None:
         return 1.0
     elif nextQueryRes is None or predictedQueryRes is None:
@@ -891,7 +893,7 @@ def execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery):
         return 0.0
     elif len(list(nextQueryRes)) > 0 and len(list(predictedQueryRes)) == 0:
         return 0.0
-    (col_F1, TP_cols, predictedQueryCols, nextQueryCols) = computeColF1(nextQueryRes, predictedQueryRes)
+    (col_F1, TP_cols, predictedQueryCols, nextQueryCols) = computeColF1(nextQueryCursor, predictedQueryCursor)
     #(pred_indices, next_indices) = find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols)
     tup_F1 = computeTupF1(predictedQueryRes, nextQueryRes, TP_cols)
     total_F1 = col_F1 * 0.2 + tup_F1 * 0.8
