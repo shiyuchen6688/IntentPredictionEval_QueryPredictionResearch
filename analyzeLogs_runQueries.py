@@ -823,7 +823,6 @@ def borrowQueryIfPossible(evalExecObj, predOpsObj, nextQuery):
     return (borrowedQuery, predictedQuery)
 
 def extractCols(cursor):
-    print "len(cursor): "+str(len(cursor))
     num_fields = len(cursor.description)
     field_names = [i[0] for i in cursor.description]
     return (num_fields, field_names)
