@@ -852,21 +852,21 @@ def find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols):
         next_indices.append(next_index)
     return (pred_indices, next_indices)
 
-def computeTupSet(queryCursor, colNames):
+def computeTupSet(queryRes, indices):
     resultSet = set()
-    for row in queryCursor:
+    for row in queryRes:
         result = ""
-        for i in range(len(colNames)):
-            col = colNames[i]
-            result += row[col]
-            if i < len(colNames)-1:
+        for i in range(len(indices)):
+            colIndex = indices[i]
+            result += row[colIndex]
+            if i < len(indices)-1:
                 result += ","
             resultSet.add(result)
     return resultSet
 
-def computeTupF1(predictedQueryCursor, nextQueryCursor, TP_cols):
-    nextTupSet = computeTupSet(nextQueryCursor, TP_cols)
-    predTupSet = computeTupSet(predictedQueryCursor, TP_cols)
+def computeTupF1(predictedQueryRes, nextQueryRes, pred_indices, next_indices):
+    nextTupSet = computeTupSet(nextQueryRes, next_indices)
+    predTupSet = computeTupSet(predictedQueryRes, pred_indices)
     TP_tups = list(nextTupSet & predTupSet)
     FP_tups = list(predTupSet - set(TP_tups))
     FN_tups = list(nextTupSet - set(TP_tups))
@@ -891,8 +891,11 @@ def execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery):
     elif len(list(nextQueryRes)) > 0 and len(list(predictedQueryRes)) == 0:
         return 0.0
     (col_F1, TP_cols, predictedQueryCols, nextQueryCols) = computeColF1(nextQueryCursor, predictedQueryCursor)
-    #(pred_indices, next_indices) = find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols)
-    tup_F1 = computeTupF1(predictedQueryCursor, nextQueryCursor, TP_cols)
+    (pred_indices, next_indices) = find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols)
+    if pred_indices is not None and next_indices is not None:
+        tup_F1 = computeTupF1(predictedQueryRes, nextQueryRes, pred_indices, next_indices)
+    else:
+        tup_F1 = 0.0
     total_F1 = col_F1 * 0.2 + tup_F1 * 0.8
     return total_F1
 
