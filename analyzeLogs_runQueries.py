@@ -903,6 +903,7 @@ def computeExecF1(evalExecObj, predOpsObj, nextQuery):
         total_F1 = execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery)
         print "NextQuery: " + nextQuery
         print "PredictedQuery: " + predictedQuery
+        print "total_F1: " + str(total_F1)
         # print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
         #print "BorrowedQuery: " + str(borrowedQuery)
         return (total_F1, borrowedQuery)
