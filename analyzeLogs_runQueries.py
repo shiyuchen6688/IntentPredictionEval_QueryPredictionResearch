@@ -879,7 +879,7 @@ def computeTupF1(predictedQueryRes, nextQueryRes, pred_indices, next_indices):
     FP_tups = list(predTupSet - set(TP_tups))
     FN_tups = list(nextTupSet - set(TP_tups))
     if len(TP_tups) == 0:
-        return 0.0
+        return (0.0, 0.0, 0.0)
     tup_prec = float(len(TP_tups)) / float(len(TP_tups) + len(FP_tups))
     tup_rec = float(len(TP_tups)) / float(len(TP_tups) + len(FN_tups))
     tup_F1 = float(2*tup_prec*tup_rec)/float(tup_prec+tup_rec)
