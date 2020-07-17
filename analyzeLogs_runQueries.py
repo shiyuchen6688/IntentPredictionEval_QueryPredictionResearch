@@ -18,6 +18,7 @@ from openpyxl import load_workbook
 import pandas as pd
 import operator
 import collections
+import mysql.connector
 
 def updateArrWithDictEntry(arr, evalOpsObjDict, epIndex, numOpQueryCountDict):
     try:
