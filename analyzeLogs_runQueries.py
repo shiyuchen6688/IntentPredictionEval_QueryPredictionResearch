@@ -843,7 +843,7 @@ def computeColF1(nextQueryCursor, predictedQueryCursor):
     #print TP_cols
     #print predictedQueryCols
     #print nextQueryCols
-    return (col_F1, TP_cols, predictedQueryCols, nextQueryCols)
+    return (col_F1, col_prec, col_rec, TP_cols, predictedQueryCols, nextQueryCols)
 
 def find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols):
     if TP_cols is None or len(TP_cols) == 0:
@@ -883,29 +883,33 @@ def computeTupF1(predictedQueryRes, nextQueryRes, pred_indices, next_indices):
     tup_prec = float(len(TP_tups)) / float(len(TP_tups) + len(FP_tups))
     tup_rec = float(len(TP_tups)) / float(len(TP_tups) + len(FN_tups))
     tup_F1 = float(2*tup_prec*tup_rec)/float(tup_prec+tup_rec)
-    return tup_F1
+    return (tup_F1, tup_prec, tup_rec)
 
 def execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery):
     (nextQueryCursor, nextQueryRes) = QExec.executeMINCQueryCursor(nextQuery, evalExecObj.configDict)
     (predictedQueryCursor, predictedQueryRes) = QExec.executeMINCQueryCursor(predictedQuery, evalExecObj.configDict)
     if nextQueryRes is None and predictedQueryRes is None:
-        return 1.0
+        return (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
     elif nextQueryRes is None or predictedQueryRes is None:
-        return 0.0
-    elif len(list(nextQueryRes)) == 0 and len(list(predictedQueryRes)) == 0:
-        return 1.0
+        return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     elif len(list(nextQueryRes)) == 0 and len(list(predictedQueryRes)) > 0:
-        return 0.0
+        return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     elif len(list(nextQueryRes)) > 0 and len(list(predictedQueryRes)) == 0:
-        return 0.0
-    (col_F1, TP_cols, predictedQueryCols, nextQueryCols) = computeColF1(nextQueryCursor, predictedQueryCursor)
+        return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    (col_F1, col_prec, col_rec, TP_cols, predictedQueryCols, nextQueryCols) = computeColF1(nextQueryCursor, predictedQueryCursor)
+    if len(list(nextQueryRes)) == 0 and len(list(predictedQueryRes)) == 0:
+        return (col_F1, col_prec, col_rec, 1.0, 1.0, 1.0, 0.2*col_F1+0.8, 0.2*col_prec+0.8, 0.2*col_rec+0.8)
     (pred_indices, next_indices) = find_matching_indices(TP_cols, predictedQueryCols, nextQueryCols)
     if pred_indices is not None and next_indices is not None:
-        tup_F1 = computeTupF1(predictedQueryRes, nextQueryRes, pred_indices, next_indices)
+        (tup_F1, tup_prec, tup_rec) = computeTupF1(predictedQueryRes, nextQueryRes, pred_indices, next_indices)
     else:
         tup_F1 = 0.0
+        tup_prec = 0.0
+        tup_rec = 0.0
     total_F1 = col_F1 * 0.2 + tup_F1 * 0.8
-    return total_F1
+    total_prec = col_prec * 0.2 + tup_prec * 0.8
+    total_rec = col_rec * 0.2 + tup_rec * 0.8
+    return (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec)
 
 def computeExecF1(evalExecObj, predOpsObj, nextQuery):
     borrow_or_reconstruct = evalExecObj.configDict['BORROW_OR_RECONSTRUCT_QUERY']
@@ -916,14 +920,14 @@ def computeExecF1(evalExecObj, predOpsObj, nextQuery):
     else:
         predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
     if predictedQuery.lower().strip().startswith("select") and nextQuery.lower().strip().startswith("select"):
-        total_F1 = execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery)
+        (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec) = execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery)
         print "NextQuery: " + nextQuery
         print "PredictedQuery: " + predictedQuery
-        print "total_F1: " + str(total_F1)
+        print "col_F1: "+ str(col_F1) + "col_prec: "+ str(col_prec) + "col_rec: "+ str(col_rec) + "tup_F1: "+ str(tup_F1) + "tup_prec: "+ str(tup_prec) + "tup_rec: "+ str(tup_rec) + "total_F1: " + str(total_F1) + "total_prec: " + str(total_prec) + "total_rec: " + str(total_rec)
         # print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
         #print "BorrowedQuery: " + str(borrowedQuery)
-        return (total_F1, borrowedQuery)
-    return (0.0, borrowedQuery)
+        return (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec, borrowedQuery)
+    return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, borrowedQuery)
 
 def executeExpectedQueries(evalExecObj):
     newEpFlg = 0
@@ -943,7 +947,15 @@ def executeExpectedQueries(evalExecObj):
     predOpsObj = None
     borrowedQueryCount = 0
     execF1Count = 0
+    execColF1 = 0.0
+    execColPrec = 0.0
+    execColRec = 0.0
+    execTupF1 = 0.0
+    execTupPrec = 0.0
+    execTupRec = 0.0
     execTotalF1 = 0.0
+    execTotalPrec = 0.0
+    execTotalRec = 0.0
     with open(evalExecObj.logFile) as f:
         for line in f:
             if line.startswith("#Episodes"):
@@ -984,16 +996,32 @@ def executeExpectedQueries(evalExecObj):
                 if curQueryIndex == rank:
                     predOpsObj = nextActualOps()
             elif line.startswith("---") and nextQuery is not None and predOpsObj is not None and nextQuery.lower().strip().startswith("select"):
-                (total_F1, borrowedQuery) = computeExecF1(evalExecObj, predOpsObj, nextQuery)
+                (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec, borrowedQuery) = computeExecF1(evalExecObj, predOpsObj, nextQuery)
                 if borrowedQuery == True:
                     borrowedQueryCount+=1
                 execF1Count += 1
+                execColF1 += col_F1
+                execColPrec += col_prec
+                execColRec += col_rec
+                execTupF1 += tup_F1
+                execTupPrec += tup_prec
+                execTupRec += tup_rec
                 execTotalF1 += total_F1
+                execTotalPrec += total_prec
+                execTotalRec += total_rec
                 #computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
             elif curQueryIndex == rank:
                     parseLineAddOp(line, predOpsObj)
+    avgColF1 = float(execColF1) / float(execF1Count)
+    avgColPrec = float(execColPrec) / float(execF1Count)
+    avgColRec = float(execColRec) / float(execF1Count)
+    avgTupF1 = float(execTupF1) / float(execF1Count)
+    avgTupPrec = float(execTupPrec) / float(execF1Count)
+    avgTupRec = float(execTupPrec) / float(execF1Count)
     avgExecF1 = float(execTotalF1) / float(execF1Count)
-    print "Avg Exec F1: "+str(avgExecF1)
+    avgExecPrec = float(execTotalPrec) / float(execF1Count)
+    avgExecRec = float(execTotalRec) / float(execF1Count)
+    print "avgColF1: "+str(avgColF1)+", avgColPrec: "+str(avgColPrec)+", avgColRec: "+str(avgColRec)+", avgTupF1: "+str(avgTupF1)+", avgTupPrec: "+str(avgTupPrec)+", avgTupRec: "+str(avgTupRec)+", avgExecF1: "+str(avgExecF1)+", avgExecPrec: "+str(avgExecPrec)+", avgExecRec: "+str(avgExecRec)
     print "Total Test #SELECT queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount) + ", #borrowedQuery: "+str(borrowedQueryCount)
     print "Total Test #INSERT queries: "+str(insQueryCount)+", #UPDATES: "+str(updQueryCount)+", #DELETES: "+str(delQueryCount)
     return
