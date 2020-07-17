@@ -835,7 +835,7 @@ def computeColF1(nextQueryCursor, predictedQueryCursor):
     FP_cols = list(set(predictedQueryCols) - set(TP_cols))
     FN_cols = list(set(nextQueryCols) - set(TP_cols))
     if len(TP_cols) == 0:
-        return (0.0, TP_cols, predictedQueryCols, nextQueryCols)
+        return (0.0, 0.0, 0.0, TP_cols, predictedQueryCols, nextQueryCols)
     col_prec = float(len(TP_cols))/float(len(TP_cols) + len(FP_cols))
     col_rec = float(len(TP_cols))/float(len(TP_cols) + len(FN_cols))
     col_F1 = float(2*col_prec*col_rec) / float(col_prec+col_rec)
@@ -923,7 +923,7 @@ def computeExecF1(evalExecObj, predOpsObj, nextQuery):
         (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec) = execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery)
         print "NextQuery: " + nextQuery
         print "PredictedQuery: " + predictedQuery
-        print "col_F1: "+ str(col_F1) + "col_prec: "+ str(col_prec) + "col_rec: "+ str(col_rec) + "tup_F1: "+ str(tup_F1) + "tup_prec: "+ str(tup_prec) + "tup_rec: "+ str(tup_rec) + "total_F1: " + str(total_F1) + "total_prec: " + str(total_prec) + "total_rec: " + str(total_rec)
+        print "col_F1: "+ str(col_F1) + ", col_prec: "+ str(col_prec) + ", col_rec: "+ str(col_rec) + ", tup_F1: "+ str(tup_F1) + ", tup_prec: "+ str(tup_prec) + ", tup_rec: "+ str(tup_rec) + ", total_F1: " + str(total_F1) + ", total_prec: " + str(total_prec) + ", total_rec: " + str(total_rec)
         # print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
         #print "BorrowedQuery: " + str(borrowedQuery)
         return (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec, borrowedQuery)
