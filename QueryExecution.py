@@ -79,10 +79,10 @@ def executeMINCQueryCursor(sessQuery, configDict):
     cursor = cnx.cursor()
     try:
         cursor.execute(sessQuery)
-        return cursor
+        return (cursor, cursor.fetchall())
     except:
         print "Error in executing Query"
-        return None
+        return (None, None)
 
 def executeMINCQuery(sessQuery, configDict):
     cnx =  minc_mysql.connectToMinc(configDict)

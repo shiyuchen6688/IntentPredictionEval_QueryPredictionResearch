@@ -879,10 +879,8 @@ def computeTupF1(predictedQueryRes, nextQueryRes, TP_cols):
     return tup_F1
 
 def execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery):
-    nextQueryCursor = QExec.executeMINCQueryCursor(nextQuery, evalExecObj.configDict)
-    predictedQueryCursor = QExec.executeMINCQueryCursor(predictedQuery, evalExecObj.configDict)
-    nextQueryRes = nextQueryCursor.fetchall()
-    predictedQueryRes = predictedQueryCursor.fetchall()
+    (nextQueryCursor, nextQueryRes) = QExec.executeMINCQueryCursor(nextQuery, evalExecObj.configDict)
+    (predictedQueryCursor, predictedQueryRes) = QExec.executeMINCQueryCursor(predictedQuery, evalExecObj.configDict)
     if nextQueryRes is None and predictedQueryRes is None:
         return 1.0
     elif nextQueryRes is None or predictedQueryRes is None:
