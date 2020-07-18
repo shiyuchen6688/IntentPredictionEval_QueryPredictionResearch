@@ -920,7 +920,7 @@ def computeExecF1(evalExecObj, predOpsObj, nextQuery):
     if borrow_or_reconstruct == "BORROW":
         (borrowedQuery, predictedQuery) = borrowQueryIfPossible(evalExecObj, predOpsObj, nextQuery)
     else:
-        CreateSQLFromIntentVec_selOpConst.printSQLOps(predOpsObj)
+        #CreateSQLFromIntentVec_selOpConst.printSQLOps(predOpsObj)
         predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
     if predictedQuery.lower().strip().startswith("select") and nextQuery.lower().strip().startswith("select"):
         (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec) = execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery)
