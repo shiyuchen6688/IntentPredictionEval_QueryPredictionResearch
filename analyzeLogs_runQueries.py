@@ -781,8 +781,10 @@ def appendOrderByPred(predictedQuery, predOpsObj):
 
 def createPredictedQuery(evalExecObj, predOpsObj):
     predictedQuery = predOpsObj.queryType.replace("'","")
-    predictedQuery = appendProjCols(predictedQuery, predOpsObj)
-    predictedQuery = appendTables(predictedQuery, predOpsObj)
+    if predOpsObj.projCols is not None:
+        predictedQuery = appendProjCols(predictedQuery, predOpsObj)
+    if predOpsObj.tables is not None:
+        predictedQuery = appendTables(predictedQuery, predOpsObj)
     if predOpsObj.selCols is not None or predOpsObj.joinPreds is not None:
         predictedQuery += " WHERE "
         predictedQuery = appendSelPreds(predictedQuery, predOpsObj, evalExecObj)
