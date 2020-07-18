@@ -967,6 +967,7 @@ def executeExpectedQueries(evalExecObj):
                 rank = int(line.strip().split(";")[numTokens - 3].split(":")[1])
                 if rank == -1:  # this can happen when all predicted queries are equally bad
                     rank = 0
+                rank = 0  # uncomment this line only when top-1 should be enabled
                 assert rank >= 0 and rank < int(evalExecObj.configDict['TOP_K'])
             if line.startswith("Next Query"):
                 nextQuery = line.strip().split(": ")[1].strip()
