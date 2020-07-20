@@ -959,7 +959,7 @@ def executeExpectedQueries(evalExecObj):
     execTotalF1 = 0.0
     execTotalPrec = 0.0
     execTotalRec = 0.0
-    borrow_or_reconstruct_top_k=int(configDict['BORROW_OR_RECONSTRUCT_TOP_K'])
+    borrow_or_reconstruct_top_k=int(evalExecObj.configDict['BORROW_OR_RECONSTRUCT_TOP_K'])
     assert borrow_or_reconstruct_top_k >= 1
     with open(evalExecObj.logFile) as f:
         for line in f:
