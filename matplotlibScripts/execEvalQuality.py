@@ -90,7 +90,7 @@ if __name__ == "__main__":
     rects2 = ax.bar(r2, tupF1, color='lawngreen', width = barwidth, edgecolor='black', label='F1(Tup)', hatch = 'O') 
     rects3 = ax.bar(r3, colF1, color='lightcoral', width = barwidth, edgecolor='black', label='F1(Col)', hatch='x') 
 
-    ax.set_title('Query Execution - Avg Quality Measures\n (Course Website)', fontsize=22)
+    ax.set_title('Query Execution - Avg F1-Scores\n (Course Website)', fontsize=22)
     ax.set_xticks(r1+barwidth)
     ax.set_xticklabels(('Q-Learn', 'RNN-S', 'CF-SVD', 'CF-Cos', 'RNN-H'), fontsize=25)
     #ax.set_yscale('log')
