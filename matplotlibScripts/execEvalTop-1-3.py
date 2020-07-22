@@ -81,11 +81,11 @@ if __name__ == "__main__":
     Types = 5
     barwidth = 1.0/(Types+2)
     
-    r1 = np.arange(len(borrowF1))
+    r1 = np.arange(len(top3_F1))
     r2 = [x+barwidth for x in r1]
     fig, ax = plt.subplots()
-    rects1 = ax.bar(r1, borrowF1, color='deepskyblue', width = barwidth, edgecolor='black', label='F1(Top-3)', hatch='*') 
-    rects2 = ax.bar(r2, reconstF1, color='lightcoral', width = barwidth, edgecolor='black', label='F1(Top-1)', hatch='x') 
+    rects1 = ax.bar(r1, top3_F1, color='deepskyblue', width = barwidth, edgecolor='black', label='F1(Top-3)', hatch='*') 
+    rects2 = ax.bar(r2, top1_F1, color='lightcoral', width = barwidth, edgecolor='black', label='F1(Top-1)', hatch='x') 
 
     ax.set_title('Query Execution - Top-3 vs. Top-1\n (Course Website)', fontsize=22)
     ax.set_xticks(r1+barwidth)
