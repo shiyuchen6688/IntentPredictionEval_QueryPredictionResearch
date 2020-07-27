@@ -169,6 +169,10 @@ def refineQTableUsingBellmanUpdate(qObj):
     #print "Expected number of refinement iterations: max("+str(len(qObj.queryVocab))+","+str(int(configDict['QL_REFINE_ITERS']))+")"
     #numRefineIters = max(len(qObj.queryVocab), int(configDict['QL_REFINE_ITERS']))
     # if len(qObj.queryVocab) * len(qObj.queryVocab)/10 <= int(configDict['QL_REFINE_ITERS']):
+    assert qObj.configDict['QL_REFINE_OR_NOT'] == 'YES' or qObj.configDict['QL_REFINE_OR_NOT'] == 'NO'
+    if qObj.configDict['QL_REFINE_OR_NOT'] == 'NO':
+        return # no experience replay
+    #============== Following is the code for something analogous to experience replay ================
     numRefineIters = int(configDict['QL_REFINE_ITERS'])
     print "Expected number of refinement iterations: " + str(numRefineIters)
     #else:
