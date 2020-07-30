@@ -78,21 +78,21 @@ if __name__ == "__main__":
      
     trainT = [4072.15274, 3364.55097] 
     Types = 1
-    barwidth = 1.0/(Types+2)
+    barwidth = 1.0/(Types+1)
     
     r1 = np.arange(len(trainT))
     fig, ax = plt.subplots()
     rects1 = ax.bar(r1, trainT, color='deepskyblue', width = barwidth, edgecolor='black', label='Train', hatch='*') 
 
-    ax.set_title('Effect of Experience Replay\nTrain Time (secs) (Course Website)', fontsize=28)
-    ax.set_xticks(r1+0.5*barwidth)
-    ax.set_xticklabels(('QL-ExpReplay', 'QL-NoExpReplay'), fontsize=24)
+    ax.set_title('Effect of Experience Replay\nTrain Time (secs) (Course Website)', fontsize=20)
+    ax.set_xticks(r1+0.01*barwidth)
+    ax.set_xticklabels(('QL-ExpReplay', 'QL-NoExpReplay'), fontsize=18)
     #ax.set_yscale('log')
     #ax.set_ylim(0.92, 0.96)
-    plt.ylabel('Time (secs)',fontsize=24)
-    plt.yticks(fontsize=25)
+    plt.ylabel('Time (secs)',fontsize=20)
+    plt.yticks(fontsize=20)
     #ax.tick_params(labelsize=16)
-    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=2, prop={'size':28})
+    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=2, prop={'size':20})
     
     #autolabel(rects1, "center")
     #autolabel(rects2, "center")
