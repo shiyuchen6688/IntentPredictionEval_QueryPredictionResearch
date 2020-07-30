@@ -90,14 +90,14 @@ if __name__ == "__main__":
     rects2 = ax.bar(r2, tupF1, color='lawngreen', width = barwidth, edgecolor='black', label='F1(Tup)', hatch = 'O') 
     rects3 = ax.bar(r3, colF1, color='lightcoral', width = barwidth, edgecolor='black', label='F1(Col)', hatch='x') 
 
-    ax.set_title('Effect of Experience Replay\n Avg Query Execution F1-Scores (Course Website)', fontsize=16)
+    ax.set_title('Effect of Experience Replay\n Avg Query Execution F1-Scores (Course Website)', fontsize=18)
     ax.set_xticks(r1+barwidth)
-    ax.set_xticklabels(('Q-Learn-ExpReplay', 'Q-Learn-NoExpReplay'), fontsize=20)
+    ax.set_xticklabels(('Q-Learn-ExpReplay', 'Q-Learn-NoExpReplay'), fontsize=25)
     #ax.set_yscale('log')
     #plt.ylabel('log-scale',fontsize=20)
     plt.yticks(np.arange(0, 1.1, 0.2),fontsize=20)
-    ax.tick_params(labelsize=16)
-    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=3, prop={'size':14})
+    ax.tick_params(labelsize=18)
+    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=3, prop={'size':18})
     
     #autolabel(rects1, "center")
     #autolabel(rects2, "center")
