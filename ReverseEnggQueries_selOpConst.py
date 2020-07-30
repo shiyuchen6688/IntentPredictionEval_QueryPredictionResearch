@@ -375,13 +375,17 @@ def refineIntentForQuery(threadID, predictedY, topKCandidateVector, schemaDicts,
     # Step 1: regenerate the query ops from the topKCandidateVector
     # print "-----------Original SQL----------------"
     predictedIntentObj = CreateSQLFromIntentVec_selOpConst.regenerateSQL(predictedY, topKCandidateVector, schemaDicts)
-    curIntentObj = None
-    if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentBitVec is not None:
-        curIntentObj = CreateSQLFromIntentVec_selOpConst.regenerateSQL(None, curIntentBitVec, schemaDicts)
-    # Step 2: refine SQL violations
-    intentObj = CreateSQLFromIntentVec_selOpConst.fixSQLViolations(predictedIntentObj, precOrRecallFavor, curIntentObj)
-    # print "-----------Refined SQL-----------------"
-    # intentObj = CreateSQLFromIntentVec_selOpConst.regenerateSQL(intentObj.intentBitVec, schemaDicts)
+    assert configDict['RNN_NOVEL_FIX_SQL_VIOLATIONS'] == 'True' or configDict['RNN_NOVEL_FIX_SQL_VIOLATIONS'] == 'False'
+    if configDict['RNN_NOVEL_FIX_SQL_VIOLATIONS'] == 'True':
+        curIntentObj = None
+        if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentBitVec is not None:
+            curIntentObj = CreateSQLFromIntentVec_selOpConst.regenerateSQL(None, curIntentBitVec, schemaDicts)
+        # Step 2: refine SQL violations
+        intentObj = CreateSQLFromIntentVec_selOpConst.fixSQLViolations(predictedIntentObj, precOrRecallFavor, curIntentObj)
+        # print "-----------Refined SQL-----------------"
+        # intentObj = CreateSQLFromIntentVec_selOpConst.regenerateSQL(intentObj.intentBitVec, schemaDicts)
+    else:
+        intentObj = predictedIntentObj
     return intentObj
 
 def refineIntentForTable(threadID, predictedY, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
