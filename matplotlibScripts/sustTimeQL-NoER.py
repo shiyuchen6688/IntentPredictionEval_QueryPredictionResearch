@@ -79,20 +79,20 @@ if __name__ == "__main__":
     trainT_course = [4072.15274, 3364.55097] 
     trainT_bustracker = [276.5544, 249.517]
     Types = 2
-    barwidth = 1.0/(Types+12
+    barwidth = 1.0/(Types+2)
     
     r1 = np.arange(len(trainT_course))
     r2 = [x+barwidth for x in r1]
     fig, ax = plt.subplots()
     rects1 = ax.bar(r1, trainT_course, color='deepskyblue', width = barwidth, edgecolor='black', label='Course Website', hatch='*') 
-    rects2 = ax.bar(r1, trainT_bustracker, color='yellow', width = barwidth, edgecolor='black', label='BusTracker', hatch='O') 
+    rects2 = ax.bar(r2, trainT_bustracker, color='orange', width = barwidth, edgecolor='black', label='BusTracker', hatch='O') 
 
-    ax.set_title('Effect of Experience Replay\nTrain Time (secs)', fontsize=20)
+    ax.set_title('Effect of Experience Replay\nTrain Time (secs)', fontsize=25)
     ax.set_xticks(r1+0.5*barwidth)
     ax.set_xticklabels(('QL-ExpReplay', 'QL-NoExpReplay'), fontsize=18)
     #ax.set_yscale('log')
     #ax.set_ylim(0.92, 0.96)
-    plt.ylabel('Train Time (secs)',fontsize=20)
+    plt.ylabel('Train Time (secs)',fontsize=25)
     plt.yticks(fontsize=20)
     #ax.tick_params(labelsize=16)
     ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=2, prop={'size':20})

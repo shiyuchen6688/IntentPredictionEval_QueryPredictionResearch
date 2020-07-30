@@ -81,22 +81,22 @@ if __name__ == "__main__":
     Types = 2
     barwidth = 1.0/(Types+2)
     
-    r1 = np.arange(len(fscore))
+    r1 = np.arange(len(fscore_course))
     r2 = [x+barwidth for x in r1]
     fig, ax = plt.subplots()
     rects1 = ax.bar(r1, fscore_course, color='deepskyblue', width = barwidth, edgecolor='black', label='Course Website', hatch='*') 
-    rects2 = ax.bar(r2, fscore_bustracker, color='gold', width = barwidth, edgecolor='black', label='BusTracker', hatch = 'O') 
+    rects2 = ax.bar(r2, fscore_bustracker, color='orange', width = barwidth, edgecolor='black', label='BusTracker', hatch = 'O') 
 
-    ax.set_title('Effect of Experience Replay\nFragment Prediction Quality', fontsize=42)
-    ax.set_xticks(r1+barwidth)
-    ax.set_xticklabels(('QL-ExpReplay', 'QL-NoExpReplay'), fontsize=28)
+    ax.set_title('Effect of Experience Replay\nFragment Prediction Quality', fontsize=28)
+    ax.set_xticks(r1+0.5*barwidth)
+    ax.set_xticklabels(('QL-ExpReplay', 'QL-NoExpReplay'), fontsize=22)
     #ax.set_yscale('log')
     ax.set_ylim(0.0, 1.1)
-    plt.ylabel('Test-F1',fontsize=20)
+    plt.ylabel('Test-F1',fontsize=25)
     #plt.yticks(np.arange(0.92, 0.97, 0.02),fontsize=25)
-    plt.yticks(fontsize=25)
+    plt.yticks(fontsize=22)
     #ax.tick_params(labelsize=16)
-    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=3, prop={'size':26})
+    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=2, prop={'size':22})
     
     #autolabel(rects1, "center")
     #autolabel(rects2, "center")
