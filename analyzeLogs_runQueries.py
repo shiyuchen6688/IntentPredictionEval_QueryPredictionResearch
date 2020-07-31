@@ -1004,7 +1004,19 @@ def executeExpectedQueries(evalExecObj):
                 if curQueryIndex == rank:
                     predOpsObj = nextActualOps()
             elif line.startswith("---") and nextQuery is not None and predOpsObj is not None and nextQuery.lower().strip().startswith("select"):
-                (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec, borrowedQuery) = computeExecF1(evalExecObj, predOpsObj, nextQuery)
+                try:
+                    (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec, borrowedQuery) = computeExecF1(evalExecObj, predOpsObj, nextQuery)
+                except:
+                    col_F1 = 0.0
+                    col_prec = 0.0
+                    col_rec = 0.0
+                    tup_F1 = 0.0
+                    tup_prec = 0.0
+                    tup_rec = 0.0
+                    total_F1 = 0.0
+                    total_prec = 0.0
+                    total_rec = 0.0
+                    borrowedQuery = False
                 if borrowedQuery == True:
                     borrowedQueryCount+=1
                 execF1Count += 1
