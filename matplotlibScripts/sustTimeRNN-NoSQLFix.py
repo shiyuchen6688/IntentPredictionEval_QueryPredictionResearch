@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     ax.set_title('Effect of SQL Violation Fixes\nPrediction Time (secs)', fontsize=25)
     ax.set_xticks(r1+0.5*barwidth)
-    ax.set_xticklabels(('SQLFix', 'NoSQLFix'), fontsize=25)
+    ax.set_xticklabels(('SQLFixes', 'NoSQLFixes'), fontsize=25)
     #ax.set_yscale('log')
     #ax.set_ylim(0.92, 0.96)
     plt.ylabel('Prediction Time (secs)',fontsize=25)
