@@ -87,9 +87,9 @@ if __name__ == "__main__":
     rects1 = ax.bar(r1, predT_course, color='deepskyblue', width = barwidth, edgecolor='black', label='Course Website', hatch='*') 
     rects2 = ax.bar(r2, predT_bustracker, color='orange', width = barwidth, edgecolor='black', label='BusTracker', hatch='O') 
 
-    ax.set_title('Effect of SQL Violation Fixes\nSynthesis-based RNNs Prediction Time (secs)', fontsize=25)
+    ax.set_title('Effect of SQL Violation Fixes\nPrediction Time (secs)', fontsize=25)
     ax.set_xticks(r1+0.5*barwidth)
-    ax.set_xticklabels(('SQLFix', 'NoSQLFix'), fontsize=18)
+    ax.set_xticklabels(('SQLFix', 'NoSQLFix'), fontsize=25)
     #ax.set_yscale('log')
     #ax.set_ylim(0.92, 0.96)
     plt.ylabel('Prediction Time (secs)',fontsize=25)

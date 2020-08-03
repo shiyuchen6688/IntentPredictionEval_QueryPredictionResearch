@@ -86,11 +86,11 @@ if __name__ == "__main__":
     r2 = [x+barwidth for x in r1]
     r3 = [x+barwidth for x in r2]
     fig, ax = plt.subplots()
-    rects1 = ax.bar(r1, fscore, color='deepskyblue', width = barwidth, edgecolor='black', label='F1-Score', hatch='*') 
-    rects2 = ax.bar(r2, precision, color='lawngreen', width = barwidth, edgecolor='black', label='Precision', hatch = 'O') 
-    rects3 = ax.bar(r3, recall, color='lightcoral', width = barwidth, edgecolor='black', label='Recall', hatch='x') 
+    rects1 = ax.bar(r1, fscore, color='lightskyblue', width = barwidth, edgecolor='black', label='F1-Score', hatch='*') 
+    rects2 = ax.bar(r2, precision, color='orange', width = barwidth, edgecolor='black', label='Precision', hatch = 'O') 
+    rects3 = ax.bar(r3, recall, color='gold', width = barwidth, edgecolor='black', label='Recall', hatch='x') 
 
-    ax.set_title('Effect of SQL Violation Fixes\nSynthesis-based RNNs (BusTracker)', fontsize=42)
+    ax.set_title('Effect of SQL Violation Fixes\n(BusTracker)', fontsize=28)
     ax.set_xticks(r1+barwidth)
     ax.set_xticklabels(('SQLFixes', 'NoSQLFixes'), fontsize=28)
     #ax.set_yscale('log')
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     #plt.yticks(np.arange(0.92, 0.97, 0.02),fontsize=25)
     plt.yticks(fontsize=25)
     #ax.tick_params(labelsize=16)
-    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=3, prop={'size':26})
+    ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=3, prop={'size':20})
     
     #autolabel(rects1, "center")
     #autolabel(rects2, "center")
