@@ -323,7 +323,7 @@ class evalExec:
         self.curEpisode = 0
         self.schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(self.configDict)
         self.colTypeDict = ReverseEnggQueries_selOpConst.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
-        '''
+
         assert self.configDict['BORROW_OR_RECONSTRUCT_QUERY'] == "BORROW" or self.configDict['BORROW_OR_RECONSTRUCT_QUERY'] == "RECONSTRUCT"
         if self.configDict['BORROW_OR_RECONSTRUCT_QUERY'] == "BORROW":
             try:
@@ -336,7 +336,7 @@ class evalExec:
                 QR.writeToPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle", self.SQLFragmentDict)
                 print "len(SQLFragmentDict): " + str(len(self.SQLFragmentDict))
                 printSQLFragmentDict(self.SQLFragmentDict)
-        '''
+
 
 
 class nextActualOps:
@@ -1115,9 +1115,9 @@ if __name__ == "__main__":
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
     evalExecObj = evalExec(args.config, args.log)
-    findTableRowStats(evalExecObj)
+    #findTableRowStats(evalExecObj)
 
-    #executeExpectedQueries(evalExecObj)
+    executeExpectedQueries(evalExecObj)
 
     #evalOpsObj = evalOps(args.config, args.log)
     #evalOpsObj = createEvalMetricsOpWise(evalOpsObj)
