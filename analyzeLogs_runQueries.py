@@ -1112,9 +1112,9 @@ if __name__ == "__main__":
     #parser.add_argument("-lineNum", help="line Number to analyze", type=int, required=True)
     args = parser.parse_args()
     evalExecObj = evalExec(args.config, args.log)
-    #findTableRowStats(evalExecObj)
+    findTableRowStats(evalExecObj)
 
-    executeExpectedQueries(evalExecObj)
+    #executeExpectedQueries(evalExecObj)
 
     #evalOpsObj = evalOps(args.config, args.log)
     #evalOpsObj = createEvalMetricsOpWise(evalOpsObj)
