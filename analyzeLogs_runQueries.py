@@ -323,6 +323,7 @@ class evalExec:
         self.curEpisode = 0
         self.schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(self.configDict)
         self.colTypeDict = ReverseEnggQueries_selOpConst.readColDict(getConfig(self.configDict['MINC_COL_TYPES']))
+        '''
         assert self.configDict['BORROW_OR_RECONSTRUCT_QUERY'] == "BORROW" or self.configDict['BORROW_OR_RECONSTRUCT_QUERY'] == "RECONSTRUCT"
         if self.configDict['BORROW_OR_RECONSTRUCT_QUERY'] == "BORROW":
             try:
@@ -335,6 +336,8 @@ class evalExec:
                 QR.writeToPickleFile(getConfig(self.configDict['PICKLE_TEMP_OUTPUT_DIR'])+"SQLFragmentDict.pickle", self.SQLFragmentDict)
                 print "len(SQLFragmentDict): " + str(len(self.SQLFragmentDict))
                 printSQLFragmentDict(self.SQLFragmentDict)
+        '''
+
 
 class nextActualOps:
     def __init__(self):
