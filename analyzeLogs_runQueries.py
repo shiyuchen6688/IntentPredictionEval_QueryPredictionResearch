@@ -728,7 +728,7 @@ def appendSelPreds(predictedQuery, predOpsObj, evalExecObj):
                                     elif opSym == ">=" or opSym == ">":
                                         strToAppend = selCol + " " + opSym + " " + quoteModify(constBinToks[0], includeQuote)
                                     elif opSym == "<>":
-                                        strToAppend = selCol + "<>" + quoteModify(constBinToks[0], includeQuote) + "AND" + selCol + "<>" + quoteModify(constBinToks[1], includeQuote)
+                                        strToAppend = selCol + "<=" + quoteModify(constBinToks[0], includeQuote) + "AND" + selCol + ">=" + quoteModify(constBinToks[1], includeQuote)
                                     elif opSym == "LIKE":
                                         strToAppend = "(" + selCol + "LIKE" + quoteModify(constBinToks[0], includeQuote) + "OR" + selCol + "LIKE" + quoteModify(constBinToks[1], includeQuote) + ")"
     if strToAppend != "":
