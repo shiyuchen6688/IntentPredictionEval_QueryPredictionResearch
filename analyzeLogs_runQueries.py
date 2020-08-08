@@ -920,20 +920,22 @@ def computeExecF1(evalExecObj, predOpsObj, nextQuery):
     borrow_or_reconstruct = evalExecObj.configDict['BORROW_OR_RECONSTRUCT_QUERY']
     assert borrow_or_reconstruct == "BORROW" or borrow_or_reconstruct == "RECONSTRUCT"
     borrowedQuery = False
+    query_gen_time = time.time()
     if borrow_or_reconstruct == "BORROW":
         (borrowedQuery, predictedQuery) = borrowQueryIfPossible(evalExecObj, predOpsObj, nextQuery)
     else:
         #CreateSQLFromIntentVec_selOpConst.printSQLOps(predOpsObj)
         predictedQuery = createPredictedQuery(evalExecObj, predOpsObj)
+    query_gen_time = float(time.time() - query_gen_time)
     if predictedQuery.lower().strip().startswith("select") and nextQuery.lower().strip().startswith("select"):
         (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec) = execF1(evalExecObj, predOpsObj, predictedQuery, nextQuery)
         print "NextQuery: " + nextQuery
         print "PredictedQuery: " + predictedQuery
-        print "col_F1: "+ str(col_F1) + ", col_prec: "+ str(col_prec) + ", col_rec: "+ str(col_rec) + ", tup_F1: "+ str(tup_F1) + ", tup_prec: "+ str(tup_prec) + ", tup_rec: "+ str(tup_rec) + ", total_F1: " + str(total_F1) + ", total_prec: " + str(total_prec) + ", total_rec: " + str(total_rec)
+        print "col_F1: "+ str(col_F1) + ", col_prec: "+ str(col_prec) + ", col_rec: "+ str(col_rec) + ", tup_F1: "+ str(tup_F1) + ", tup_prec: "+ str(tup_prec) + ", tup_rec: "+ str(tup_rec) + ", total_F1: " + str(total_F1) + ", total_prec: " + str(total_prec) + ", total_rec: " + str(total_rec) + ", query_gen_time: " + str(query_gen_time)
         # print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
         #print "BorrowedQuery: " + str(borrowedQuery)
         return (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec, borrowedQuery)
-    return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, borrowedQuery)
+    return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, borrowedQuery, query_gen_time)
 
 def executeExpectedQueries(evalExecObj):
     newEpFlg = 0
@@ -962,6 +964,7 @@ def executeExpectedQueries(evalExecObj):
     execTotalF1 = 0.0
     execTotalPrec = 0.0
     execTotalRec = 0.0
+    avg_query_gen_time = 0.0
     borrow_or_reconstruct_top_k=int(evalExecObj.configDict['BORROW_OR_RECONSTRUCT_TOP_K'])
     assert borrow_or_reconstruct_top_k >= 1
     with open(evalExecObj.logFile) as f:
@@ -1008,7 +1011,7 @@ def executeExpectedQueries(evalExecObj):
                     predOpsObj = nextActualOps()
             elif line.startswith("---") and nextQuery is not None and predOpsObj is not None and nextQuery.lower().strip().startswith("select"):
                 try:
-                    (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec, borrowedQuery) = computeExecF1(evalExecObj, predOpsObj, nextQuery)
+                    (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec, borrowedQuery, query_gen_time) = computeExecF1(evalExecObj, predOpsObj, nextQuery)
                 except:
                     col_F1 = 0.0
                     col_prec = 0.0
@@ -1020,6 +1023,7 @@ def executeExpectedQueries(evalExecObj):
                     total_prec = 0.0
                     total_rec = 0.0
                     borrowedQuery = False
+                    query_gen_time = 0.0
                 if borrowedQuery == True:
                     borrowedQueryCount+=1
                 execF1Count += 1
@@ -1032,6 +1036,7 @@ def executeExpectedQueries(evalExecObj):
                 execTotalF1 += total_F1
                 execTotalPrec += total_prec
                 execTotalRec += total_rec
+                avg_query_gen_time += query_gen_time
                 #computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
             elif curQueryIndex == rank:
                     parseLineAddOp(line, predOpsObj)
@@ -1044,9 +1049,11 @@ def executeExpectedQueries(evalExecObj):
     avgExecF1 = float(execTotalF1) / float(execF1Count)
     avgExecPrec = float(execTotalPrec) / float(execF1Count)
     avgExecRec = float(execTotalRec) / float(execF1Count)
+    avg_query_gen_time = float(avg_query_gen_time) / float(borrowedQueryCount)
     print "avgColF1: "+str(avgColF1)+", avgColPrec: "+str(avgColPrec)+", avgColRec: "+str(avgColRec)+", avgTupF1: "+str(avgTupF1)+", avgTupPrec: "+str(avgTupPrec)+", avgTupRec: "+str(avgTupRec)+", avgExecF1: "+str(avgExecF1)+", avgExecPrec: "+str(avgExecPrec)+", avgExecRec: "+str(avgExecRec)
     print "Total Test #SELECT queries: " +str(nextQueryCount)+", #misses: "+str(missedNextQueryExec) +", #zeroRes: "+str(zeroResCount)+", #nonZeroRes: "+str(nonZeroResCount) + ", #borrowedQuery: "+str(borrowedQueryCount)
     print "Total Test #INSERT queries: "+str(insQueryCount)+", #UPDATES: "+str(updQueryCount)+", #DELETES: "+str(delQueryCount)
+    print "Average Query Reconstruction Time: "+str(avg_query_gen_time)
     return
 '''
     def createEvalMetricsOpWise(evalOpsObj):
