@@ -82,7 +82,7 @@ if __name__ == "__main__":
     Types = 2
     barwidth = 1.0/(Types+2)
     
-    r1 = np.arange(len(rnn_fscore))
+    r1 = np.arange(len(rnn_time))
     r2 = [x+barwidth for x in r1]
     r3 = [x+barwidth for x in r2]
     fig, ax = plt.subplots()
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     ax.set_xticks(r1+barwidth)
     ax.set_xticklabels(('LAST-1', 'LAST-3'), fontsize=22)
     #ax.set_yscale('log')
-    ax.set_ylim(0.0, 1.1)
+    #ax.set_ylim(0.0, 1.1)
     plt.ylabel('Training Time (secs)',fontsize=25)
     #plt.yticks(np.arange(0.92, 0.97, 0.02),fontsize=22)
     plt.yticks(fontsize=22)
