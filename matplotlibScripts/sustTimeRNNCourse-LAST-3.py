@@ -76,9 +76,9 @@ if __name__ == "__main__":
     font = {'size'   : 14}
     plt.rc('font', **font)
      
-    rnn_fscore = [0.810299615, 0.197518795] 
-    lstm_fscore = [0.796741461, 0.194356073] 
-    gru_fscore = [0.704975968, 0.204681592]
+    rnn_time = [43725.25052, 45814.92543] 
+    lstm_time = [46438.90976, 49337.15623] 
+    gru_time = [44940.66064, 48311.26837]
     Types = 2
     barwidth = 1.0/(Types+2)
     
@@ -86,16 +86,16 @@ if __name__ == "__main__":
     r2 = [x+barwidth for x in r1]
     r3 = [x+barwidth for x in r2]
     fig, ax = plt.subplots()
-    rects1 = ax.bar(r1, rnn_fscore, color='deepskyblue', width = barwidth, edgecolor='black', label='RNN-S', hatch='*') 
-    rects2 = ax.bar(r2, lstm_fscore, color='lawngreen', width = barwidth, edgecolor='black', label='LSTM-S', hatch = 'O') 
-    rects3 = ax.bar(r3, gru_fscore, color='lightcoral', width = barwidth, edgecolor='black', label='GRU-S', hatch='x') 
+    rects1 = ax.bar(r1, rnn_time, color='deepskyblue', width = barwidth, edgecolor='black', label='RNN-S', hatch='*') 
+    rects2 = ax.bar(r2, lstm_time, color='lawngreen', width = barwidth, edgecolor='black', label='LSTM-S', hatch = 'O') 
+    rects3 = ax.bar(r3, gru_time, color='lightcoral', width = barwidth, edgecolor='black', label='GRU-S', hatch='x') 
 
-    ax.set_title('Effect of Session Context\nFragment Quality(Course Website)', fontsize=24)
+    ax.set_title('Effect of Session Context\nTraining Time(Course Website)', fontsize=24)
     ax.set_xticks(r1+barwidth)
     ax.set_xticklabels(('LAST-1', 'LAST-3'), fontsize=22)
     #ax.set_yscale('log')
     ax.set_ylim(0.0, 1.1)
-    plt.ylabel('Test F1',fontsize=25)
+    plt.ylabel('Training Time (secs)',fontsize=25)
     #plt.yticks(np.arange(0.92, 0.97, 0.02),fontsize=22)
     plt.yticks(fontsize=22)
     #ax.tick_params(labelsize=16)
