@@ -76,9 +76,9 @@ if __name__ == "__main__":
     font = {'size'   : 14}
     plt.rc('font', **font)
      
-    RNNF1 = [0.729, 0.0] 
-    LSTMF1 = [, 0.0] 
-    GRUF1 = [, 0.0]
+    RNNF1 = [0.729, 0.04509] 
+    LSTMF1 = [0.724, 0.03924] 
+    GRUF1 = [0.5458, 0.04256]
     Types = 2
     barwidth = 1.0/(Types+2)
     
