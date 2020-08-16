@@ -1038,7 +1038,7 @@ def executeExpectedQueries(evalExecObj):
                 execTotalRec += total_rec
                 avg_query_gen_time += query_gen_time
                 #computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
-                print("borrowedQueryCount: "+str(borrowedQueryCount))
+                #print("borrowedQueryCount: "+str(borrowedQueryCount))
             elif curQueryIndex == rank:
                     parseLineAddOp(line, predOpsObj)
     avgColF1 = float(execColF1) / float(execF1Count)
