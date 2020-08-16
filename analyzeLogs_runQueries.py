@@ -933,7 +933,7 @@ def computeExecF1(evalExecObj, predOpsObj, nextQuery):
         print "PredictedQuery: " + predictedQuery
         print "col_F1: "+ str(col_F1) + ", col_prec: "+ str(col_prec) + ", col_rec: "+ str(col_rec) + ", tup_F1: "+ str(tup_F1) + ", tup_prec: "+ str(tup_prec) + ", tup_rec: "+ str(tup_rec) + ", total_F1: " + str(total_F1) + ", total_prec: " + str(total_prec) + ", total_rec: " + str(total_rec) + ", query_gen_time: " + str(query_gen_time)
         # print "PredictedSQLFragStr: " + predictedSQLFragStr + "\n"
-        print "BorrowedQuery: " + str(borrowedQuery)
+        #print "BorrowedQuery: " + str(borrowedQuery)
         return (col_F1, col_prec, col_rec, tup_F1, tup_prec, tup_rec, total_F1, total_prec, total_rec, borrowedQuery)
     return (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, borrowedQuery, query_gen_time)
 
@@ -1038,6 +1038,7 @@ def executeExpectedQueries(evalExecObj):
                 execTotalRec += total_rec
                 avg_query_gen_time += query_gen_time
                 #computeF1(evalOpsObj, predOpsObj, nextActualOpsObj)
+                print("borrowedQueryCount: "+str(borrowedQueryCount))
             elif curQueryIndex == rank:
                     parseLineAddOp(line, predOpsObj)
     avgColF1 = float(execColF1) / float(execF1Count)
