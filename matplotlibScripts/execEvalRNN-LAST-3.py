@@ -82,7 +82,7 @@ if __name__ == "__main__":
     Types = 2
     barwidth = 1.0/(Types+2)
     
-    r1 = np.arange(len(totF1))
+    r1 = np.arange(len(RNNF1))
     r2 = [x+barwidth for x in r1]
     r3 = [x+barwidth for x in r2]
     fig, ax = plt.subplots()
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     ax.set_xticks(r1+barwidth)
     ax.set_xticklabels(('LAST-1', 'LAST-3'), fontsize=28)
     #ax.set_yscale('log')
-    #plt.ylabel('log-scale',fontsize=20)
+    plt.ylabel('Test F1',fontsize=20)
     plt.yticks(np.arange(0, 1.1, 0.2),fontsize=20)
     ax.tick_params(labelsize=18)
     ax.legend(bbox_to_anchor=(0.5,-0.05), loc='upper center', ncol=3, prop={'size':18})
