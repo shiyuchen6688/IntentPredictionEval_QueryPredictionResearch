@@ -14,7 +14,12 @@ except ImportError:
     pass
 
 def total_size(o, handlers={}, verbose=False):
-    """ Returns the approximate memory footprint an object and all of its contents.
+    """ 
+    Returns the approximate memory footprint an object and all of its contents.
+
+    This code is borrowed from the Internet and is not guaranteed to be accurate.
+
+    The best way to measure memory consumption is to use a memory profiler or to use "htop" on Linux to examine memory consumption by each process.
 
     Automatically finds the contents of the following builtin containers and
     their subclasses:  tuple, list, deque, dict, set and frozenset.
