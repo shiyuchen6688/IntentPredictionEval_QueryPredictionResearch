@@ -1,6 +1,6 @@
 # About this repo:
 
-This codebase requires the SQL fragment vectors to be pre-created and fed as input to each of the algorithms here.
+This codebase was written in Python 2.7 and requires the SQL fragment vectors to be pre-created and fed as input to each of the algorithms here.
 
 * QLearning.py: This code uses tabular version of Q-Learning to predict the SQL fragments
 * QLearning_selOpConst.py: This code uses Q-Learning to predict SQL fragment vectors with constant bins
