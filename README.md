@@ -1,5 +1,7 @@
 # About this repo:
 
+This is a part of our work towards our paper https://dl.acm.org/doi/10.1145/3442338
+
 This codebase was written in Python 2.7 and requires the SQL fragment bit-vectors to be pre-created and fed as input to each of the algorithms here.
 
 * QLearning.py: This code uses tabular version of Q-Learning to predict the SQL fragments
