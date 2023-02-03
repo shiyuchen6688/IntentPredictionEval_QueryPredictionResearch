@@ -15,8 +15,12 @@ import pandas as pd
 from numpy import dot
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
-import keras
+print("before importing kera")
+# import keras
+print("after importing kera")
+print("before importing tf")
 import tensorflow as tf
+print("after importing tf")
 from keras import backend as K
 from keras.datasets import imdb
 from keras.preprocessing import sequence
@@ -127,7 +131,7 @@ def initializeRNN(n_features, n_memUnits, configDict):
         modelRNN.add(Dropout(0.5))
         modelRNN.add(BatchNormalization())
         modelRNN.add(Dense(256, activation='relu'))  # However this size of weight matrix 256 * 100,000 could potentially blow up
-        #print "Inside MultiLayer RNN"
+        #print("Inside MultiLayer RNN")
         modelRNN.add(Dropout(0.25))
         modelRNN.add(BatchNormalization())
         modelRNN.add(Dense(n_features, activation="sigmoid"))
@@ -212,17 +216,17 @@ def predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_
         curSessIntent = sessionStreamDict[curSessQueryID]
         intentStrList = createCharListFromIntent(curSessIntent, configDict)
         testX.append(intentStrList)
-    #print "Appended charList sessID: "+str(sessID)+", queryID: "+str(queryID)
+    #print("Appended charList sessID: "+str(sessID)+", queryID: "+str(queryID))
     # modify testX to be compatible with the RNN prediction
     testX = np.array(testX)
     testX = testX.reshape(1, testX.shape[0], testX.shape[1])
     if len(testX) < max_lookback:
         testX = pad_sequences(testX, maxlen=max_lookback, padding='pre')
-    #print "Padded sequences sessID: " + str(sessID) + ", queryID: " + str(queryID)
+    #print("Padded sequences sessID: " + str(sessID) + ", queryID: " + str(queryID))
     batchSize = min(int(configDict['ACTIVE_BATCH_SIZE']), len(testX))
     predictedY = modelRNNThread.predict(testX, batch_size = batchSize)
     predictedY = predictedY[0][predictedY.shape[1] - 1]
-    #print "Completed prediction: " + str(sessID) + ", queryID: " + str(queryID)
+    #print("Completed prediction: " + str(sessID) + ", queryID: " + str(queryID))
     return predictedY
 
 
@@ -235,7 +239,7 @@ def partitionPrevQueriesAmongThreads(sessionDictCurThread, sampledQueryHistory, 
         return partitionPrevQueriesAmongThreadsSample(sampledQueryHistory, numSubThreads)
 
 def partitionPrevQueriesAmongThreadsSample(sampledQueryHistory, numSubThreads):
-    #print "numSubThreads: "+str(numSubThreads)+", len(sampledQueryhistory): "+str(len(sampledQueryHistory))
+    #print("numSubThreads: "+str(numSubThreads)+", len(sampledQueryhistory): "+str(len(sampledQueryHistory)))
     queryPartitions = {}
     for i in range(numSubThreads):
         queryPartitions[i] = []
@@ -311,7 +315,7 @@ def singleThreadedTopKDetectionFull(predictedY, cosineSimDict, curSessID, curQue
     return cosineSimDict
 
 
-def multiThreadedTopKDetection((threadID, subThreadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)):
+def multiThreadedTopKDetection(threadID, subThreadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict):
     assert configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'SAMPLE' or configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL'
     if configDict['RNN_QUERY_HISTORY_SAMPLE_OR_FULL'] == 'FULL':
         return multiThreadedTopKDetectionFull((threadID, subThreadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict))
@@ -319,19 +323,19 @@ def multiThreadedTopKDetection((threadID, subThreadID, queryPartition, predicted
         return multiThreadedTopKDetectionSample((threadID, subThreadID, queryPartition, predictedY, sessionStreamDict, configDict))
 
 
-def multiThreadedTopKDetectionSample((threadID, subThreadID, queryPartition, predictedY, sessionStreamDict, configDict)):
+def multiThreadedTopKDetectionSample(threadID, subThreadID, queryPartition, predictedY, sessionStreamDict, configDict):
     localCosineSimDict = {}
     for sessQueryID in queryPartition:
         queryIntent = sessionStreamDict[sessQueryID]
         #cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
         cosineSim = computeBinaryCrossEntropy(predictedY, queryIntent)
         localCosineSimDict[sessQueryID] = cosineSim
-    #print localCosineSimDict
+    #print(localCosineSimDict)
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+"_"+str(subThreadID)+".pickle",localCosineSimDict)
     return localCosineSimDict
 
 
-def multiThreadedTopKDetectionFull((threadID, subThreadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict)):
+def multiThreadedTopKDetectionFull(threadID, subThreadID, queryPartition, predictedY, curSessID, curQueryID, sessionDictCurThread, sessionStreamDict, configDict):
     localCosineSimDict = {}
     for sessQueryID in queryPartition:
         sessID = sessQueryID.split(",")[0]
@@ -347,7 +351,7 @@ def multiThreadedTopKDetectionFull((threadID, subThreadID, queryPartition, predi
             #cosineSim = CFCosineSim.computeListBitCosineSimilarityPredictOnlyOptimized(predictedY, queryIntent, configDict)
             cosineSim = computeBinaryCrossEntropy(predictedY, queryIntent)
             localCosineSimDict[sessQueryID] = cosineSim
-    #print localCosineSimDict
+    #print(localCosineSimDict)
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR'])+"localCosineSimDict_"+str(threadID)+"_"+str(subThreadID)+".pickle",localCosineSimDict)
     return localCosineSimDict
 
@@ -432,14 +436,14 @@ def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, schemaDicts, mod
             predictedY = predictWeightVector(modelRNNThread, sessionStreamDict, sessID, queryID, max_lookback, configDict)
             nextQueryIntent = sessionStreamDict[str(sessID) + "," + str(queryID + 1)]
             #nextIntentList = createCharListFromIntent(nextQueryIntent, configDict)
-            #print "Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            #print("Created nextIntentList sessID: " + str(sessID) + ", queryID: " + str(queryID))
             #actual_vector = np.array(nextIntentList).astype(np.int)
             if configDict['BIT_OR_WEIGHTED'] == 'BIT':
                 topKPredictedIntents = computePredictedIntentsRNN(threadID, predictedY, schemaDicts, configDict, sessID, queryID, sessionDictCurThread, sampledQueryHistory, sessionStreamDict)
             elif configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
                 topKPredictedIntents = QR.computeWeightedVectorFromList(predictedY)
             resList.append((sessID, queryID, predictedY, topKPredictedIntents, nextQueryIntent))
-            #print "computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            #print("computed Top-K Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID))
     #QR.deleteIfExists(modelRNNFileName)
     return resList
 
@@ -472,7 +476,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, schemaDicts, resultDict,
         t_loHiDict[i] = (t_lo, t_hi)
         resultDict[i] = list()
         totalSplitRows += t_hi -t_lo+1
-    #print "Set tuple boundaries for Threads"
+    #print("Set tuple boundaries for Threads")
     assert totalSplitRows == hi-lo+1
     if numThreads == 1:
         predictTopKIntentsPerThread(0, lo, hi, keyOrder, schemaDicts, modelRNN, resultDict[0], sessionDictGlobal, sampledQueryHistory, sessionStreamDict,
@@ -510,7 +514,7 @@ def predictIntentsIncludeCurrentBatch(lo, hi, keyOrder, schemaDicts, resultDict,
         t_loHiDict[i] = (t_lo, t_hi)
         sessionDictsThreads = updateSessionDictsThreads(i, sessionDictsThreads, t_lo, t_hi, keyOrder)
         resultDict[i] = list()
-    #print "Updated Session Dictionaries for Threads"
+    #print("Updated Session Dictionaries for Threads")
     if numThreads == 1:
         predictTopKIntentsPerThread(0, lo, hi, keyOrder, schemaDicts, modelRNN, resultDict[0], sessionDictsThreads[0], sampledQueryHistory, sessionStreamDict,
                                     sessionLengthDict, max_lookback, configDict) # 0 is the threadID
@@ -541,10 +545,18 @@ def updateGlobalSessionDictSustenance(lo, hi, keyOrder, sessionDictGlobal):
         queryID = int(sessQueryID.split(",")[1])
         sessionDictGlobal[sessID]= queryID # key is sessID and value is the latest queryID
         cur+=1
-    #print "updated Global Session Dict"
+    #print("updated Global Session Dict")
     return sessionDictGlobal
 
 def updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal):
+    """
+    For each key in the range [lo, hi] (which is a batch)
+    keyOrder[cur] is sessQueryId of the key with index cur
+
+    Output:
+    queryKeysSetAside: stores session ID and query ID for all queries in keyOrder[lo, hi]
+    sessionDictGlobal: stores session to query mapping for the lastest queryID of that session
+    """
     cur = lo
     while(cur<hi+1):
         sessQueryID = keyOrder[cur]
@@ -553,7 +565,7 @@ def updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlob
         queryID = int(sessQueryID.split(",")[1])
         sessionDictGlobal[sessID]= queryID # key is sessID and value is the latest queryID
         cur+=1
-    #print "updated Global Session Dict"
+    #print("updated Global Session Dict")
     return (sessionDictGlobal, queryKeysSetAside)
 
 def copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict):
@@ -562,7 +574,7 @@ def copySessionDictsThreads(sessionDictGlobal, sessionDictsThreads, configDict):
         if i not in sessionDictsThreads:
             sessionDictsThreads[i] = {}
         sessionDictsThreads[i].update(sessionDictGlobal)
-    #print "Copied Thread Session Dicts from Global Session Dict"
+    #print("Copied Thread Session Dicts from Global Session Dict")
     return sessionDictsThreads
 
 def appendResultsToFile(resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, foldID):
@@ -592,7 +604,7 @@ def updateTimeResultsToExcel(configDict, episodeResponseTimeDictName, outputInte
     ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
 
 
-    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    print("--Completed Quality Evaluation for accThres:" + str(accThres))
     '''
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
                                configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"])
@@ -606,7 +618,7 @@ def updateTimeResultsToExcel(configDict, episodeResponseTimeDictName, outputInte
                               'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                           configDict['EPISODE_IN_QUERIES'] + "_" + configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] + ".xlsx"
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
-    print "--Completed Quality and Time Evaluation--"
+    print("--Completed Quality and Time Evaluation--")
     return
 
 def updateQualityResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
@@ -627,7 +639,7 @@ def updateQualityResultsToExcel(configDict, episodeResponseTimeDictName, outputI
     ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
 
 
-    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    print("--Completed Quality Evaluation for accThres:" + str(accThres))
     '''
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
                                configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"])
@@ -641,7 +653,7 @@ def updateQualityResultsToExcel(configDict, episodeResponseTimeDictName, outputI
                               'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
                           configDict['EPISODE_IN_QUERIES'] + "_" + configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] + ".xlsx"
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
-    print "--Completed Quality and Time Evaluation--"
+    print("--Completed Quality and Time Evaluation--")
     '''
 
     return
@@ -663,7 +675,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
                              'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + "_" + configDict[
                              'RNN_INCREMENTAL_OR_FULL_TRAIN'] + ".xlsx"
     ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
-    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    print("--Completed Quality Evaluation for accThres:" + str(accThres))
 
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
                                configDict['ALGORITHM'] + "_" + configDict["RNN_BACKPROP_LSTM_GRU"])
@@ -678,7 +690,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
                           configDict['EPISODE_IN_QUERIES'] + "_" + configDict['RNN_INCREMENTAL_OR_FULL_TRAIN'] + ".xlsx"
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
 
-    print "--Completed Quality and Time Evaluation--"
+    print("--Completed Quality and Time Evaluation--")
     return
 
 def clear(resultDict):
@@ -697,11 +709,11 @@ def compareBitMaps(bitMap1, bitMap2):
 def findIfQueryInside(sessQueryID, sessionStreamDict, sampledQueryHistory, distinctQueries):
     for oldSessQueryID in distinctQueries:
         if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
-            #print "True"
+            #print("True")
             return oldSessQueryID
     for oldSessQueryID in sampledQueryHistory:
         if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
-            #print "True"
+            #print("True")
             return oldSessQueryID
     return "False"
 
@@ -730,7 +742,7 @@ def updateSampledQueryHistory(configDict, sampledQueryHistory, queryKeysSetAside
                 sampledQueryHistory.add(distinctQueries[curIndex])
                 curIndex += batchSize
                 covered += 1
-    print "len(distinctQueries): "+str(len(distinctQueries))+", len(sampledQueryHistory): "+str(len(sampledQueryHistory))
+    print("len(distinctQueries): "+str(len(distinctQueries))+", len(sampledQueryHistory): "+str(len(sampledQueryHistory)))
     return sampledQueryHistory
 
 def saveModel(modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback, configDict):
@@ -810,7 +822,7 @@ def trainModelSustenance(episodic, trainKeyOrder, sampledQueryHistory, queryKeys
             batchSize = len(trainKeyOrder) - lo
         hi = lo + batchSize - 1
 
-        print "Starting training in Episode " + str(numTrainEpisodes)
+        print("Starting training in Episode " + str(numTrainEpisodes))
         # update SessionDictGlobal and train with the new batch
         (sessionDictGlobal, queryKeysSetAside) = updateGlobalSessionDict(lo, hi, trainKeyOrder, queryKeysSetAside,
                                                                          sessionDictGlobal)
@@ -844,8 +856,8 @@ def testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpi
         elapsedAppendTime = 0.0
 
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
-            hi) + ", len(keyOrder): " + str(len(testKeyOrder))
+        print("Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(keyOrder): " + str(len(testKeyOrder)))
         if modelRNN is not None:
             assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
             if configDict['INCLUDE_CUR_SESS'] == 'True':
@@ -880,7 +892,7 @@ def evalSustenance(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetAside
     elif configDict['RNN_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         (modelRNN, sessionDictGlobal, sampledQueryHistory, max_lookback) = loadModelSustenance(configDict)
     sustTotalTrainTime = float(time.time() - sustStartTrainTime)
-    print "Sustenace Train Time: " + str(sustTotalTrainTime)
+    print("Sustenace Train Time: " + str(sustTotalTrainTime))
     testModelSustenance(testKeyOrder, schemaDicts, sampledQueryHistory, startEpisode, numEpisodes, episodeResponseTimeDictName, episodeResponseTime, outputIntentFileName, resultDict, sessionDictGlobal, sessionDictsThreads, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
     return
 
@@ -896,7 +908,7 @@ def trainTestBatchWise(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetA
         elapsedAppendTime = 0.0
 
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode "+str(numEpisodes)+", lo: "+str(lo)+", hi: "+str(hi)+", len(keyOrder): "+str(len(keyOrder))
+        print("Starting prediction in Episode "+str(numEpisodes)+", lo: "+str(lo)+", hi: "+str(hi)+", len(keyOrder): "+str(len(keyOrder)))
         if modelRNN is not None:
             assert configDict['INCLUDE_CUR_SESS'] == 'True' or configDict['INCLUDE_CUR_SESS'] == 'False'
             if configDict['INCLUDE_CUR_SESS'] == 'True':
@@ -904,7 +916,7 @@ def trainTestBatchWise(keyOrder, schemaDicts, sampledQueryHistory, queryKeysSetA
             else:
                 resultDict = predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, schemaDicts, resultDict, sessionDictGlobal, sampledQueryHistory, sessionStreamDict, sessionLengthDict, modelRNN, max_lookback, configDict)
 
-        print "Starting training in Episode " + str(numEpisodes)
+        print("Starting training in Episode " + str(numEpisodes))
         # update SessionDictGlobal and train with the new batch
         (sessionDictGlobal, queryKeysSetAside) = updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal)
         if configDict['RNN_PREDICT_NOVEL_QUERIES'] == 'False':
@@ -968,7 +980,7 @@ def testOneFold(schemaDicts, foldID, keyOrder, sampledQueryHistory, sessionStrea
                 (episodeResponseTimeDictName, episodeResponseTime, startEpisode,
                  elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime,
                                                             numEpisodes, startEpisode, elapsedAppendTime)
-                #print episodeResponseTime.keys()
+                #print(episodeResponseTime.keys())
                 resultDict = clear(resultDict)
                 numEpisodes += 1  # episodes start from 1, numEpisodes = numTestSessions
         episodeWiseKeys.append(key)
@@ -1074,7 +1086,7 @@ def runRNNKFoldExp(configDict):
         schemaDicts = ReverseEnggQueries.readSchemaDicts(configDict)
     else:
         schemaDicts = ReverseEnggQueries_selOpConst.readSchemaDicts(configDict)
-    print "Num Folds to Run: "+str(int(configDict['NUM_FOLDS_TO_RUN']))
+    print("Num Folds to Run: "+str(int(configDict['NUM_FOLDS_TO_RUN'])))
     for foldID in range(int(configDict['NUM_FOLDS_TO_RUN'])):
         outputIntentFileName = getConfig(configDict['KFOLD_OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + algoName + "_" + \
                                configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + \
@@ -1200,7 +1212,7 @@ if __name__ == "__main__":
     accThres = float(configDict['ACCURACY_THRESHOLD'])
     QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
                                   configDict['ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU'])
-    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    print("--Completed Quality Evaluation for accThres:" + str(accThres))
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"])
     outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM'] + "_" + configDict['RNN_BACKPROP_LSTM_GRU']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
     outputExcelQuality = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelQuality_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_ACCURACY_THRESHOLD_"+str(accThres)+"_"+configDict['RNN_INCREMENTAL_OR_FULL_TRAIN']+".xlsx"
@@ -1210,7 +1222,7 @@ if __name__ == "__main__":
     outputExcelTimeEval = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelTime_" + configDict['ALGORITHM']+"_"+ configDict["RNN_BACKPROP_LSTM_GRU"]+"_"+ configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']+"_"+configDict['RNN_INCREMENTAL_OR_FULL_TRAIN']+".xlsx"
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
 
-    print "--Completed Quality and Time Evaluation--"
+    print("--Completed Quality and Time Evaluation--")
     
             #modelRNNFileName = getConfig(configDict['OUTPUT_DIR'])+'/Thread_Model_'+str(i)+'.h5'
         #modelRNN.save(modelRNNFileName, overwrite=True)
@@ -1230,7 +1242,7 @@ def partitionPrevQueriesAmongThreads_Deprecated(sessionDictCurThread, numQueries
             if queryCount == 1 or relCount == 1:
                 p_lo = str(sessID)+","+str(queryID)
             #if (queryCount % numQueriesPerThread == 0 and remCount < numQueriesPerThread):
-                #print "I am here "
+                #print("I am here ")
             if (queryCount % numQueriesPerThread == 0 and remCount >= numQueriesPerThread) or queryCount == numQueries:
                 p_hi = str(sessID)+","+str(queryID)
                 relCount = 0

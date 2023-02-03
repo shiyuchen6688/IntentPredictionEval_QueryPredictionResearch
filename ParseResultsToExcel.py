@@ -15,7 +15,7 @@ def parseMincQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIt
     assert len(avgTrainTime) == len(avgTestTime) and len(avgExSelTime) == len(avgTrainTime) and len(
         avgTrainTime) == len(avgKFoldAccuracy) and len(avgTrainTime) == len(avgKFoldFMeasure) and len(
         avgTrainTime) == len(avgKFoldPrecision) and len(avgTrainTime) == len(avgKFoldRecall) and len(avgTrainTime) == len(avgIterTime)
-    print "Lengths of iterations: " + str(len(avgIterTime))
+    print("Lengths of iterations: " + str(len(avgIterTime)))
     df = DataFrame(
         {'iterations': avgIterTime.keys(), 'precision': avgKFoldPrecision.values(),
          'recall': avgKFoldRecall.values(), 'FMeasure': avgKFoldFMeasure.values(), 'accuracy': avgKFoldAccuracy.values(),
@@ -30,7 +30,7 @@ def parseQualityTimeActiveRNN(avgTrainTime, avgExSelTime, avgTestTime, avgIterTi
     assert len(avgTrainTime) == len(avgTestTime) and len(avgExSelTime) == len(avgTrainTime) and len(
         avgTrainTime) == len(avgKFoldAccuracy) and len(avgTrainTime) == len(avgKFoldFMeasure) and len(
         avgTrainTime) == len(avgKFoldPrecision) and len(avgTrainTime) == len(avgKFoldRecall) and len(avgTrainTime) == len(avgIterTime)
-    print "Lengths of iterations: " + str(len(avgIterTime))
+    print("Lengths of iterations: " + str(len(avgIterTime)))
     df = DataFrame(
         {'iterations': avgIterTime.keys(), 'precision': avgKFoldPrecision.values(),
          'recall': avgKFoldRecall.values(), 'FMeasure': avgKFoldFMeasure.values(), 'accuracy': avgKFoldAccuracy.values(),
@@ -62,7 +62,7 @@ def parseQualityFileWithoutEpisodeRep(fileName, outputExcel, configDict):
             recall.append(recallPerEpisode)
             FMeasure.append(FMeasurePerEpisode)
             accuracy.append(accuracyPerEpisode)
-    print "Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy))
+    print("Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy)))
     df = DataFrame(
         {'episodes':episodes, 'precision': precision,
          'recall': recall, 'FMeasure': FMeasure, 'accuracy': accuracy})
@@ -135,7 +135,7 @@ def parseQualityFileWithEpisodeRep(fileName, outputExcel, configDict):
                                                                                                    recallPerEpisode,
                                                                                                    FMeasurePerEpisode,
                                                                                                    accuracyPerEpisode)
-    print "Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy))
+    print("Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy)))
     df = DataFrame(
         {'episodes':episodes, 'precision': precision,
          'recall': recall, 'FMeasure': FMeasure, 'accuracy': accuracy})
@@ -182,7 +182,7 @@ def parseQualityFileWithEpisodeRepOld(fileName, outputExcel, configDict):
                 recallPerEpisode = 0.0
                 FMeasurePerEpisode = 0.0
                 accuracyPerEpisode = 0.0
-    print "Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy))
+    print("Lengths of episodes: "+str(len(episodes))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(FMeasure): "+str(len(FMeasure))+", len(accuracy): "+str(len(accuracy)))
     df = DataFrame(
         {'episodes':episodes, 'precision': precision,
          'recall': recall, 'FMeasure': FMeasure, 'accuracy': accuracy})
@@ -202,9 +202,9 @@ def parseTimeFile(fileName, outputExcel):
             intentCreate.append(float(tokens[2].split(":")[1]))
             intentPredict.append(float(tokens[3].split(":")[1]))
             responseTime.append(float(tokens[4].split(":")[1]))
-    print "Lengths of episodes: " + str(len(episodes)) + ", len(queryExec): " + str(
+    print("Lengths of episodes: " + str(len(episodes)) + ", len(queryExec): " + str(
         len(queryExec)) + ", len(intentCreate): " + str(len(intentCreate)) + ", len(intentPredict): " + str(
-        len(intentPredict)) + ", len(responseTime): " + str(len(responseTime))
+        len(intentPredict)) + ", len(responseTime): " + str(len(responseTime)))
     df = DataFrame(
         {'episodes': episodes, 'queryExec': queryExec,
          'intentCreate': intentCreate, 'intentPredict': intentPredict, 'responseTime': responseTime})
@@ -216,13 +216,13 @@ def parseKFoldTimeDict(avgKFoldTimeDict, avgTrainTime, avgTestTime, outputExcelT
     for episodeIndex in avgKFoldTimeDict:
         episodes.append(episodeIndex)
         avgIntentPredict.append(avgKFoldTimeDict[episodeIndex])
-    print "Lengths of episodes: " + str(len(episodes)) + ", avgIntentPredict: "+str(len(avgIntentPredict))
+    print("Lengths of episodes: " + str(len(episodes)) + ", avgIntentPredict: "+str(len(avgIntentPredict)))
     df = DataFrame({'episodes': episodes, 'avgIntentPredict': avgIntentPredict})
     df.to_excel(outputExcelTimeEval, sheet_name='sheet1', index=False)
     foldID = [ i for i in range(len(avgTrainTime))]
     assert len(avgTrainTime) == len(avgTestTime)
     # there are 11 folds for 10 coz last entry is the average time across all the 10 folds
-    print "Lengths of folds: " + str(len(foldID)) + ", avgTrainTime: " + str(len(avgTrainTime)) + ", avgTestTime: " + str(len(avgTestTime))
+    print("Lengths of folds: " + str(len(foldID)) + ", avgTrainTime: " + str(len(avgTrainTime)) + ", avgTestTime: " + str(len(avgTestTime)))
     df = DataFrame({'foldID': foldID, 'avgTrainTime': avgTrainTime, 'avgTestTime': avgTestTime})
     df.to_excel(outputExcelKFoldTimeEval, sheet_name='sheet1', index=False)
 
@@ -262,7 +262,7 @@ if __name__ == "__main__":
 
     '''
     trainSize, testSize, posTrain, posTest, precision, recall, accuracy, FMeasure = read(readFile)
-    print "Lengths of trainSize: "+str(len(trainSize))+", len(testSize): "+str(len(testSize))+", len(posTrain): "+str(len(posTrain))+", len(posTest): "+str(len(posTest))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(accuracy): "+str(len(accuracy))+", len(FMeasure): "+str(len(FMeasure))+"\n"
+    print("Lengths of trainSize: "+str(len(trainSize))+", len(testSize): "+str(len(testSize))+", len(posTrain): "+str(len(posTrain))+", len(posTest): "+str(len(posTest))+", len(precision): "+str(len(precision))+", len(recall): "+str(len(recall))+", len(accuracy): "+str(len(accuracy))+", len(FMeasure): "+str(len(FMeasure))+"\n")
     df = DataFrame({'trainSize': trainSize, 'posTrain': posTrain, 'testSize': testSize, 'posTest': posTest, 'precision': precision, 'recall': recall, 'accuracy': accuracy, 'FMeasure':FMeasure})
     df.to_excel('PerfMetrics.xlsx', sheet_name = 'sheet1', index=False)
     
@@ -286,7 +286,7 @@ def parseQualityFileRNNDeprecated(fileName, outputExcel, configDict):
                 episodes.append(numEpisodes)
                 accuracy.append(accuracyPerEpisode)
                 accuracyPerEpisode = 0.0
-    print "Lengths of episodes: "+str(len(episodes))+", len(accuracy): "+str(len(accuracy))
+    print("Lengths of episodes: "+str(len(episodes))+", len(accuracy): "+str(len(accuracy)))
     df = DataFrame(
         {'episodes':episodes, 'accuracy': accuracy})
     df.to_excel(outputExcel, sheet_name='sheet1', index=False)

@@ -24,39 +24,64 @@ import random
 
 class Q_Obj:
     def __init__(self, configDict):
+        # configurations
         self.configDict = configDict
+        # TODO: confirm
+        # input file name
+        # Documents/DataExploration-Research/BusTracker/InputOutput/MincBitFragmentIntentSessions
         self.intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
+        # file path name of respone time dict
         self.episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
             'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + \
                                       configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                           'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
                                           'EPISODE_IN_QUERIES'] + ".pickle"
+        # file path for output                                
         self.outputIntentFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputFileShortTermIntent_" + configDict[
             'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict[
                                    'TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES']
         self.numEpisodes = 0
         self.queryKeysSetAside = []
         self.episodeResponseTime = {}
+        # configDict['QUERYSESSIONS']: file path to queries seperated for each session
+        # self.sessionLengthDict stores count (value) of query of each session (key)
         self.sessionLengthDict = ConcurrentSessions.countQueries(getConfig(configDict['QUERYSESSIONS']))
+
+        # if output file exist, remove it
         try:
             os.remove(self.outputIntentFileName)
         except OSError:
             pass
+        # multiprocessing is a package that supports spawning processes using an API similar to the threading module
+        # A manager object returned by Manager() controls a server process which holds Python objects and allows other processes to manipulate them using proxies.
+        # Doc here: https://docs.python.org/3/library/multiprocessing.html
         self.manager = multiprocessing.Manager()
+        # this dict can be manipulated by different process
         self.sessionStreamDict = self.manager.dict()
         self.resultDict = {}
+        # array of "sessID,queryID" for each query in each session
         self.keyOrder = []
         with open(self.intentSessionFile) as f:
             for line in f:
+                # for each line in f
+                # get sessID, queryID, curQueryIntent, updated sessionStreamDict
+                # add BitMap object of current query in sessionStreamDict
+                # key is: sessID, queryID
                 (sessID, queryID, curQueryIntent, self.sessionStreamDict) = QR.updateSessionDict(line, self.configDict,
-                                                                                                 self.sessionStreamDict)
+                # append current key to self.KeyOrder                                                                                 self.sessionStreamDict)
                 self.keyOrder.append(str(sessID) + "," + str(queryID))
+
         f.close()
+        # dictionary that stores qTable
+        # key is distinct queries' sessQueryID
         self.qTable = {} # this will be a dictionary
+
         self.queryVocab = []  # list of (sessID,queryID)
         self.sessionDict = {} # key is sess index and val is a list of query vocab indices
+        # get learning rate and decay Rate base on configuration file
         self.learningRate = float(configDict['QL_LEARNING_RATE'])
         self.decayRate = float(configDict['QL_DECAY_RATE'])
+        # record start episode time, didn't see it being used any where else
         self.startEpisode = time.time()
 
 def findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict):
@@ -83,61 +108,124 @@ def findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict):
     return None
 
 def findDistinctQuery(sessQueryID, qObj):
+    """
+    find sessQueryID of any previous ID with same query as
+    prevSessQueryID, None if not found
+    """
     return findDistinctQueryAllArgs(sessQueryID, qObj.queryVocab, qObj.sessionStreamDict)
 
 def updateQTableDims(distinctSessQueryID, qObj):
+    """
+    add 1 dimention, which is the new query distinctSessQueryID to original qTable
+    """
+    # add a new row
     if distinctSessQueryID not in qObj.qTable:
+        # initial Q value for that new dimension is a row of 0
         qObj.qTable[distinctSessQueryID] = [0.0] * len(qObj.queryVocab)
+    
+    # add a new column
     for sessQueryID in qObj.queryVocab:
+        # if any sessQueryID in queeyVocab is not in qTable
+        # add a row for them too
         if sessQueryID not in qObj.qTable:
             qObj.qTable[sessQueryID] = [0.0] * len(qObj.queryVocab)
+        
+        # get the rows of q value for each row/state in qTable
+        # if that row's length < queryVocab, we need to add new
+        # column(s) to that row, most of the time just 1 column
+        # added for the newly added dimension distinctSessQueryID
         qValues = qObj.qTable[sessQueryID]
         while len(qValues) < len(qObj.queryVocab):
             qValues.append(0.0)
     return
 
 def invokeBellmanUpdate(curSessQueryID, nextKeyIndex, qObj, rewVal):
+    """
+    Update base on BellmanUpdate equation:
+    new q(s, a) = 
+    (1 - learning rate) * old q(s, a) + 
+    (learning rate) * (immediate return + decay rate * (max q value over all action a' at state s' q(s', a'))
+
+    where q(s, a) is q value at state s picking action a
+    """
     nextSessQueryID = qObj.queryVocab[nextKeyIndex]
-    maxNextQVal = max(qObj.qTable[nextSessQueryID])
+    maxNextQVal = max(qObj.qTable[nextSessQueryID]) # second part of equation
+    # the qTable (didct) is indexed first by sessQueryID (key) that represent the current state (previously we call this prevDistinctSessQueryID)
+    # then the result is an array and we need to index the array by a numeric index which is nextKeyIndex (previously called current keyIndex)
+    # this step is just updating the qvalue base on the bellman udpate equation
     qObj.qTable[curSessQueryID][nextKeyIndex] = qObj.qTable[curSessQueryID][nextKeyIndex] * (1-qObj.learningRate) + \
                                                 qObj.learningRate * (rewVal + qObj.decayRate * maxNextQVal)
     return
 
 def updateQValues(prevDistinctSessQueryID, curSessQueryID, qObj):
+    """
+    update Q value by calling invokeBellmanUpdate
+    """
+    # find index of curSessQueryID in qObj.queryVocab (this is a list)
     keyIndex = qObj.queryVocab.index(curSessQueryID)
+    # update Q value base on bellman update equation
     invokeBellmanUpdate(prevDistinctSessQueryID, keyIndex, qObj, 1.0)
     return
 
 def updateQTable(curSessQueryID, prevSessQueryID, qObj):
+    """
+    when we saw a pair of (prevSessQueryID, curSessQueryID)
+    we can update the Qtable base on this pair
+    """
     assert qObj.configDict['QTABLE_MEM_DISK'] == 'MEM' or qObj.configDict['QTABLE_MEM_DISK'] == 'DISK'
+    # devide if we are going to store the qTable on disk or memory
+    # I think the current model only deals with in-memory qtable
     if qObj.configDict['QTABLE_MEM_DISK'] == 'MEM':
+            # find sessQueryID of any previous ID with same query as
+            # prevSessQueryID, None if not found
             prevDistinctSessQueryID= findDistinctQuery(prevSessQueryID, qObj)
+            # if previous query exist, then we update Q value
             if prevDistinctSessQueryID is not None:
                 #updateQTableDims(prevDistinctSessQueryID, qObj)
+                # udate Q value for Qrew_prevDistinctSessQueryID_curSessQueryID
                 updateQValues(prevDistinctSessQueryID, curSessQueryID, qObj)
     return
 
 def findIfQueryInside(sessQueryID, sessionStreamDict, queryVocab, distinctQueries):
+    """
+    Check if given query sessQueryID is already in distinctQueries or queryVocab
+    """
+    # check if current query already exist in distinctQueries
     for oldSessQueryID in distinctQueries:
         if LSTM_RNN_Parallel.compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return oldSessQueryID
+    # check if current query already exist in queryVocab
     for oldSessQueryID in queryVocab:
         if LSTM_RNN_Parallel.compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return oldSessQueryID
+    # return None if this is the first time seeing this query
     return None
 
 def updateQueryVocabQTable(qObj):
+    """
+    """
     distinctQueries = []
+    # for each session query id in qObj.queryKeysSetAside
+    # which contains all queries of this episode
     for sessQueryID in qObj.queryKeysSetAside:
         retDistinctSessQueryID = findIfQueryInside(sessQueryID, qObj.sessionStreamDict, qObj.queryVocab, distinctQueries)
+        # if first time seeing this query
         if retDistinctSessQueryID is None:
+            # add sessQueryID tp distinctQueries and qObj.queryVocab
             distinctQueries.append(sessQueryID)
             qObj.queryVocab.append(sessQueryID)
             retDistinctSessQueryID = sessQueryID
+            # update Q tables dimension because we just saw a brand new query
             updateQTableDims(retDistinctSessQueryID, qObj)
+        
+        # parse and get sessID and queryID
         sessID = int(sessQueryID.split(",")[0])
         queryID = int(sessQueryID.split(",")[1])
+        
+        # if this is not the first query of that session
         if queryID - 1 >= 0:
+            # get sessQueryID of the query prior to the current query
+            # now we get a pair of query (prevSessQueryID, sessQueryID)
             prevSessQueryID = str(sessID) + "," + str(queryID - 1)
             updateQTable(retDistinctSessQueryID, prevSessQueryID, qObj)
     return distinctQueries
@@ -147,7 +235,7 @@ def printQTable(qTable, queryVocab):
     for key in queryVocab:
         line = str(key)+":"
         line += str(qTable[key])+"\n"
-        print line
+        print(line)
     return
 
 def assignReward(startDistinctSessQueryID, endDistinctSessQueryID, qObj):
@@ -178,17 +266,18 @@ def assignReward(startDistinctSessQueryID, endDistinctSessQueryID, qObj):
     return rewVal
 
 def refineQTableUsingBellmanUpdate(qObj):
-    print "Number of distinct queries: "+str(len(qObj.queryVocab))+", #cells in QTable: "+str(int(len(qObj.queryVocab)*len(qObj.queryVocab)))
-    #print "Expected number of refinement iterations: max("+str(len(qObj.queryVocab))+","+str(int(configDict['QL_REFINE_ITERS']))+")"
+    print("Number of distinct queries: "+str(len(qObj.queryVocab))+", #cells in QTable: "+str(int(len(qObj.queryVocab)*len(qObj.queryVocab))))
+    #print("Expected number of refinement iterations: max("+str(len(qObj.queryVocab))+","+str(int(configDict['QL_REFINE_ITERS']))+")"
     #numRefineIters = max(len(qObj.queryVocab), int(configDict['QL_REFINE_ITERS']))
     # if len(qObj.queryVocab) * len(qObj.queryVocab)/10 <= int(configDict['QL_REFINE_ITERS']):
     numRefineIters = int(configDict['QL_REFINE_ITERS'])
-    print "Expected number of refinement iterations: " + str(numRefineIters)
+    print("Expected number of refinement iterations: " + str(numRefineIters))
     #else:
         #numRefineIters = min(len(qObj.queryVocab) * len(qObj.queryVocab) / 100, int(configDict['QL_REFINE_ITERS']))
     for i in range(numRefineIters):
+        # print message every 100 iteration
         if i%100 == 0:
-            print "Refining using Bellman update, Iteration:"+str(i)
+            print("Refining using Bellman update, Iteration:"+str(i))
         # pick a random start and end sessQueryID pair within the vocabulary in queryVocab
         startSessQueryIndex = random.randrange(len(qObj.queryVocab))
         endSessQueryIndex = random.randrange(len(qObj.queryVocab))
@@ -199,7 +288,7 @@ def refineQTableUsingBellmanUpdate(qObj):
     return
 
 def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamDict, configDict):
-    #print "Inside ThreadID:"+str(threadID)
+    #print("Inside ThreadID:"+str(threadID))
     (maxCosineSim, maxSimSessQueryID) = findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict)
     qValues = qTable[maxSimSessQueryID]
     topK = int(configDict['TOP_K'])
@@ -207,12 +296,12 @@ def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamD
     topKSessQueryIndices = []
     for topKIndex in topKIndices:
         topKSessQueryIndices.append(queryVocab[topKIndex])
-    #print "maxSimSessQueryID: "+str(maxSimSessQueryID)+", topKIndices: "+str(topKIndices)+", topKSessQueryIndices: "+str(topKSessQueryIndices)
+    #print("maxSimSessQueryID: "+str(maxSimSessQueryID)+", topKIndices: "+str(topKIndices)+", topKSessQueryIndices: "+str(topKSessQueryIndices))
     return topKSessQueryIndices
 
-def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocab, sessionStreamDict, configDict)):
+def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocab, sessionStreamDict, configDict):
     #printQTable(qTable, queryVocab)
-    #print "QueryVocab:"+str(queryVocab)
+    #print("QueryVocab:"+str(queryVocab))
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
@@ -222,12 +311,12 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, qTable, resList
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
             topKSessQueryIndices = predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamDict, configDict)
             for sessQueryID in topKSessQueryIndices:
-                #print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
+                #print("Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])])))
                 if sessQueryID not in sessionStreamDict:
-                    print "sessQueryID: "+sessQueryID+" not in sessionStreamDict !!"
+                    print("sessQueryID: "+sessQueryID+" not in sessionStreamDict !!")
                     sys.exit(0)
-            #print "ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
-            #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            #print("ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
+            #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID))
             if topKSessQueryIndices is not None:
                 resList.append((sessID, queryID, topKSessQueryIndices))
     QR.writeToPickleFile(
@@ -248,7 +337,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj, keyOrder):
             t_hi = t_lo + numKeysPerThread - 1
         t_loHiDict[threadID] = (t_lo, t_hi)
         qObj.resultDict[threadID] = list()
-        # print "Set tuple boundaries for Threads"
+        # print("Set tuple boundaries for Threads")
     # sortedSessKeys = svdObj.sessAdjList.keys().sort()
     if numThreads == 1:
         qObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, keyOrder, qObj.qTable,
@@ -274,7 +363,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj, keyOrder):
             qObj.resultDict[threadID] = QR.readFromPickleFile(
                 getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "QLResList_" + str(threadID) + ".pickle")
         del sharedTable
-    #print "len(resultDict): " + str(len(qObj.resultDict))
+    #print("len(resultDict): " + str(len(qObj.resultDict)))
     return qObj.resultDict
 
 def saveModelToFile(qObj):
@@ -296,21 +385,22 @@ def trainTestBatchWise(qObj):
         hi = lo + batchSize - 1
         elapsedAppendTime = 0.0
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode " + str(qObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
-            hi) + ", len(keyOrder): " + str(len(qObj.keyOrder))
+        print("Starting prediction in Episode " + str(qObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(keyOrder): " + str(len(qObj.keyOrder)))
         if len(qObj.queryVocab) > 2:  # unless at least two rows hard to recommend
             qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj, qObj.keyOrder)
-        print "Starting training in Episode " + str(qObj.numEpisodes)
+        print("Starting training in Episode " + str(qObj.numEpisodes))
         startTrainTime = time.time()
         (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, qObj.keyOrder,
                                                                               qObj.queryKeysSetAside, qObj.sessionDict)
         updateQueryVocabQTable(qObj)
+
         if len(qObj.queryVocab) > 2:
             refineQTableUsingBellmanUpdate(qObj)
             saveModelToFile(qObj)
             #printQTable(qObj.qTable, qObj.queryVocab) # only enabled for debugging purposes
         totalTrainTime = float(time.time() - startTrainTime)
-        print "Total Train Time: " + str(totalTrainTime)
+        print("Total Train Time: " + str(totalTrainTime))
         assert qObj.configDict['QL_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or qObj.configDict[
                                                                                           'QL_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
@@ -334,47 +424,61 @@ def trainTestBatchWise(qObj):
 def loadModel(qObj):
     qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_QLQueryVocab.pickle")
     qObj.qTable = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_QTable.pickle")
-    print "Loaded len(queryVocab): "+str(len(qObj.queryVocab))+", len(qObj.qTable): "+str(len(qObj.qTable))
+    print("Loaded len(queryVocab): "+str(len(qObj.queryVocab))+", len(qObj.qTable): "+str(len(qObj.qTable)))
     notInQT = 0
     notInSessionStreamDict = 0
     for key in qObj.queryVocab:
         if key not in qObj.qTable:
-            print "key: "+key+" not in qObj.qTable"
+            print("key: "+key+" not in qObj.qTable")
             notInQT += 1
         if key not in qObj.sessionStreamDict:
-            print "key: "+key+" not in qObj.sessionStreamDict"
+            print("key: "+key+" not in qObj.sessionStreamDict")
             notInSessionStreamDict += 1
-    print "notInQT: "+str(notInQT)+", notInSessionStreamDict: "+str(notInSessionStreamDict)
+    print("notInQT: "+str(notInQT)+", notInSessionStreamDict: "+str(notInSessionStreamDict))
     return
 
 def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, qObj):
+    """
+    Train episodic QLearning model
+    """
     numTrainEpisodes = 0
     assert episodicTraining == 'True' or episodicTraining == 'False'
     if episodicTraining == 'True':
+        # each episode contain 1000 in BusTracker configuration
         batchSize = int(qObj.configDict['EPISODE_IN_QUERIES'])
     elif episodicTraining == 'False':
         batchSize = len(trainKeyOrder)
+
     lo = 0
     hi = -1
     # assert qObj.configDict['INCLUDE_CUR_SESS'] == "False"
+    # separate into episode of 1000 query each
     while hi < len(trainKeyOrder) - 1:
         lo = hi + 1
+        # if not enough data left for last batch, shrink batchSize
         if len(trainKeyOrder) - lo < batchSize:
             batchSize = len(trainKeyOrder) - lo
+        # update lo, hi to point to region of this batch
         hi = lo + batchSize - 1
-        print "Starting training in Episode " + str(numTrainEpisodes)
+        print("Starting training in Episode " + str(numTrainEpisodes))
+        # record start train time
         startTrainTime = time.time()
+        # train model if we are loading existing model
         if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
+            # qObj.queryKeysSetAside and qObj.sessionDict are being updated
             (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, qObj.keyOrder,
                                                                                                    qObj.queryKeysSetAside,
                                                                                                    qObj.sessionDict)
+            # update Q table
             updateQueryVocabQTable(qObj)
+
             if len(qObj.queryVocab) > 2:
                 refineQTableUsingBellmanUpdate(qObj)
                 saveModelToFile(qObj)
                 # printQTable(qObj.qTable, qObj.queryVocab) # only enabled for debugging purposes
+        # calculate total training time
         totalTrainTime = float(time.time() - startTrainTime)
-        print "Total Train Time: " + str(totalTrainTime)
+        print("Total Train Time: " + str(totalTrainTime))
         assert qObj.configDict['QL_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or qObj.configDict[
                                                                                        'QL_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
         # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
@@ -387,9 +491,11 @@ def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, qObj):
 def trainModelSustenance(trainKeyOrder, qObj):
     assert configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True' or configDict[
                                                                             'QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False'
+    # retrain a new model                                                                     
     if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
         episodicTraining = 'True'
         trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, qObj)
+    # allow us to load existing models here
     elif configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'True':
         loadModel(qObj)
     return
@@ -406,14 +512,14 @@ def testModelSustenance(testKeyOrder, qObj):
         hi = lo + batchSize - 1
         elapsedAppendTime = 0.0
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode " + str(qObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
-            hi) + ", len(testKeyOrder): " + str(len(testKeyOrder))+ ", len(queryVocab): " +str(len(qObj.queryVocab))
+        print("Starting prediction in Episode " + str(qObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(testKeyOrder): " + str(len(testKeyOrder))+ ", len(queryVocab): " +str(len(qObj.queryVocab)))
         if len(qObj.queryVocab) > 2:  # unless at least two rows hard to recommend
             qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj, testKeyOrder)
             # we record the times including train and test
             qObj.numEpisodes += 1
             if len(qObj.resultDict) > 0:
-                print "appending results"
+                print("appending results")
                 elapsedAppendTime = CFCosineSim_Parallel.appendResultsToFile(qObj.sessionStreamDict, qObj.resultDict,
                                                                              elapsedAppendTime, qObj.numEpisodes,
                                                                              qObj.outputIntentFileName, qObj.configDict,
@@ -427,21 +533,36 @@ def testModelSustenance(testKeyOrder, qObj):
     return
 
 def evalSustenance(qObj):
+    # split to train test split
+    # qObj.keyOrder stores sessionId,queryId
     (trainKeyOrder, testKeyOrder) = LSTM_RNN_Parallel.splitIntoTrainTestSets(qObj.keyOrder, qObj.configDict)
+    # record start time
     sustStartTrainTime = time.time()
+    # train model
     trainModelSustenance(trainKeyOrder, qObj)
+    # get total train time by subtracting
     sustTotalTrainTime = float(time.time() - sustStartTrainTime)
-    print "Sustenace Train Time: "+str(sustTotalTrainTime)
+    print("Sustenace Train Time: "+str(sustTotalTrainTime))
+    # test model
     testModelSustenance(testKeyOrder, qObj)
 
 def runQLearning(configDict):
     assert configDict['SINGULARITY_OR_KFOLD'] == 'SINGULARITY'
     assert configDict['ALGORITHM'] == 'QLEARNING'
+    
+    # construct QLearning Q_Obj by calling the constructor
     qObj = Q_Obj(configDict)
+
+
     assert configDict['QL_SUSTENANCE'] == 'True' or configDict['QL_SUSTENANCE'] == 'False'
+
+
+
     if configDict['QL_SUSTENANCE'] == 'False':
+        # train by episode, prequential test then train
         trainTestBatchWise(qObj)
     elif configDict['QL_SUSTENANCE'] == 'True':
+        # train test split
         evalSustenance(qObj)
 
 if __name__ == "__main__":

@@ -108,7 +108,7 @@ def computeListBitCosineSimilarityPredictOnlyOptimized(predSessSummary, oldSessi
         #assert oldSessionSummary.test(i)
         numerator += float(predSessSummary[i])
     #if oldSessionSummary.count() == 0:
-        #print "L2NormSquares cannot be zero !!"
+        #print("L2NormSquares cannot be zero !!")
         #sys.exit(0)
     cosineSim = numerator / math.sqrt(oldSessionSummary.count())
     return cosineSim
@@ -131,7 +131,7 @@ def computeListBitCosineSimilarity(predSessSummary, oldSessionSummary, configDic
         if oldSessionSummary.test(i):
             numerator += float(predSessDim * 1.0)
     if l2NormOldSess == 0 or l2NormPredSess == 0:
-        print "L2NormSquares cannot be zero !!"
+        print("L2NormSquares cannot be zero !!")
         sys.exit(0)
     cosineSim = numerator / (math.sqrt(l2NormPredSess) * math.sqrt(l2NormOldSess))
     return cosineSim
@@ -152,7 +152,7 @@ def computeWeightedCosineSimilarity(curSessionSummary, oldSessionSummary, delimi
     for i in range(idealSize):
         numerator = numerator + float(curSessDims[i] * oldSessDims[i])
     if l2NormQuery == 0 or l2NormSession == 0:
-        print "L2NormSquares cannot be zero !!"
+        print("L2NormSquares cannot be zero !!")
         sys.exit(0)
     cosineSim = numerator / (math.sqrt(l2NormQuery) * math.sqrt(l2NormSession))
     return cosineSim
@@ -172,14 +172,14 @@ def computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary, deli
     for i in range(idealSize):
         numerator = numerator + float(predSessSummary[i] * oldSessDims[i])
     if l2NormQuery == 0 or l2NormSession == 0:
-        print "L2NormSquares cannot be zero !!"
+        print("L2NormSquares cannot be zero !!")
         sys.exit(0)
     cosineSim = numerator / (math.sqrt(l2NormQuery) * math.sqrt(l2NormSession))
     return cosineSim
 
 def findTopKSessIndex(topCosineSim, cosineSimDict, topKSessindices):
     if topCosineSim not in cosineSimDict:
-        print "cosineSimilarity not found in the dictionary !!"
+        print("cosineSimilarity not found in the dictionary !!")
         sys.exit(0)
     for sessIndex in cosineSimDict[topCosineSim]:
         if sessIndex not in topKSessindices:
@@ -406,7 +406,7 @@ def runCFCosineSimSingularityExp(configDict):
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     accThres=float(configDict['ACCURACY_THRESHOLD'])
     QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres, configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
-    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    print("--Completed Quality Evaluation for accThres:" + str(accThres))
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict, configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
 
     outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
@@ -444,13 +444,13 @@ def findLatestIntentPredictedSoFar(sessID, queryID, topKPredictedIntentDict, top
                     return (topKSessQueryIndicesDict[curSessID][curQueryID], topKPredictedIntentDict[curSessID][curQueryID])
                 curQueryID = curQueryID-1
         curSessID = curSessID - 1
-    print "Could not find sessID, queryID !!"
+    print("Could not find sessID, queryID !!")
     sys.exit(0)
 
 def insertIntoTopKDict(sessID, queryID, topKIndices, topKIndicesDict):
     if sessID in topKIndicesDict:
         if queryID in topKIndicesDict:
-            print "raise error sessID queryID already exists !!"
+            print("raise error sessID queryID already exists !!")
             sys.exit(0)
     else:
         topKIndicesDict[sessID] = {}

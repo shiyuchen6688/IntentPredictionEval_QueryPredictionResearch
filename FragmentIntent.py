@@ -180,7 +180,7 @@ if __name__ == "__main__":
     elif configDict["BIT_OR_WEIGHTED"] == "WEIGHTED":
         fragmentIntentSessionsFile = getConfig(configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS'])
     else:
-        print "BIT_OR_WEIGHTED should be set either to BIT or WEIGHTED in the Config File !!"
+        print("BIT_OR_WEIGHTED should be set either to BIT or WEIGHTED in the Config File !!")
         sys.exit(0)
     try:
         os.remove(fragmentIntentSessionsFile)
@@ -195,5 +195,5 @@ if __name__ == "__main__":
                                              configDict)  # rowIDs passed should be None, else it won't fill up
             outputIntentLine = sessQueryName + "; OrigQuery: " + sessQuery + ";" + str(resObj)
             ti.appendToFile(fragmentIntentSessionsFile, outputIntentLine)
-            print "Generated fragment for " + sessQueryName
+            print("Generated fragment for " + sessQueryName)
 

@@ -1,3 +1,9 @@
+"""
+Parse input query
+Argument:
+input query file
+output query file
+"""
 import sys
 import os
 import time, argparse
@@ -21,6 +27,7 @@ def cleanEachQuery(sessQuery):
     return sessQuery
 
 def cleanQuerySessions(log, outputFile):
+    # if outut file already exsit then remove it
     try:
         os.remove(outputFile)
     except OSError:

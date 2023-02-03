@@ -31,7 +31,7 @@ if __name__ == "__main__":
     if configDict["INTENT_REP"] == "QUERY":
         queryIntentSessionsFile = getConfig(configDict['QUERY_INTENT_SESSIONS'])
     else:
-        print "This supports only query intent gen !!"
+        print("This supports only query intent gen !!")
         sys.exit(0)
     try:
         os.remove(queryIntentSessionsFile)
@@ -49,6 +49,6 @@ if __name__ == "__main__":
             outputIntentLine = sessQueryName + "; OrigQuery: " + sessQuery + ";" + str(resObj)
             ti.appendToFile(queryIntentSessionsFile, outputIntentLine)
             queryCount = queryCount + 1
-            print "Generated fragment for " + sessQueryName + ", #distinct queries so far: " + str(
-                len(queryVocabulary)) + ", total #queries: " + str(queryCount)
+            print("Generated fragment for " + sessQueryName + ", #distinct queries so far: " + str(
+                len(queryVocabulary)) + ", total #queries: " + str(queryCount))
 

@@ -8,12 +8,24 @@ import random
 import TupleIntent as ti
 
 def countQueries(inputFile):
+    """
+    Input:
+    inputFile: a file path to the input file that stores query seperated for each session 
+
+    Output:
+    sessionQueryCountDict: dictionary with session idx as key and # of query in that section as value
+    """
     sessionQueryCountDict = {}
+    # parse the input file
     with open(inputFile) as f:
         for line in f:
+            # get session token
             sessTokens = line.strip().split(";")
             # sessionIndices need to be noted that they are neither sequential nor complete. For instance session 15 or 16 does not exist.
+            # get index from session token
             sessIndex = int(sessTokens[0].split(" ")[1])
+
+            # parse the line to find number 
             sessionQueryCountDict[sessIndex] = line.count(";")-1 #line ends with a semicolon but has the first token as session name which is ignored
     return sessionQueryCountDict
 
@@ -54,7 +66,7 @@ def createConcurrentSessions(inputFile, outputFile):
                 coveredSessQueries[sessIndex] += 1
             output_str="Session "+str(sessIndex)+", Query "+str(queryIndex)+";"+sessQuery
             ti.appendToFile(outputFile, output_str)
-            print "appended Session "+str(sessIndex)+", Query "+str(queryIndex)
+            print("appended Session "+str(sessIndex)+", Query "+str(queryIndex))
         else:
             keyList.remove(sessIndex)
 
@@ -70,7 +82,7 @@ def readTestSessIDs(inputSeqFile, configDict):
                 lineIndex+=1
         f.close()
     except:
-        print "error1"
+        print("error1")
     return sessIDs
 
 def convertSeqToConcFile(configDict):
@@ -97,7 +109,7 @@ def convertSeqToConcFile(configDict):
                     ti.appendToFile(concTrainFile, line.strip())
         f.close()
     except:
-        print "error2"
+        print("error2")
     return
 
 
@@ -108,4 +120,4 @@ if __name__ == "__main__":
     configDict = parseConfig.parseConfigFile(args.config)
     #convertSeqToConcFile(configDict)
     createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
-    print "Completed concurrent session order creation"
+    print("Completed concurrent session order creation")

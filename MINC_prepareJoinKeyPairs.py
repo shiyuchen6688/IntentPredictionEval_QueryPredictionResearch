@@ -20,7 +20,7 @@ def connectToBusTracker(configDict):
         dbname = configDict['PSQL_DB']
         conn = psycopg2.connect("dbname='vmeduri' user='vmeduri' password=''")
     except:
-        print ("I am unable to connect to the database.")
+        print("I am unable to connect to the database.")
     return conn
 
 def connectToMinc(configDict):
@@ -46,7 +46,7 @@ def connectToDB(configDict):
         elif configDict['DATASET'] == 'BusTracker':
             return connectToBusTracker(configDict)
     except:
-            print "Error in DBName !"
+            print("Error in DBName !")
             sys.exit(0)
 
 
@@ -65,7 +65,7 @@ def createBusTrackerTableDict(cnx, configDict):
             tableName = psqlSchema + "_" + str(cols[0])
             assert tableName not in tableDict
             tableDict[tableName] = index
-            print "tablename: " + str(tableName) + ", index: " + str(index)
+            print("tablename: " + str(tableName) + ", index: " + str(index))
             index += 1
     sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))
     tableDict = collections.OrderedDict(sorted_x)
@@ -83,7 +83,7 @@ def createMincTableDict(cnx):
         tableName = str(cols[0])
         assert tableName not in tableDict
         tableDict[tableName] = index
-        print "tablename: "+str(tableName)+", index: "+str(index)
+        print("tablename: "+str(tableName)+", index: "+str(index))
         index+=1
     sorted_x = sorted(tableDict.items(), key=operator.itemgetter(1))
     tableDict = collections.OrderedDict(sorted_x)
@@ -101,7 +101,7 @@ def execDescTableQuery(cnx, table, configDict):
         query = "select column_name, udt_name from information_schema.columns where table_schema =\'"+psqlSchema +\
                 "\' and table_name =\'" +table+"\'"
     else:
-        print "Error in execShowTableQuery !"
+        print("Error in execShowTableQuery !")
         sys.exit(0)
     cursor = cnx.cursor()
     cursor.execute(query)
@@ -210,7 +210,7 @@ def writeSchemaInfoToFile(dict, fn):
             f.write(str(key)+":"+str(dict[key])+"\n")
         f.flush()
         f.close()
-    print "Wrote to file "+fn
+    print("Wrote to file "+fn)
 
 def writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict, configDict):
     writeSchemaInfoToFile(tableDict, getConfig(configDict['MINC_TABLES']))
@@ -247,7 +247,7 @@ def fetchSchema(configDict):
     joinPairDict = pruneEmptyJoinPairs(joinPairDict)
     joinPredBitPosDict = createJoinPredBitPosDict(joinPairDict)
 
-    print "Writing Dictionaries To Files"
+    print("Writing Dictionaries To Files")
     writeSchemaInfoToFiles(tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict, configDict)
     return (tableDict, tabColDict, tabColTypeDict, tabColBitPosDict, joinPairDict, joinPredBitPosDict)
 
@@ -286,11 +286,11 @@ def countColsFromBitPos(fileName):
     return count
 
 def printStats(configDict):
-    print "# Tables: "+str(countTables(getConfig(configDict['MINC_TABLES'])))
-    print "# Columns: "+str(countCols(getConfig(configDict['MINC_COLS'])))
-    print "# Columns from bit positions: " + str(countColsFromBitPos(getConfig(configDict['MINC_COL_BIT_POS'])))
+    print("# Tables: "+str(countTables(getConfig(configDict['MINC_TABLES']))))
+    print("# Columns: "+str(countCols(getConfig(configDict['MINC_COLS']))))
+    print("# Columns from bit positions: " + str(countColsFromBitPos(getConfig(configDict['MINC_COL_BIT_POS']))))
     joinPredCountFromBitPos = countJoinPredsFromBitPos(getConfig(configDict['MINC_JOIN_PRED_BIT_POS']))
-    print "# JoinPreds from bit positions: "+str(joinPredCountFromBitPos)
+    print("# JoinPreds from bit positions: "+str(joinPredCountFromBitPos))
 
 if __name__ == "__main__":
     #configDict = parseConfig.parseConfigFile("MINC_configFile.txt")

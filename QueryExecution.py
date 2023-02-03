@@ -40,7 +40,7 @@ def executeQuery(sessQuery, configDict):
     try:
         conn = psycopg2.connect("dbname='madlibtest' user='postgres' password=''")
     except:
-        print ("I am unable to connect to the database.")
+        print("I am unable to connect to the database.")
 
     # If we are accessing the rows via column name instead of position we
     # need to add the arguments to conn.cursor instead of conn.cursor()
@@ -55,7 +55,7 @@ def executeQuery(sessQuery, configDict):
         conn.commit()
         return cur
     except:
-        print ("cannot execute the query on Postgres")
+        print("cannot execute the query on Postgres")
         exit(0)
 
 def executeNYCQueryWithIntent(sessQuery, configDict, queryVocabulary):
@@ -81,7 +81,7 @@ def executeMINCQueryCursor(sessQuery, configDict):
         cursor.execute(sessQuery)
         return (cursor, cursor.fetchall())
     except:
-        print "Error in executing Query"
+        print("Error in executing Query")
         return (None, None)
 
 def executeMINCQuery(sessQuery, configDict):
@@ -91,7 +91,7 @@ def executeMINCQuery(sessQuery, configDict):
         cursor.execute(sessQuery)
         return cursor.fetchall()
     except:
-        print "Error in executing Query"
+        print("Error in executing Query")
         return None
     #resObj = None
     #startTime = time.time()
@@ -131,4 +131,4 @@ if __name__ == "__main__":
                 sessQuery = sessQueries[i].split("~")[0]
                 # sessQuery = "SELECT nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_latitude AS dropoff_latitude, nyc_yellow_tripdata_2016_06_sample_1_percent.dropoff_longitude AS dropoff_longitude, nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount AS fare_amount FROM public.nyc_yellow_tripdata_2016_06_sample_1_percent nyc_yellow_tripdata_2016_06_sample_1_percent GROUP BY 1, 2, 3 HAVING ((CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) >= 11.999999999999879) AND (CAST(MIN(nyc_yellow_tripdata_2016_06_sample_1_percent.fare_amount) AS DOUBLE PRECISION) <= 14.00000000000014))"
                 executeQuery(sessQuery, configDict)
-                print ("Executed "+sessName+", Query "+str(i))
+                print(("Executed "+sessName+", Query "+str(i)))
