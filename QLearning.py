@@ -27,6 +27,7 @@ class Q_Obj:
         # configurations
         self.configDict = configDict
         # TODO: confirm
+        
         # input file name
         # Documents/DataExploration-Research/BusTracker/InputOutput/MincBitFragmentIntentSessions
         self.intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
