@@ -84,7 +84,7 @@ def findIfQueryInside(sessQueryID, svdObj):
     for key in svdObj.queryVocab:
         oldSessQueryID = svdObj.queryVocab[key]
         if LSTM_RNN_Parallel.compareBitMaps(svdObj.sessionStreamDict[oldSessQueryID], svdObj.sessionStreamDict[sessQueryID]) == "True":
-            #print "True"
+            #print("True")
             return (key, oldSessQueryID)
     return (None, None)
 
@@ -109,7 +109,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
     accThres = float(configDict['ACCURACY_THRESHOLD'])
     QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
                                   configDict['ALGORITHM'])
-    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    print("--Completed Quality Evaluation for accThres:" + str(accThres))
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
                                configDict['ALGORITHM'])
 
@@ -133,7 +133,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
     return (outputIntentFileName, episodeResponseTimeDictName)
 
 def factorizeMatrix(svdObj):
-    print "Factorization using SVD_NMF_sklearn or NIMFA"
+    print("Factorization using SVD_NMF_sklearn or NIMFA")
     latentFactors = min(int(svdObj.configDict['SVD_LATENT_DIMS']), int(0.1 * len(svdObj.queryVocab)))
     if latentFactors == 0 and len(svdObj.queryVocab) > 2 and len(svdObj.queryVocab) < 10:
         latentFactors = 2
@@ -157,7 +157,7 @@ def partitionEntries(totalEntries, numThreads):
         entryIndex+=1
     return rowColPartitions
 
-def completeEntries((threadID, rowColPartition, leftFactorMatrix, rightFactorMatrix, configDict)):
+def completeEntries(threadID, rowColPartition, leftFactorMatrix, rightFactorMatrix, configDict):
     resDict = {}
     for entry in rowColPartition:
         (rowIndex, colIndex) = entry
@@ -240,7 +240,7 @@ def predictTopKIntents(threadID, matrix, sessionSummaries, sessionSummarySample,
     return topKSessQueryIndices
 
 
-def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList, queryVocab, sortedSessKeys, sessionStreamDict, sessionSummaries, sessionSummarySample, configDict)):
+def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, matrix, resList, queryVocab, sortedSessKeys, sessionStreamDict, sessionSummaries, sessionSummarySample, configDict):
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
@@ -250,12 +250,12 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList
         if str(sessID) + "," + str(queryID + 1) in sessionStreamDict:
             topKSessQueryIndices = predictTopKIntents(threadID, matrix, sessionSummaries, sessionSummarySample, queryVocab, sortedSessKeys, sessID, curQueryIntent, configDict)
             for sessQueryID in topKSessQueryIndices:
-                #print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
+                #print("Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])])))
                 if sessQueryID not in sessionStreamDict:
-                    print "sessQueryID: "+sessQueryID+" not in sessionStreamDict !!"
+                    print("sessQueryID: "+sessQueryID+" not in sessionStreamDict !!")
                     sys.exit(0)
-            #print "ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
-            #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            #print("ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
+            #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID))
             if topKSessQueryIndices is not None:
                 resList.append((sessID, queryID, topKSessQueryIndices))
     QR.writeToPickleFile(
@@ -263,7 +263,7 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, matrix, resList
     return resList
 
 def predictIntentsWithoutCurrentBatch(lo, hi, svdObj, keyOrder):
-    print "Prediction parallelized"
+    print("Prediction parallelized")
     numThreads = min(int(configDict['SVD_THREADS']), hi - lo + 1)
     numKeysPerThread = int(float(hi - lo + 1) / float(numThreads))
     # threads = {}
@@ -277,7 +277,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, svdObj, keyOrder):
             t_hi = t_lo + numKeysPerThread - 1
         t_loHiDict[threadID] = (t_lo, t_hi)
         svdObj.resultDict[threadID] = list()
-        # print "Set tuple boundaries for Threads"
+        # print("Set tuple boundaries for Threads")
     #sortedSessKeys = svdObj.sessAdjList.keys().sort()
     if numThreads == 1:
         svdObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, keyOrder, svdObj.matrix, svdObj.resultDict[0], svdObj.queryVocab, svdObj.sortedSessKeys, svdObj.sessionStreamDict, svdObj.sessionSummaries, svdObj.sessionSummarySample, svdObj.configDict))
@@ -338,7 +338,7 @@ def trainModelEpisode(lo, hi, trainKeyOrder, svdObj):
         completeMatrix(svdObj)
         saveModelToFile(svdObj)
     totalTrainTime = float(time.time() - startTrainTime)
-    print "Total Train Time: " + str(totalTrainTime)
+    print("Total Train Time: " + str(totalTrainTime))
     assert svdObj.configDict['SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'INCREMENTAL' or svdObj.configDict[
                                                                                       'SVD_INCREMENTAL_OR_FULL_TRAIN'] == 'FULL'
     # we have empty queryKeysSetAside because we want to incrementally train the CF at the end of each episode
@@ -359,12 +359,12 @@ def trainTestBatchWise(svdObj):
         hi = lo + batchSize - 1
         elapsedAppendTime = 0.0
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
-            hi) + ", len(keyOrder): " + str(len(svdObj.keyOrder))
+        print("Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(keyOrder): " + str(len(svdObj.keyOrder)))
         if len(svdObj.matrix) > 1 and len(svdObj.queryVocab) > 2 and len(svdObj.sessionSummaries) > 0: # unless at least two rows hard to recommend
             svdObj.sessionSummarySample = CFCosineSim_Parallel.sampleSessionSummaries(svdObj.sessionSummaries, float(configDict['SVD_SAMPLE_SESSION_FRACTION']))
             svdObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, svdObj, svdObj.keyOrder)
-        print "Starting training in Episode " + str(svdObj.numEpisodes)
+        print("Starting training in Episode " + str(svdObj.numEpisodes))
         trainModelEpisode(lo, hi, svdObj.keyOrder, svdObj)
         # we record the times including train and test
         svdObj.numEpisodes += 1
@@ -392,7 +392,7 @@ def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, svdObj):
         if len(trainKeyOrder) - lo < batchSize:
             batchSize = len(trainKeyOrder) - lo
         hi = lo + batchSize - 1
-        print "Starting training in Episode " + str(numTrainEpisodes)
+        print("Starting training in Episode " + str(numTrainEpisodes))
         trainModelEpisode(lo, hi, trainKeyOrder, svdObj)
         # we record the times including train and test
         numTrainEpisodes += 1
@@ -423,14 +423,14 @@ def testModelSustenance(testKeyOrder, svdObj):
         hi = lo + batchSize - 1
         elapsedAppendTime = 0.0
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
-            hi) + ", len(testKeyOrder): " + str(len(testKeyOrder))
+        print("Starting prediction in Episode " + str(svdObj.numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(testKeyOrder): " + str(len(testKeyOrder)))
         if len(svdObj.matrix) > 1 and len(svdObj.queryVocab) > 2:  # unless at least two rows hard to recommend
             svdObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, svdObj, testKeyOrder)
         # we record the times including train and test
         svdObj.numEpisodes += 1
         if len(svdObj.resultDict) > 0:
-            print "appending results"
+            print("appending results")
             elapsedAppendTime = CFCosineSim_Parallel.appendResultsToFile(svdObj.sessionStreamDict, svdObj.resultDict,
                                                                          elapsedAppendTime, svdObj.numEpisodes,
                                                                          svdObj.outputIntentFileName, svdObj.configDict,
@@ -448,7 +448,7 @@ def evalSustenance(svdObj):
     sustStartTrainTime = time.time()
     trainModelSustenance(trainKeyOrder, svdObj)
     sustTotalTrainTime = float(time.time() - sustStartTrainTime)
-    print "Sustenace Train Time: " + str(sustTotalTrainTime)
+    print("Sustenace Train Time: " + str(sustTotalTrainTime))
     testModelSustenance(testKeyOrder, svdObj)
     return
 

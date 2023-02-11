@@ -15,11 +15,11 @@ import multiprocessing
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 from multiprocessing import Queue
-import LSTM_RNN_Parallel
-import CF_SVD
+# import LSTM_RNN_Parallel
+# import CF_SVD
 import argparse
 from sklearn.decomposition import NMF
-import CFCosineSim_Parallel
+# import CFCosineSim_Parallel
 import random
 
 class Q_Obj:
@@ -30,7 +30,8 @@ class Q_Obj:
         
         # input file name
         # Documents/DataExploration-Research/BusTracker/InputOutput/MincBitFragmentIntentSessions
-        self.intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
+        # self.intentSessionFile = QR.fetchIntentFileFromConfigDict(configDict)
+        self.intentSessionFile = fetchIntentFileFromConfigDict(configDict)
         # file path name of respone time dict
         self.episodeResponseTimeDictName = getConfig(configDict['OUTPUT_DIR']) + "/ResponseTimeDict_" + configDict[
             'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + \
@@ -68,10 +69,9 @@ class Q_Obj:
                 # get sessID, queryID, curQueryIntent, updated sessionStreamDict
                 # add BitMap object of current query in sessionStreamDict
                 # key is: sessID, queryID
-                (sessID, queryID, curQueryIntent, self.sessionStreamDict) = QR.updateSessionDict(line, self.configDict,
-                # append current key to self.KeyOrder                                                                                 self.sessionStreamDict)
+                (sessID, queryID, curQueryIntent, self.sessionStreamDict) = QR.updateSessionDict(line, self.configDict, self.sessionStreamDict)
+                # append current key to self.KeyOrder                                                                                 
                 self.keyOrder.append(str(sessID) + "," + str(queryID))
-
         f.close()
         # dictionary that stores qTable
         # key is distinct queries' sessQueryID
@@ -100,11 +100,123 @@ def findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict):
             maxSimSessQueryID = oldSessQueryID
     return (maxCosineSim, maxSimSessQueryID)
 
+# Helper functions copied over from other files
+def fetchIntentFileFromConfigDict(configDict):
+    # INTENT_REP means intended representation
+
+    # tuple based representation
+    if configDict['INTENT_REP'] == 'TUPLE':
+        intentSessionFile = getConfig(configDict['TUPLEINTENTSESSIONS'])
+    # fragment bit based or weighted fragemmnt representation
+    # all configuration file are using bit: BIT_OR_WEIGHTED=BIT
+    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'BIT':
+        # if predicting query or table
+        # TODO: not exatly sure what is the difference
+        if configDict['RNN_PREDICT_QUERY_OR_TABLE'] == 'TABLE':
+            intentSessionFile = getConfig(configDict['BIT_FRAGMENT_TABLE_INTENT_SESSIONS'])
+        else:
+            # If predicting query
+            # file path: 
+            # Documents/DataExploration-Research/BusTracker/InputOutput/MincBitFragmentIntentSessions
+            intentSessionFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
+
+    # weighted fragment based
+    elif configDict['INTENT_REP'] == 'FRAGMENT' and configDict['BIT_OR_WEIGHTED'] == 'WEIGHTED':
+        intentSessionFile = getConfig(configDict['WEIGHTED_FRAGMENT_INTENT_SESSIONS'])
+    elif configDict['INTENT_REP'] == 'QUERY':
+        intentSessionFile = getConfig(configDict['QUERY_INTENT_SESSIONS'])
+    else:
+        print("ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!")
+        sys.exit(0)
+    return intentSessionFile
+
+# LSTM_RNN_Parallel.compareBitMaps
+def compareBitMaps(bitMap1, bitMap2):
+    set1 = set(bitMap1.nonzero())
+    set2 = set(bitMap2.nonzero())
+    if set1 == set2:
+        return "True"
+    return "False"
+
+# LSTM_RNN_Parallel.clear
+def clear(resultDict):
+    keys = resultDict.keys()
+    for resKey in keys:
+        del resultDict[resKey]
+    return resultDict
+
+# LSTM_RNN_Parallel.updateGlobalSessionDict
+def updateGlobalSessionDict(lo, hi, keyOrder, queryKeysSetAside, sessionDictGlobal):
+    """
+    For each key in the range [lo, hi] (which is a batch)
+    keyOrder[cur] is sessQueryId of the key with index cur
+
+    Output:
+    queryKeysSetAside: stores session ID and query ID for all queries in keyOrder[lo, hi]
+    sessionDictGlobal: stores session to query mapping for the lastest queryID of that session
+    """
+    cur = lo
+    while(cur<hi+1):
+        sessQueryID = keyOrder[cur]
+        queryKeysSetAside.append(sessQueryID)
+        sessID = int(sessQueryID.split(",")[0])
+        queryID = int(sessQueryID.split(",")[1])
+        sessionDictGlobal[sessID]= queryID # key is sessID and value is the latest queryID
+        cur+=1
+    #print("updated Global Session Dict")
+    return (sessionDictGlobal, queryKeysSetAside)
+
+
+# LSTM_RNN_Parallel.splitIntoTrainTestSets
+def splitIntoTrainTestSets(keyOrder, configDict):
+    keyCount = 0
+    trainKeyOrder = []
+    testKeyOrder = []
+    for key in keyOrder:
+        if keyCount <= int(configDict['RNN_SUSTENANCE_TRAIN_LIMIT']):
+            trainKeyOrder.append(key)
+        else:
+            testKeyOrder.append(key)
+        keyCount+=1
+    return (trainKeyOrder, testKeyOrder)
+
+
+# CF_SVD.updateResultsToExcel
+def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName):
+    accThres = float(configDict['ACCURACY_THRESHOLD'])
+    QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
+                                  configDict['ALGORITHM'])
+    print("--Completed Quality Evaluation for accThres:" + str(accThres))
+    QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
+                               configDict['ALGORITHM'])
+
+    outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + configDict[
+        'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                    'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                                configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
+    outputExcelQuality = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelQuality_" + configDict['ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                             'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict[
+                             'EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres) + ".xlsx"
+    ParseResultsToExcel.parseQualityFileWithEpisodeRep(outputEvalQualityFileName, outputExcelQuality, configDict)
+
+    outputEvalTimeFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalTimeShortTermIntent_" + configDict[
+        'ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                                 'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                             configDict['EPISODE_IN_QUERIES']
+    outputExcelTimeEval = getConfig(configDict['OUTPUT_DIR']) + "/OutputExcelTime_" + configDict['ALGORITHM'] + "_" + configDict['INTENT_REP'] + "_" + configDict[
+                              'BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + \
+                          configDict['EPISODE_IN_QUERIES'] + ".xlsx"
+    ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
+    return (outputIntentFileName, episodeResponseTimeDictName)
+
+# End of helper functions copied over from other files
+
 def findDistinctQueryAllArgs(sessQueryID, queryVocab, sessionStreamDict):
     for oldSessQueryID in queryVocab:
         if oldSessQueryID == sessQueryID:
             return oldSessQueryID
-        elif LSTM_RNN_Parallel.compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
+        # elif LSTM_RNN_Parallel.compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
+        elif compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return oldSessQueryID
     return None
 
@@ -193,11 +305,11 @@ def findIfQueryInside(sessQueryID, sessionStreamDict, queryVocab, distinctQuerie
     """
     # check if current query already exist in distinctQueries
     for oldSessQueryID in distinctQueries:
-        if LSTM_RNN_Parallel.compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
+        if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return oldSessQueryID
     # check if current query already exist in queryVocab
     for oldSessQueryID in queryVocab:
-        if LSTM_RNN_Parallel.compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
+        if compareBitMaps(sessionStreamDict[oldSessQueryID], sessionStreamDict[sessQueryID]) == "True":
             return oldSessQueryID
     # return None if this is the first time seeing this query
     return None
@@ -253,7 +365,7 @@ def assignReward(startDistinctSessQueryID, endDistinctSessQueryID, qObj):
         idealSuccSessQueryID = str(startSessID) + "," + str(startQueryID+1)
         try:
             if qObj.configDict['QL_BOOLEAN_NUMERIC_REWARD'] == 'BOOLEAN' and \
-                            LSTM_RNN_Parallel.compareBitMaps(qObj.sessionStreamDict[endDistinctSessQueryID],
+                            compareBitMaps(qObj.sessionStreamDict[endDistinctSessQueryID],
                                                              qObj.sessionStreamDict[idealSuccSessQueryID]) == "True":
                 rewVal = 1.0
         except:
@@ -392,7 +504,7 @@ def trainTestBatchWise(qObj):
             qObj.resultDict = predictIntentsWithoutCurrentBatch(lo, hi, qObj, qObj.keyOrder)
         print("Starting training in Episode " + str(qObj.numEpisodes))
         startTrainTime = time.time()
-        (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, qObj.keyOrder,
+        (qObj.sessionDict, qObj.queryKeysSetAside) = updateGlobalSessionDict(lo, hi, qObj.keyOrder,
                                                                               qObj.queryKeysSetAside, qObj.sessionDict)
         updateQueryVocabQTable(qObj)
 
@@ -419,8 +531,8 @@ def trainTestBatchWise(qObj):
              qObj.elapsedAppendTime) = QR.updateResponseTime(
                 qObj.episodeResponseTimeDictName, qObj.episodeResponseTime, qObj.numEpisodes, qObj.startEpisode,
                 elapsedAppendTime)
-            qObj.resultDict = LSTM_RNN_Parallel.clear(qObj.resultDict)
-    CF_SVD.updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
+            qObj.resultDict = clear(qObj.resultDict)
+    updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
 
 def loadModel(qObj):
     qObj.queryVocab = QR.readFromPickleFile(getConfig(configDict['OUTPUT_DIR']) + configDict['QL_BOOLEAN_NUMERIC_REWARD'] + "_QLQueryVocab.pickle")
@@ -467,7 +579,7 @@ def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, qObj):
         # train model if we are loading existing model
         if configDict['QL_SUSTENANCE_LOAD_EXISTING_MODEL'] == 'False':
             # qObj.queryKeysSetAside and qObj.sessionDict are being updated
-            (qObj.sessionDict, qObj.queryKeysSetAside) = LSTM_RNN_Parallel.updateGlobalSessionDict(lo, hi, qObj.keyOrder,
+            (qObj.sessionDict, qObj.queryKeysSetAside) = updateGlobalSessionDict(lo, hi, qObj.keyOrder,
                                                                                                    qObj.queryKeysSetAside,
                                                                                                    qObj.sessionDict)
             # update Q table
@@ -529,14 +641,14 @@ def testModelSustenance(testKeyOrder, qObj):
                  qObj.elapsedAppendTime) = QR.updateResponseTime(
                     qObj.episodeResponseTimeDictName, qObj.episodeResponseTime, qObj.numEpisodes, qObj.startEpisode,
                     elapsedAppendTime)
-                qObj.resultDict = LSTM_RNN_Parallel.clear(qObj.resultDict)
-    CF_SVD.updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
+                qObj.resultDict = clear(qObj.resultDict)
+    updateResultsToExcel(qObj.configDict, qObj.episodeResponseTimeDictName, qObj.outputIntentFileName)
     return
 
 def evalSustenance(qObj):
     # split to train test split
     # qObj.keyOrder stores sessionId,queryId
-    (trainKeyOrder, testKeyOrder) = LSTM_RNN_Parallel.splitIntoTrainTestSets(qObj.keyOrder, qObj.configDict)
+    (trainKeyOrder, testKeyOrder) = splitIntoTrainTestSets(qObj.keyOrder, qObj.configDict)
     # record start time
     sustStartTrainTime = time.time()
     # train model

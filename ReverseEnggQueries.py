@@ -105,7 +105,7 @@ def populateColsForOp(opString, schemaDicts):
     elif opString == "having":
         startBitIndex = schemaDicts.havingStartBitIndex
     else:
-        print "ColError !!"
+        print("ColError !!")
     indexToSet = startBitIndex
     for tableIndex in range(len(schemaDicts.tableOrderDict)):
         tableName = schemaDicts.tableOrderDict[tableIndex]
@@ -132,7 +132,7 @@ def populateJoinPreds(schemaDicts):
             joinColPair = schemaDicts.joinPredDict[tablePairIndex][indexToSet-startBitPos]
             joinStrToAppend = tablePairIndex.split(",")[0] + "." + joinColPair.split(",")[0]+ "," + tablePairIndex.split(",")[1] + "." + joinColPair.split(",")[1]
             if indexToSet in schemaDicts.forwardMapBitsToOps:
-                print "Already exists "+str(indexToSet)+" :"+schemaDicts.forwardMapBitsToOps[indexToSet]
+                print("Already exists "+str(indexToSet)+" :"+schemaDicts.forwardMapBitsToOps[indexToSet])
             schemaDicts.forwardMapBitsToOps[indexToSet] = joinStrToAppend + ";" + opString
             schemaDicts.backwardMapOpsToBits[joinStrToAppend + ";" + opString] = indexToSet
     return schemaDicts
@@ -152,9 +152,9 @@ def populateBiDirectionalLookupMap(schemaDicts):
     schemaDicts = populateColsForOp("having", schemaDicts)
     schemaDicts = populateLimit(schemaDicts)
     schemaDicts = populateJoinPreds(schemaDicts)
-    #print len(schemaDicts.forwardMapBitsToOps)
-    #print len(schemaDicts.backwardMapOpsToBits)
-    #print schemaDicts.allOpSize
+    #print(len(schemaDicts.forwardMapBitsToOps))
+    #print(len(schemaDicts.backwardMapOpsToBits))
+    #print(schemaDicts.allOpSize)
     assert len(schemaDicts.forwardMapBitsToOps) == len(schemaDicts.backwardMapOpsToBits)
     assert len(schemaDicts.forwardMapBitsToOps) == schemaDicts.allOpSize
     return (schemaDicts.forwardMapBitsToOps, schemaDicts.backwardMapOpsToBits)
@@ -263,7 +263,7 @@ def checkSanity(joinPredDict, joinPredBitPosDict):
         joinPredBitPosCount += joinPredBitPosDict[key][1] - joinPredBitPosDict[key][0] + 1
     assert len(joinPredDict) == len(joinPredBitPosDict)
     assert joinPredCount == joinPredBitPosCount
-    #print "joinPredCount: "+str(joinPredCount)+", joinPredBitPosCount: "+str(joinPredBitPosCount)
+    #print("joinPredCount: "+str(joinPredCount)+", joinPredBitPosCount: "+str(joinPredBitPosCount))
 
 def readJoinColDicts(joinPredFile, joinPredBitPosFile):
     joinPredDict = readJoinPredDict(joinPredFile)
@@ -291,14 +291,14 @@ def topKThres(configDict):
 
 def refineIntentForQuery(threadID, topKCandidateVector, schemaDicts, precOrRecallFavor, configDict, curIntentBitVec):
     # Step 1: regenerate the query ops from the topKCandidateVector
-    # print "-----------Original SQL----------------"
+    # print("-----------Original SQL----------------")
     predictedIntentObj = CreateSQLFromIntentVec.regenerateSQL(None, topKCandidateVector, schemaDicts)
     curIntentObj = None
     if configDict['RNN_DEFAULT_CUR_QUERY'] == 'True' and curIntentBitVec is not None:
         curIntentObj = CreateSQLFromIntentVec.regenerateSQL(None, curIntentBitVec, schemaDicts)
     # Step 2: refine SQL violations
     intentObj = CreateSQLFromIntentVec.fixSQLViolations(predictedIntentObj, precOrRecallFavor, curIntentObj)
-    # print "-----------Refined SQL-----------------"
+    # print("-----------Refined SQL-----------------")
     # intentObj = CreateSQLFromIntentVec.regenerateSQL(intentObj.intentBitVec, schemaDicts)
     return intentObj
 
@@ -331,7 +331,7 @@ def predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, confi
         topKPredictedIntents.append(topKNovelIntent)
     return topKPredictedIntents
 
-def predictTopKNovelIntentsProcess((threadID, predictedY, schemaDicts, configDict, curIntentBitVec)):
+def predictTopKNovelIntentsProcess(threadID, predictedY, schemaDicts, configDict, curIntentBitVec):
     topKPredictedIntents = predictTopKNovelIntentsSingleThread(threadID, predictedY, schemaDicts, configDict, curIntentBitVec)
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "localTopKDict_" + str(threadID) + ".pickle", topKPredictedIntents)
     return

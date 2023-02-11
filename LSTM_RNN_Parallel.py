@@ -19,7 +19,7 @@ print("before importing kera")
 # import keras
 print("after importing kera")
 print("before importing tf")
-import tensorflow as tf
+# import tensorflow as tf
 print("after importing tf")
 from keras import backend as K
 from keras.datasets import imdb
