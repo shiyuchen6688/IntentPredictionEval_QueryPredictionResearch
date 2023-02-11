@@ -133,7 +133,7 @@ def computeListBitCosineSimilarityPredictOnlyOptimized(predSessSummary, oldSessi
         #assert oldSessionSummary.test(i)
         numerator += float(predSessSummary[i])
     #if oldSessionSummary.count() == 0:
-        #print "L2NormSquares cannot be zero !!"
+        #print("L2NormSquares cannot be zero !!")
         #sys.exit(0)
     cosineSim = numerator / math.sqrt(oldSessionSummary.count())
     return cosineSim
@@ -156,7 +156,7 @@ def computeListBitCosineSimilarity(predSessSummary, oldSessionSummary, configDic
         if oldSessionSummary.test(i):
             numerator += float(predSessDim * 1.0)
     if l2NormOldSess == 0 or l2NormPredSess == 0:
-        print "L2NormSquares cannot be zero !!"
+        print("L2NormSquares cannot be zero !!")
         sys.exit(0)
     cosineSim = numerator / (math.sqrt(l2NormPredSess) * math.sqrt(l2NormOldSess))
     return cosineSim
@@ -177,7 +177,7 @@ def computeWeightedCosineSimilarity(curSessionSummary, oldSessionSummary, delimi
     for i in range(idealSize):
         numerator = numerator + float(curSessDims[i] * oldSessDims[i])
     if l2NormQuery == 0 or l2NormSession == 0:
-        print "L2NormSquares cannot be zero !!"
+        print("L2NormSquares cannot be zero !!")
         sys.exit(0)
     cosineSim = numerator / (math.sqrt(l2NormQuery) * math.sqrt(l2NormSession))
     return cosineSim
@@ -197,14 +197,14 @@ def computeListWeightedCosineSimilarity(predSessSummary, oldSessionSummary, deli
     for i in range(idealSize):
         numerator = numerator + float(predSessSummary[i] * oldSessDims[i])
     if l2NormQuery == 0 or l2NormSession == 0:
-        print "L2NormSquares cannot be zero !!"
+        print("L2NormSquares cannot be zero !!")
         sys.exit(0)
     cosineSim = numerator / (math.sqrt(l2NormQuery) * math.sqrt(l2NormSession))
     return cosineSim
 
 def findTopKSessIndex(topCosineSim, cosineSimDict, topKSessindices):
     if topCosineSim not in cosineSimDict:
-        print "cosineSimilarity not found in the dictionary !!"
+        print("cosineSimilarity not found in the dictionary !!")
         sys.exit(0)
     for sessIndex in cosineSimDict[topCosineSim]:
         if sessIndex not in topKSessindices:
@@ -215,7 +215,7 @@ def popTopKfromHeap(configDict, minheap, cosineSimDict):
     numElemToPop = int(configDict['TOP_K'])
     if len(minheap) < numElemToPop:
         numElemToPop = len(minheap)
-    #print "len(minheap): "+str(len(minheap))+", numElemToPop: "+str(numElemToPop)
+    #print("len(minheap): "+str(len(minheap))+", numElemToPop: "+str(numElemToPop))
     while len(topKIndices) < numElemToPop and len(minheap)>0:
         topCosineSim = 0 - (heapq.heappop(minheap))  # negated to get back the item
         topKIndex = findTopKSessIndex(topCosineSim, cosineSimDict, topKIndices)
@@ -259,7 +259,7 @@ def computeSessSimilaritySingleThread(sessionSummaries, sessionSummarySample, cu
         sessSimDict[sessID] = sessSim
     return sessSimDict
 
-def computeSessQuerySimilarityMultiThread((threadID, subThreadID, sessQueryPartition, sessionStreamDict, curSessSummary, configDict)):
+def computeSessQuerySimilarityMultiThread(threadID, subThreadID, sessQueryPartition, sessionStreamDict, curSessSummary, configDict):
     sessQuerySimDict = {}
     for sessQueryID in sessQueryPartition:
         prevSessQuery = sessionStreamDict[sessQueryID]
@@ -270,7 +270,7 @@ def computeSessQuerySimilarityMultiThread((threadID, subThreadID, sessQueryParti
             subThreadID) + ".pickle", sessQuerySimDict)
     return
 
-def computeSessSimilarityMultiThread((threadID, subThreadID, sessPartition, sessionSummaries, curSessSummary, configDict)):
+def computeSessSimilarityMultiThread(threadID, subThreadID, sessPartition, sessionSummaries, curSessSummary, configDict):
     sessSimDict = {}
     for sessID in sessPartition:
         prevSessSummary = sessionSummaries[sessID]
@@ -330,7 +330,7 @@ def findTopKSessHeap(sessSimDict, sessID):
             (minheap, cosineSimDict) = insertIntoMinSessHeap(minheap, sessSimDict[sessIndex], cosineSimDict, sessIndex)
     if len(minheap) > 0:
         (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
-        # print "ThreadID: "+str(threadID)+", Found Top-K Sessions"
+        # print("ThreadID: "+str(threadID)+", Found Top-K Sessions")
     else:
         return None
     del minheap
@@ -429,7 +429,7 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSummar
     elif configDict['CF_HEAP_OR_SORT'] == 'SORT':
         topKSessIndices = findTopKSessSort(sessSimDict, sessID)
         topKSessQueryIndices = findTopKSessQueriesSort(threadID, topKSessIndices, sessionSampleDict, sessionStreamDict, curSessSummary)
-        print "ThreadID: "+str(threadID)+", Found Top-K Queries"
+        print("ThreadID: "+str(threadID)+", Found Top-K Queries")
     '''
     topKPredictedIntents = []
     for topKSessQueryIndex in topKSessQueryIndices:
@@ -478,7 +478,7 @@ def predictTopKIntentsOld(threadID, curQueryIntent, sessionSummaries, sessionSam
             (minheap, cosineSimDict) = insertIntoMinSessHeap(minheap, sessSimDict[sessIndex], cosineSimDict, sessIndex)
     if len(minheap) > 0:
         (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
-        #print "ThreadID: "+str(threadID)+", Found Top-K Sessions"
+        #print("ThreadID: "+str(threadID)+", Found Top-K Sessions")
     else:
         return (None, None)
 
@@ -491,7 +491,7 @@ def predictTopKIntentsOld(threadID, curQueryIntent, sessionSummaries, sessionSam
         (minheap, cosineSimDict) = insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, configDict, cosineSimDict, curSessSummary, topKSessIndex)
     if len(minheap) > 0:
         (minheap, topKSessQueryIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
-        #print "ThreadID: "+str(threadID)+", Found Top-K Queries"
+        #print("ThreadID: "+str(threadID)+", Found Top-K Queries")
     '''
     topKPredictedIntents = []
     for topKSessQueryIndex in topKSessQueryIndices:
@@ -728,7 +728,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
     accThres = float(configDict['ACCURACY_THRESHOLD'])
     QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres,
                                   configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
-    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    print("--Completed Quality Evaluation for accThres:" + str(accThres))
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict,
                                configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
 
@@ -753,7 +753,7 @@ def updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFi
     ParseResultsToExcel.parseTimeFile(outputEvalTimeFileName, outputExcelTimeEval)
     return (outputIntentFileName, episodeResponseTimeDictName)
 
-def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict)):
+def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, resList, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict):
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
@@ -764,12 +764,12 @@ def predictTopKIntentsPerThread((threadID, t_lo, t_hi, keyOrder, resList, sessio
             topKSessQueryIndices = predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict,
                                                                               sessID, configDict)
             for sessQueryID in topKSessQueryIndices:
-                #print "Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])]))
+                #print("Length of sample: "+str(len(sessionSampleDict[int(sessQueryID.split(",")[0])])))
                 if sessQueryID not in sessionStreamDict:
-                    print "sessQueryID: "+sessQueryID+" not in sessionStreamDict !!"
+                    print("sessQueryID: "+sessQueryID+" not in sessionStreamDict !!")
                     sys.exit(0)
-            #print "ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
-            #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID)
+            #print("ThreadID: "+str(threadID)+", computed Top-K="+str(len(topKSessQueryIndices))+\
+            #      " Candidates sessID: " + str(sessID) + ", queryID: " + str(queryID))
             if topKSessQueryIndices is not None:
                 resList.append((sessID, queryID, topKSessQueryIndices))
     QR.writeToPickleFile(getConfig(configDict['PICKLE_TEMP_OUTPUT_DIR']) + "CFCosineSimResList_" + str(threadID) + ".pickle", resList)
@@ -801,7 +801,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
             t_hi = t_lo + numKeysPerThread - 1
         t_loHiDict[threadID] = (t_lo, t_hi)
         resultDict[threadID] = list()
-        # print "Set tuple boundaries for Threads"
+        # print("Set tuple boundaries for Threads")
     if numThreads == 1:
         predictTopKIntentsPerThread((0, lo, hi, keyOrder, resultDict[0], sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict))
     elif numThreads > 1:
@@ -833,7 +833,7 @@ def predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSumma
             del sharedSessSummaryDict
             del sharedSessSampleDict
             del sharedSessSummarySampleList
-    #print "len(resultDict): "+str(len(resultDict))
+    #print("len(resultDict): "+str(len(resultDict)))
     return resultDict
 
 def appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, foldID):
@@ -873,15 +873,15 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
         elapsedAppendTime = 0.0
 
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
-            hi) + ", len(keyOrder): " + str(len(keyOrder))
+        print("Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(keyOrder): " + str(len(keyOrder)))
         # model is the sessionSummaries
         if len(sessionSummaries) > 0:
             # predict queries for the batch
             sessionSummarySample = sampleSessionSummaries(sessionSummaries, float(configDict['CF_SAMPLE_SESSION_FRACTION']))
             resultDict = predictIntentsWithoutCurrentBatch(lo, hi, keyOrder, resultDict, sessionSummaries, sessionSummarySample, sessionSampleDict, sessionStreamDict, configDict)
             del sessionSummarySample
-        print "Starting training in Episode " + str(numEpisodes)
+        print("Starting training in Episode " + str(numEpisodes))
         startTrainTime = time.time()
         # update SessionDictGlobal and train with the new batch
         queryKeysSetAside = updateQueriesSetAside(lo, hi, keyOrder, queryKeysSetAside)
@@ -901,7 +901,7 @@ def trainTestBatchWise(sessionSummaries, sessionSampleDict, queryKeysSetAside, r
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = LSTM_RNN_Parallel.clear(resultDict)
         totalTrainTime = float(time.time() - startTrainTime)
-        print "Total Train Time: "+str(totalTrainTime)
+        print("Total Train Time: "+str(totalTrainTime))
     updateResultsToExcel(configDict, episodeResponseTimeDictName, outputIntentFileName)
 
 def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict):
@@ -920,7 +920,7 @@ def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, sessionSampleD
         if len(trainKeyOrder) - lo < batchSize:
             batchSize = len(trainKeyOrder) - lo
         hi = lo + batchSize - 1
-        print "Starting training in Episode " + str(numTrainEpisodes)
+        print("Starting training in Episode " + str(numTrainEpisodes))
         startTrainTime = time.time()
         # update SessionDictGlobal and train with the new batch
         queryKeysSetAside = updateQueriesSetAside(lo, hi, trainKeyOrder, queryKeysSetAside)
@@ -937,7 +937,7 @@ def trainEpisodicModelSustenance(episodicTraining, trainKeyOrder, sessionSampleD
             queryKeysSetAside = []
         numTrainEpisodes += 1
         totalTrainTime = float(time.time() - startTrainTime)
-        print "Total Train Time: " + str(totalTrainTime)
+        print("Total Train Time: " + str(totalTrainTime))
     return
 
 def trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict):
@@ -966,8 +966,8 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
         hi = lo + batchSize - 1
         elapsedAppendTime = 0.0
         # test first for each query in the batch if the classifier is not None
-        print "Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
-            hi) + ", len(keyOrder): " + str(len(keyOrder))
+        print("Starting prediction in Episode " + str(numEpisodes) + ", lo: " + str(lo) + ", hi: " + str(
+            hi) + ", len(keyOrder): " + str(len(keyOrder)))
         # model is the sessionSummaries
         if len(sessionSummarySample) > 0:
             # predict queries for the batch
@@ -977,7 +977,7 @@ def testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, session
         # we record the times including train and test
         numEpisodes += 1
         if len(resultDict) > 0:
-            print "appending results"
+            print("appending results")
             elapsedAppendTime = appendResultsToFile(sessionStreamDict, resultDict, elapsedAppendTime, numEpisodes, outputIntentFileName, configDict, -1)
             (episodeResponseTimeDictName, episodeResponseTime, startEpisode, elapsedAppendTime) = QR.updateResponseTime(episodeResponseTimeDictName, episodeResponseTime, numEpisodes, startEpisode, elapsedAppendTime)
             resultDict = LSTM_RNN_Parallel.clear(resultDict)
@@ -992,7 +992,7 @@ def evalSustenance(sessionSummaries, sessionSampleDict, queryKeysSetAside, resul
     sustStartTrainTime = time.time()
     (sessionSummaries, sessionSampleDict) = trainModelSustenance(trainKeyOrder, sessionSampleDict, sessionStreamDict, queryKeysSetAside, sessionSummaries, configDict)
     sustTotalTrainTime = float(time.time() - sustStartTrainTime)
-    print "Sustenace Train Time: " + str(sustTotalTrainTime)
+    print("Sustenace Train Time: " + str(sustTotalTrainTime))
     testModelSustenance(sessionSummaries, sessionSampleDict, resultDict, sessionStreamDict, numEpisodes,
                         episodeResponseTimeDictName, episodeResponseTime, testKeyOrder, startEpisode, outputIntentFileName)
     return
@@ -1043,13 +1043,13 @@ def findLatestIntentPredictedSoFar(sessID, queryID, topKPredictedIntentDict, top
                     return (topKSessQueryIndicesDict[curSessID][curQueryID], topKPredictedIntentDict[curSessID][curQueryID])
                 curQueryID = curQueryID-1
         curSessID = curSessID - 1
-    print "Could not find sessID, queryID !!"
+    print("Could not find sessID, queryID !!")
     sys.exit(0)
 
 def insertIntoTopKDict(sessID, queryID, topKIndices, topKIndicesDict):
     if sessID in topKIndicesDict:
         if queryID in topKIndicesDict:
-            print "raise error sessID queryID already exists !!"
+            print("raise error sessID queryID already exists !!")
             sys.exit(0)
     else:
         topKIndicesDict[sessID] = {}
@@ -1084,7 +1084,7 @@ def insertIntoTopKDict(sessID, queryID, topKIndices, topKIndicesDict):
     QR.writeToPickleFile(episodeResponseTimeDictName, episodeResponseTime)
     accThres=float(configDict['ACCURACY_THRESHOLD'])
     QR.evaluateQualityPredictions(outputIntentFileName, configDict, accThres, configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
-    print "--Completed Quality Evaluation for accThres:" + str(accThres)
+    print("--Completed Quality Evaluation for accThres:" + str(accThres))
     QR.evaluateTimePredictions(episodeResponseTimeDictName, configDict, configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF'])
 
     outputEvalQualityFileName = getConfig(configDict['OUTPUT_DIR']) + "/OutputEvalQualityShortTermIntent_" + configDict['ALGORITHM'] + "_" + configDict['CF_COSINESIM_MF']+ "_" + configDict['INTENT_REP'] + "_" + configDict['BIT_OR_WEIGHTED'] + "_TOP_K_" + configDict['TOP_K'] + "_EPISODE_IN_QUERIES_" + configDict['EPISODE_IN_QUERIES'] + "_ACCURACY_THRESHOLD_" + str(accThres)
@@ -1106,7 +1106,7 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSample
             (minheap, cosineSimDict) = insertIntoMinSessHeap(minheap, sessionSummaries, sessIndex, configDict, cosineSimDict, predSessSummary, sessIndex)
     if len(minheap) > 0:
         (minheap, topKSessIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
-        print "ThreadID: "+str(threadID)+", Found Top-K Sessions"
+        print("ThreadID: "+str(threadID)+", Found Top-K Sessions")
     else:
         return (None, None)
 
@@ -1119,7 +1119,7 @@ def predictTopKIntents(threadID, curQueryIntent, sessionSummaries, sessionSample
         (minheap, cosineSimDict) = insertIntoMinQueryHeap(minheap, sessionSampleDict, sessionStreamDict, configDict, cosineSimDict, predSessSummary, topKSessIndex)
     if len(minheap) > 0:
         (minheap, topKSessQueryIndices) = popTopKfromHeap(configDict, minheap, cosineSimDict)
-        print "ThreadID: "+str(threadID)+", Found Top-K Queries"
+        print("ThreadID: "+str(threadID)+", Found Top-K Queries")
     return topKSessQueryIndices
     
 def insertIntoMinSessHeap(minheap, elemList, elemIndex, configDict, cosineSimDict, predSessSummary, insertKey):
