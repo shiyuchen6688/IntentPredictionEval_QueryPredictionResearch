@@ -21,26 +21,27 @@ print("after importing kera")
 print("before importing tf")
 # import tensorflow as tf
 print("after importing tf")
-from keras import backend as K
-from keras.datasets import imdb
-from keras.preprocessing import sequence
-from keras.preprocessing.sequence import pad_sequences
-from keras import regularizers
-from keras.callbacks import ModelCheckpoint
-from keras.models import Sequential
-from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU, BatchNormalization
+# from keras import backend as K
+# from keras.datasets import imdb
+# from keras.preprocessing import sequence
+# from keras.preprocessing.sequence import pad_sequences
+# from keras import regularizers
+# from keras.callbacks import ModelCheckpoint
+# from keras.models import Sequential
+# from keras.layers import Activation, SimpleRNN, Dense, TimeDistributed, Flatten, LSTM, Dropout, GRU, BatchNormalization
 import CFCosineSim
 import argparse
 from ParseConfigFile import getConfig
 import threading
 import copy
+print("before importing multiprocessing")
 import multiprocessing
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 import ReverseEnggQueries
 import ReverseEnggQueries_selOpConst
-from keras.models import load_model
-
+# from keras.models import load_model
+print("after importing ReverseEnggQueries_selOpConst")
 
 class ThreadSafeDict(dict) :
     def __init__(self, * p_arg, ** n_arg) :

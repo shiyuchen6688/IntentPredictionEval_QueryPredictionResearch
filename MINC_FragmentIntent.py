@@ -56,7 +56,7 @@ def seqIntentVectorFilesModifyCrawler(configDict):
                     if queryLimit != 0 and queryCount > queryLimit: # 0 indicates no limit
                         break
                     if queryCount % 1000 == 0:
-                        print ("Query count so far: "+str(queryCount)+", len(sessionQueryDict): "+str(len(sessionQueryDict)))
+                        print("Query count so far: "+str(queryCount)+", len(sessionQueryDict): "+str(len(sessionQueryDict)))
     return sessionQueryDict
 
 
@@ -106,7 +106,7 @@ def seqIntentVectorFilesPruneCrawler(configDict):
                     if queryLimit != 0 and queryCount > queryLimit: # 0 indicates no limit
                         break
                     if queryCount % 1000 == 0:
-                        print ("Query count so far: " + str(queryCount) + ", len(sessionQueryDict): " + str(
+                        print("Query count so far: " + str(queryCount) + ", len(sessionQueryDict): " + str(
                             len(sessionQueryDict)))
     return sessionQueryDict
 
@@ -142,7 +142,7 @@ def seqIntentVectorFilesKeepCrawler(configDict):
                     if queryLimit != 0 and queryCount > queryLimit: # 0 indicates no limit
                         break
                     if queryCount % 10000 == 0:
-                        print ("Query count so far: "+str(queryCount)+", len(sessionQueryDict): "+str(len(sessionQueryDict)))
+                        print("Query count so far: "+str(queryCount)+", len(sessionQueryDict): "+str(len(sessionQueryDict)))
     return sessionQueryDict
 
 def concatenateSeqIntentVectorFiles(configDict):
@@ -174,7 +174,7 @@ def concatenateSeqIntentVectorFiles(configDict):
                 if queryLimit != 0 and queryCount > queryLimit:  # 0 indicates no limit
                     break
                 if queryCount % 10000 == 0:
-                    print ("Query count so far: "+str(queryCount))
+                    print("Query count so far: "+str(queryCount))
     return sessionQueryDict
 
 def createQuerySessions(sessionQueryDict, configDict):
@@ -231,7 +231,7 @@ def createSingularityIntentVectors(sessionQueryDict, configDict):
                 del sessionQueryDict[sessIndex]
             #queryIndexRec = sessQueryIntent.split(";")[0].split(", ")[1].split(" ")[1]
             #if queryIndexRec != str(queryIndex):
-                #print "queryIndexRec != queryIndex !!"
+                #print("queryIndexRec != queryIndex !!")
             #assert queryIndexRec == str(queryIndex)
             tokens = sessQueryIntent.split(";")
             assert len(tokens) == 3
@@ -254,12 +254,12 @@ def createSingularityIntentVectors(sessionQueryDict, configDict):
                 ti.appendToFile(tableIntentFile, output_table_str)
                 queryCount = 0
             if absCount % 10000 == 0:
-                print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", absQueryCount: " + str(absCount))
+                print("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", absQueryCount: " + str(absCount))
     if queryCount > 0:
         ti.appendToFile(intentFile, output_str)
         ti.appendToFile(concurrentFile, conc_str)
         ti.appendToFile(tableIntentFile, output_table_str)
-    print ("Created intent vectors for # Sessions: "+str(numSessions)+" and # Queries: "+str(absCount))
+    print("Created intent vectors for # Sessions: "+str(numSessions)+" and # Queries: "+str(absCount))
 
 
 if __name__ == "__main__":
