@@ -19,7 +19,7 @@ from multiprocessing import Queue
 # import CF_SVD
 import argparse
 from sklearn.decomposition import NMF
-# import CFCosineSim_Parallel
+import CFCosineSim_Parallel
 import random
 
 class Q_Obj:
@@ -405,7 +405,7 @@ def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamD
     (maxCosineSim, maxSimSessQueryID) = findMostSimilarQuery(sessQueryID, queryVocab, sessionStreamDict)
     qValues = qTable[maxSimSessQueryID]
     topK = int(configDict['TOP_K'])
-    topKIndices = zip(*heapq.nlargest(topK, enumerate(qValues), key=operator.itemgetter(1)))[0]
+    topKIndices = list(zip(*heapq.nlargest(topK, enumerate(qValues), key=operator.itemgetter(1))))[0]
     topKSessQueryIndices = []
     for topKIndex in topKIndices:
         topKSessQueryIndices.append(queryVocab[topKIndex])
@@ -415,6 +415,7 @@ def predictTopKIntents(threadID, qTable, queryVocab, sessQueryID, sessionStreamD
 def predictTopKIntentsPerThread(threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocab, sessionStreamDict, configDict):
     #printQTable(qTable, queryVocab)
     #print("QueryVocab:"+str(queryVocab))
+    # print(threadID, t_lo, t_hi, keyOrder, qTable, resList, queryVocab, sessionStreamDict, configDict)
     for i in range(t_lo, t_hi+1):
         sessQueryID = keyOrder[i]
         sessID = int(sessQueryID.split(",")[0])
@@ -452,11 +453,18 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj, keyOrder):
         qObj.resultDict[threadID] = list()
         # print("Set tuple boundaries for Threads")
     # sortedSessKeys = svdObj.sessAdjList.keys().sort()
+    print("numThreads is ", numThreads)
+    print("numThreads is ", numThreads)
+    # print("lo, hi, keyOrder, qObj.qTable, qObj.resultDict[0], qObj.queryVocab, qObj.sessionStreamDict, qObj.configDict", 
+        #   (lo, hi, keyOrder, qObj.qTable,
+        #     qObj.resultDict[0], qObj.queryVocab,
+        #     qObj.sessionStreamDict,
+        #     qObj.configDict))
     if numThreads == 1:
-        qObj.resultDict[0] = predictTopKIntentsPerThread((0, lo, hi, keyOrder, qObj.qTable,
+        qObj.resultDict[0] = predictTopKIntentsPerThread(0, lo, hi, keyOrder, qObj.qTable,
                                                             qObj.resultDict[0], qObj.queryVocab,
                                                             qObj.sessionStreamDict,
-                                                            qObj.configDict))
+                                                            qObj.configDict)
     elif numThreads > 1:
         sharedTable = qObj.manager.dict()
         for key in qObj.qTable:
@@ -465,10 +473,11 @@ def predictIntentsWithoutCurrentBatch(lo, hi, qObj, keyOrder):
         argsList = []
         for threadID in range(numThreads):
             (t_lo, t_hi) = t_loHiDict[threadID]
-            argsList.append((threadID, t_lo, t_hi, keyOrder, sharedTable, qObj.resultDict[threadID],
-                             qObj.queryVocab, qObj.sessionStreamDict, qObj.configDict))
+            argsList.append(threadID, t_lo, t_hi, keyOrder, sharedTable, qObj.resultDict[threadID],
+                             qObj.queryVocab, qObj.sessionStreamDict, qObj.configDict)
             # threads[i] = threading.Thread(target=predictTopKIntentsPerThread, args=(i, t_lo, t_hi, keyOrder, resList, sessionDict, sessionSampleDict, sessionStreamDict, sessionLengthDict, configDict))
             # threads[i].start()
+        print("argsList is ", argsList)
         pool.map(predictTopKIntentsPerThread, argsList)
         pool.close()
         pool.join()
@@ -684,4 +693,5 @@ if __name__ == "__main__":
     parser.add_argument("-config", help="Config parameters file", type=str, required=True)
     args = parser.parse_args()
     configDict = parseConfig.parseConfigFile(args.config)
+    # print(configDict)
     runQLearning(configDict)

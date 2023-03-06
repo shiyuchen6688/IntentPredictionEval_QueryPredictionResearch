@@ -167,6 +167,7 @@ def createFragmentIntentRep(sessQuery, configDict):
     if configDict["BIT_OR_WEIGHTED"] == "BIT":
         resObj = BitMap.fromstring(projAggrObj.tostring()+selObj.tostring()+groupByObj.tostring()+orderByObj.tostring()+havingObj.tostring()+limitObj.tostring()+tableObj.tostring())
         expectedPaddedBitCount = (6+4)*5+7+7 # reasoning is 19 bits get padded up to 24 and 1 bit gets padded up to 8, coz bitmaps are created in bytes not in bits
+        print(resObj.size(), numExpectedDims+expectedPaddedBitCount)
         assert resObj.size() == numExpectedDims+expectedPaddedBitCount
     elif configDict["BIT_OR_WEIGHTED"] == "WEIGHTED":
         resObj = projAggrObj+selObj+groupByObj+orderByObj+havingObj+limitObj+tableObj
@@ -174,7 +175,8 @@ def createFragmentIntentRep(sessQuery, configDict):
     return resObj
 
 if __name__ == "__main__":
-    configDict = parseConfig.parseConfigFile("configFile.txt")
+    # configDict = parseConfig.parseConfigFile("configFile.txt")
+    configDict = parseConfig.parseConfigFile("configFile_updated_file_path.txt")
     if configDict["BIT_OR_WEIGHTED"] == "BIT":
         fragmentIntentSessionsFile = getConfig(configDict['BIT_FRAGMENT_INTENT_SESSIONS'])
     elif configDict["BIT_OR_WEIGHTED"] == "WEIGHTED":

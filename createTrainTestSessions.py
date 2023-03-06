@@ -20,10 +20,10 @@ def compareForSanity(newSessionLengthDict, sessionLengthDict):
     for key in sessionLengthDict:
         #assert key in newSessionLengthDict
         #if sessCount % 100 == 0:
-            #print "Checked Sanity for "+str(sessCount)+" so far"
+            #print("Checked Sanity for "+str(sessCount)+" so far")
         #sessCount+=1
         if sessionLengthDict[key] != newSessionLengthDict[key]:
-            print "newSessionLengthDict["+str(key)+"]: "+str(newSessionLengthDict[key])+", sessionLengthDict["+str(key)+"]: "+str(sessionLengthDict[key])
+            print("newSessionLengthDict["+str(key)+"]: "+str(newSessionLengthDict[key])+",  sessionLengthDict["+str(key)+"]: "+str(sessionLengthDict[key]))
 
 def createConcIntentVectors(testSessNamesFold, foldID, configDict, intentSessionFile, allQueries):
     fileNameWithoutDir = intentSessionFile.split("/")[len(intentSessionFile.split("/"))-1]
@@ -64,18 +64,18 @@ def createSeqIntentVectors(testSessNamesFold, foldID, configDict, sessNames, int
         sessID = int(sessName.split(" ")[1])
         numSessQueries = sessionLengthDict[sessID]
         #if sessID == 36 or sessID == 30:
-            #print "hi in createTrainTest"
+            #print("hi in createTrainTest")
         for queryID in range(numSessQueries):
             lineToOutput = sessionLineDict[str(sessID)+","+str(queryID)]
             #sessQueryCount += 1
             if sessName in testSessNamesFold:
                 ti.appendToFile(outputIntentSeqTestSessions, lineToOutput)
                 #if sessQueryCount%10000 == 0:
-                    #print "Sess: "+str(sessCount)+", sessQueryCount: "+str(sessQueryCount)
+                    #print("Sess: "+str(sessCount)+", sessQueryCount: "+str(sessQueryCount))
             else:
                 ti.appendToFile(outputIntentSeqTrainSessions, lineToOutput)
                 #if sessQueryCount%10000 == 0:
-                    #print "Sess: "+str(sessCount)+", sessQueryCount: "+str(sessQueryCount)
+                    #print("Sess: "+str(sessCount)+", sessQueryCount: "+str(sessQueryCount))
         #sessCount+=1
     return
 
@@ -95,7 +95,7 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
     kFold = int(configDict['KFOLD'])
     testFrac = 1.0/float(kFold)
     numTest = int(testFrac * len(sessNames))
-    print "Total Sessions: "+ str(len(sessNames))+", numTest: "+str(numTest)
+    print("Total Sessions: "+ str(len(sessNames))+", numTest: "+str(numTest))
     # for K fold CV
     testSessNames = [[] for i in range(kFold)]
     testEndIndex = -1
@@ -109,7 +109,7 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
                 (sessionLineDict, newSessionLengthDict) = QR.updateSessionLineDict(line, configDict, sessionLineDict, newSessionLengthDict)
         f.close()
         compareForSanity(newSessionLengthDict, sessionLengthDict)
-        print "Checked Sanity for all Sessions"
+        print("Checked Sanity for all Sessions")
     else:
         allQueries =[]
         with open(intentSessionFile) as f:
@@ -123,7 +123,7 @@ def prepareKFoldTrainTest(configDict, intentSessionFile):
             testEndIndex = len(sessNames)-1
         for index in range(testStartIndex, testEndIndex+1):
             testSessNames[i].append(sessNames[index])
-        print "Fold "+str(i)+", StartIndex="+str(testStartIndex)+", EndIndex="+str(testEndIndex)
+        print("Fold "+str(i)+", StartIndex="+str(testStartIndex)+", EndIndex="+str(testEndIndex))
         if configDict['SEQ_OR_CONC_TRAIN_TEST'] == 'SEQ':
             createSeqIntentVectors(testSessNames[i], i, configDict, sessNames, intentSessionFile, sessionLengthDict, sessionLineDict)
         else:
@@ -149,6 +149,6 @@ if __name__ == "__main__":
     elif configDict['INTENT_REP']=='QUERY':
         intentSessionFile = getConfig(configDict['QUERY_INTENT_SESSIONS'])
     else:
-        print "ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!"
+        print("ConfigDict['INTENT_REP'] must either be TUPLE or FRAGMENT or QUERY !!")
         sys.exit(0)
     prepareKFoldTrainTest(configDict, intentSessionFile)

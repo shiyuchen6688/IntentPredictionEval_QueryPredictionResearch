@@ -33,18 +33,21 @@ def assertConcurrentSessions(rawFile, concSessFile):
                     continue # because the pattern is messed up and such queries can be ignored
                 sessQuery = " ".join(sessTokens[2:])
                 inputQueries.append(sessQuery)
+    print("inputQueries is ", inputQueries)
     queryCount = 0
     with open(concSessFile) as f:
         for line in f:
             sessQuery = line.strip().split(";")[1]
             if sessQuery not in inputQueries:
-                print "query not present !! exiting"
+                print("query not present !! exiting")
+                print(sessQuery)
+                # print(inputQueries)
                 exit(0)
             inputQueries.remove(sessQuery)
             queryCount+=1
             if queryCount % 1000000 == 0:
-                print ("Completed Assertion for "+str(queryCount)+" queries")
-    print "Assertion Met !!"
+                print("Completed Assertion for "+str(queryCount)+" queries")
+    print("Assertion Met !!")
     return
 
 def countQueries(inputFile): # this is an in-memory version, so holds all the lines in memory in dict
@@ -59,7 +62,7 @@ def countQueries(inputFile): # this is an in-memory version, so holds all the li
                 sessTokens = line.split()
                 if sessTokens[1] != 'Query':
                     violated += 1
-                    print ("discovered violations so far: "+str(violated))
+                    print("discovered violations so far: "+str(violated))
                     continue # because the pattern is messed up and such queries can be ignored
                 sessIndex = sessTokens[0] # the ID is used as a string
                 if sessIndex not in sessionQueryDict:
@@ -68,13 +71,13 @@ def countQueries(inputFile): # this is an in-memory version, so holds all the li
                 sessionQueryDict[sessIndex].append(sessQuery)
                 queryCount +=1 # note that queryCount is not the same as lineNum
                 if queryCount % 1000000 == 0:
-                    print ("Query count so far: "+str(queryCount))
+                    print("Query count so far: "+str(queryCount))
             lineNum+=1
-    print ("Total Query Count: " + str(queryCount)+", session count: "+str(len(sessionQueryDict)))
+    print("Total Query Count: " + str(queryCount)+", session count: "+str(len(sessionQueryDict)))
     return sessionQueryDict
 
 def raiseError():
-    print ("Error as correct line not found !!")
+    print("Error as correct line not found !!")
     exit(0)
 
 def retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex, sessionQueryPosDict):
@@ -86,14 +89,14 @@ def retrieveQueryFromFile(inputFile, coveredSessQueries, sessIndex, sessionQuery
     with open(inputFile) as f:
         lines = list(islice(f, int(queryLineNum), int(queryLineNum)+1)) # only one line
     for line in lines:
-        print (sessIndex+","+line)
+        print(sessIndex+","+line)
     line = lines[0]
     if 'Query' in line and line.startswith('\t'):
         line = cleanQuery(line)
         sessTokens = line.split()
         curSessIndex = sessTokens[0]
         if sessTokens[1] != 'Query':
-            print ("Error following pattern !!")
+            print("Error following pattern !!")
             exit(0)
         if sessIndex == curSessIndex:
             # here we assume queryIndex starts from 1, count of queries covered so far gives the index of the next uncovered query
@@ -145,12 +148,12 @@ def createConcurrentSessionsIdeal(inputFile, outputFile):
         queryCount+=1
         aggQueryCount += queryCount
         if queryCount % 1000000 == 0:
-            print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", queryCount: " + str(queryCount))
+            print("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", queryCount: " + str(queryCount))
             #ti.appendToFile(outputFile, output_str)
             #queryCount = 0
     if queryCount > 0:
         ti.appendToFile(outputFile, output_str)
-        print ("appended Sessions and Queries for a queryCount: "+str(queryCount))
+        print("appended Sessions and Queries for a queryCount: "+str(queryCount))
 
 def createConcurrentSessions(inputFile, outputFile):
     sessionQueryDict = countQueries(inputFile)
@@ -175,15 +178,17 @@ def createConcurrentSessions(inputFile, outputFile):
                 output_str += "\nSession " + str(sessIndex) + ", Query " + str(queryIndex) + ";" + sessQuery
             queryCount += 1
             if queryCount % 1000000 == 0:
-                print ("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", queryCount: " + str(queryCount))
+                print("appended Session " + str(sessIndex) + ", Query " + str(queryIndex) + ", queryCount: " + str(queryCount))
                 #ti.appendToFile(outputFile, output_str)
                 #queryCount = 0
     ti.appendToFile(outputFile, output_str)
-    print ("appended Sessions and Queries for a queryCount: "+str(queryCount))
+    print("appended Sessions and Queries for a queryCount: "+str(queryCount))
 
 if __name__ == "__main__":
-    configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
+    # configDict = parseConfig.parseConfigFile("MINC_configFile.txt")
+    configDict = parseConfig.parseConfigFile("MINC_configFile_updated_file_path.txt")
     #createConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
-    #print ("Completed concurrent session order creation")
+    #print("Completed concurrent session order creation")
+    print("configDict['QUERYSESSIONS'] is ", configDict['QUERYSESSIONS'])
     assertConcurrentSessions(getConfig(configDict['QUERYSESSIONS']), getConfig(configDict['CONCURRENT_QUERY_SESSIONS']))
-    print ("Completed assertion of concurrent sessions")
+    print("Completed assertion of concurrent sessions")

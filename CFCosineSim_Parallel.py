@@ -15,7 +15,7 @@ import multiprocessing
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Array
 from multiprocessing import Queue
-import LSTM_RNN_Parallel
+# import LSTM_RNN_Parallel
 import argparse
 
 class NoDaemonProcess(multiprocessing.Process):
